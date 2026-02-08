@@ -1,0 +1,56 @@
+.card {
+
+  --grain: url(/img/grain.webp);
+  --glitter: url(/img/glitter.webp);
+  --noise: url(https://poke-holo.b-cdn.net/foils/151/noise-base.webp);
+  --noise-over: url(https://poke-holo.b-cdn.net/foils/151/noise-top.webp);
+  --iri1: url(https://poke-holo.b-cdn.net/foils/151/iri-1.webp);
+  --iri2: url(https://poke-holo.b-cdn.net/foils/151/iri-2.webp);
+  --iri3: url(https://poke-holo.b-cdn.net/foils/151/iri-3.webp);
+  --iri4: url(https://poke-holo.b-cdn.net/foils/151/iri-4.webp);
+  --iri5: url(https://poke-holo.b-cdn.net/foils/151/iri-5.webp);
+  --iri6: url(https://poke-holo.b-cdn.net/foils/151/iri-6.webp);
+  --iri7: url(https://poke-holo.b-cdn.net/foils/151/iri-7.webp);
+  --iri8: url(https://poke-holo.b-cdn.net/foils/151/iri-8.webp);
+  --iri9: url(https://poke-holo.b-cdn.net/foils/151/iri-9.webp);
+  --birthday: url(https://poke-holo.b-cdn.net/foils/151/birthday-holo.webp);
+  --birthday-dank: url(https://poke-holo.b-cdn.net/foils/151/birthday-holo-dank.webp);
+  --birthday-dank2: url(https://poke-holo.b-cdn.net/foils/151/birthday-holo-dank-2.webp);
+  --glittersize: 25%;
+
+  --space: 5%;
+  --angle: 133deg;
+  --imgsize: cover;
+
+  --red: #f80e35;
+  --yellow: #eedf10;
+  --green: #21e985;
+  --blue: #0dbde9;
+  --violet: #c929f1;
+
+  --clip: inset(9.85% 8% 52.85% 8%);
+  --clip-invert: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0 47.15%, 91.5% 47.15%, 91.5% 9.85%, 8% 9.85%, 8% 47.15%, 0 50%);
+
+  --clip-stage: polygon(91.5% 9.85%, 57% 9.85%, 54% 12%, 17% 12%, 16% 14%, 12% 16%, 8% 16%, 8% 47.15%, 92% 47.15%);
+  --clip-stage-invert: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0 47.15%, 91.5% 47.15%, 91.5% 9.85%, 57% 9.85%, 54% 12%, 17% 12%, 16% 14%, 12% 16%, 8% 16%, 8% 47.15%, 0 50%);
+
+  --clip-trainer: inset(14.5% 8.5% 48.2% 8.5%);
+  --clip-borders: inset(2.8% 4% round 2.55% / 1.5%);
+  --clip-borders-invert: polygon(94.8% 2.8%, 95.7% 3.2%, 96.2% 3.8%, 96.2% 96%, 95.9% 96.8%, 94.8% 97.3%, 5% 97.3%, 4.2% 96.9%, 3.8% 96.2%, 3.8% 6.1%, 15% 6.1%, 16% 5%, 17.9% 4%, 19% 2.8%);
+
+  --clip-ex-borders: polygon(0% 0%, 0% 100%, 4% 100%, 4% 18%, 1% 16%, 1% 13%, 3% 10%, 4% 9%, 4% 6%, 9% 6%, 16% 6%, 16% 5%, 18% 4%, 19% 3%, 95% 3%, 97% 4%, 96% 90%, 97% 92%, 97% 94%, 96% 95%, 96% 97%, 95% 97%, 4% 97%, 4% 100%, 100% 100%, 100% 0%);
+}
+
+.card__shine,
+.card__glare {
+
+  will-change: transform, opacity, background-image, background-size,
+    background-position, background-blend-mode, filter;
+
+}
+
+.card.offscreen {
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  visibility: hidden;
+}

@@ -8,7 +8,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   movementScale: 1.5,
   boxDepthRatio: 1.1,
   smoothing: 0.06,
-  holoIntensity: 0.4,
+  holoIntensity: 0.7,
   cardSize: 0.5,
   cardSpinSpeed: 0,
   nearPlane: 0.05,

@@ -13,7 +13,7 @@ uniform float uFade;         // overall card opacity 0-1 (for transitions)
 
 varying vec2 vUv;
 
-// ── Blend modes ──────────────────────────────────────
+// ── Blend modes (matching CSS blend modes) ──────────
 vec3 blendColorDodge(vec3 base, vec3 blend) {
     return min(base / max(1.0 - blend, 0.001), vec3(1.0));
 }
@@ -32,6 +32,9 @@ vec3 blendHardLight(vec3 base, vec3 blend) {
 }
 vec3 blendScreen(vec3 base, vec3 blend) {
     return 1.0 - (1.0 - base) * (1.0 - blend);
+}
+vec3 blendExclusion(vec3 base, vec3 blend) {
+    return base + blend - 2.0 * base * blend;
 }
 
 // ── Filter helpers ───────────────────────────────────
@@ -94,70 +97,77 @@ void main() {
     float ptrX = uPointer.x;
     float ptrY = uPointer.y;
 
+    // CSS: brightness(calc(pointer-from-center * 0.4 + 0.5))
+    float ptrBrightness = uPointerFromCenter * 0.4 + 0.5;
+
     // Radial spotlight from pointer (shared by holo & foil)
     float spotDist = length(uv - vec2(ptrX, ptrY));
     float spotlight = 1.0 - smoothstep(0.0, 0.8, spotDist);
 
-    // ── SHINE LAYER 1: Rainbow stripes (color-dodge) ─
-    float rainbowSpeed = 1.6;
-    float rainbowT = uv.y * 1.0
-        + ((0.5 - bgY) * rainbowSpeed)
+    // ── SHINE LAYER 1: Rainbow + bars (color-dodge) ──
+    // CSS: repeating sunpillar gradient (0deg, 200% 700% ≈ 3.5 vertical repeats)
+    float rainbowT = uv.y * 3.5
+        + ((0.5 - bgY) * 2.6)
         + sin(uTime * 0.3) * 0.05;
     vec3 rainbow = sunpillarGradient(rainbowT);
 
-    // Scanline overlay — fine horizontal lines
-    float scanFreq = 200.0;
-    float scan = smoothstep(0.3, 0.5, fract(uv.y * scanFreq));
-    vec3 scanlines = mix(vec3(0.0), vec3(0.4), scan);
-    rainbow = blendOverlay(rainbow, scanlines);
-
-    // Diagonal bar pattern (133 deg)
-    float barAngle = 133.0 * 3.14159 / 180.0;
+    // CSS: repeating-linear-gradient(128.5deg, #0e152e → hsl(180,29%,66%) → #0e152e)
+    float barAngle = 128.5 * 3.14159 / 180.0;
     float barCoord = dot(uv, vec2(cos(barAngle), sin(barAngle)));
     float barOffset = ((0.5 - bgX) * 1.65) + (bgY * 0.5);
-    float barT = fract((barCoord + barOffset) * 12.0);
-    float bar = smoothstep(0.2, 0.25, barT) * (1.0 - smoothstep(0.35, 0.4, barT))
-              + smoothstep(0.5, 0.55, barT) * (1.0 - smoothstep(0.85, 0.9, barT));
-    vec3 barColor = mix(vec3(0.0), vec3(0.7), bar * 0.6);
-    rainbow = blendScreen(rainbow, barColor);
+    float barT = fract((barCoord + barOffset) * 4.0);
+    // Narrow cyan band (0–32% of period), dark gap (32–100%)
+    float barIntensity = smoothstep(0.0, 0.24, barT) * (1.0 - smoothstep(0.28, 0.55, barT));
+    vec3 barDark = vec3(0.055, 0.082, 0.18);    // #0e152e
+    vec3 barBright = vec3(0.45, 0.76, 0.76);    // hsl(180, 29%, 66%)
+    vec3 barColor = mix(barDark, barBright, barIntensity);
+
+    // CSS: background-blend-mode hard-light for bar layer
+    rainbow = blendHardLight(rainbow, barColor);
 
     // Apply spotlight
     rainbow *= 0.5 + spotlight * 0.5;
 
-    // Filter: brightness(0.85) contrast(2.75) saturate(0.65)
-    vec3 shine1 = adjustBrightness(rainbow, 0.85);
-    shine1 = adjustContrast(shine1, 2.75);
-    shine1 = adjustSaturate(shine1, 0.65);
+    // CSS filter: brightness(pfc*0.4+0.5) contrast(2.5) saturate(0.66)
+    vec3 shine1 = adjustBrightness(rainbow, ptrBrightness);
+    shine1 = adjustContrast(shine1, 2.5);
+    shine1 = adjustSaturate(shine1, 1.0);
     shine1 = clamp(shine1, 0.0, 1.0);
 
-    // ── SHINE LAYER 2: Shifted copy (soft-light) ─────
-    float rainbow2T = uv.y * 3.0
+    // ── SHINE LAYER 2: Shifted copy (exclusion blend) ─
+    // CSS :after: inverted positions, mix-blend-mode: exclusion
+    float rainbow2T = uv.y * 2.5
         + ((0.5 - bgY) * -1.8)
         + cos(uTime * 0.25) * 0.04;
     vec3 rainbow2 = sunpillarGradient(rainbow2T);
 
-    // Different bar offset
+    // Inverted bar offset
     float barOffset2 = ((0.5 - bgX) * -0.9) - (bgY * 0.75);
-    float barT2 = fract((barCoord + barOffset2) * 10.0);
-    float bar2 = smoothstep(0.2, 0.25, barT2) * (1.0 - smoothstep(0.35, 0.4, barT2))
-               + smoothstep(0.5, 0.55, barT2) * (1.0 - smoothstep(0.85, 0.9, barT2));
-    rainbow2 = blendScreen(rainbow2, mix(vec3(0.0), vec3(0.7), bar2 * 0.5));
+    float barT2 = fract((barCoord + barOffset2) * 4.0);
+    float barIntensity2 = smoothstep(0.0, 0.24, barT2) * (1.0 - smoothstep(0.28, 0.55, barT2));
+    vec3 barColor2 = mix(barDark, barBright, barIntensity2);
+    rainbow2 = blendHardLight(rainbow2, barColor2);
     rainbow2 *= 0.5 + spotlight * 0.5;
 
-    // Filter: brightness(1.0) contrast(2.5) saturate(1.75)
-    vec3 shine2 = adjustBrightness(rainbow2, 1.0);
-    shine2 = adjustContrast(shine2, 2.5);
-    shine2 = adjustSaturate(shine2, 1.75);
+    // CSS :after filter: brightness(pfc*0.4+0.5) contrast(1.66) saturate(1.0)
+    vec3 shine2 = adjustBrightness(rainbow2, ptrBrightness);
+    shine2 = adjustContrast(shine2, 1.66);
+    shine2 = adjustSaturate(shine2, 1.0);
     shine2 = clamp(shine2, 0.0, 1.0);
 
-    // ── GLARE: Radial white specular ─────────────────
-    float glareCore = smoothstep(0.6, 0.0, spotDist);
-    float glareEdge = smoothstep(1.0, 0.3, spotDist) * 0.1;
-    vec3 glare = vec3(glareCore * 0.9 + glareEdge);
+    // ── GLARE: Warm-to-cool radial (hard-light) ─────
+    // CSS: radial-gradient(farthest-corner at pointer,
+    //   hsl(0,0%,75%) 5%, hsl(200,5%,35%) 70%, hsl(320,40%,10%) 150%)
+    vec3 glareWhite = vec3(0.75);
+    vec3 glareCool = vec3(0.32, 0.35, 0.37);
+    vec3 glareWarm = vec3(0.14, 0.06, 0.10);
+    float glareMix1 = smoothstep(0.0, 0.05, spotDist);
+    float glareMix2 = smoothstep(0.05, 0.7, spotDist);
+    vec3 glare = mix(glareWhite, glareCool, glareMix1);
+    glare = mix(glare, glareWarm, glareMix2);
 
-    // Glare filter: brightness(0.8) contrast(1.5)
+    // CSS filter: brightness(0.8)
     glare = adjustBrightness(glare, 0.8);
-    glare = adjustContrast(glare, 1.5);
     glare = clamp(glare, 0.0, 1.0);
 
     // ── Compose layers ───────────────────────────────
@@ -166,13 +176,15 @@ void main() {
 
     // Holo mask layers (shine1 + shine2 + glare)
     if (mask > 0.01) {
+        // Shine 1: color-dodge
         result = blendColorDodge(base, shine1 * mask * uCardOpacity);
 
-        vec3 shine2Masked = mix(vec3(0.5), shine2, mask * uCardOpacity);
-        result = blendSoftLight(result, shine2Masked);
+        // Shine 2: exclusion (CSS :after mix-blend-mode)
+        vec3 shine2Contrib = shine2 * mask * uCardOpacity;
+        result = mix(result, blendExclusion(result, shine2Contrib), mask * uCardOpacity);
 
-        vec3 glareMasked = mix(vec3(0.5), glare, mask * uCardOpacity * 0.8);
-        result = blendOverlay(result, glareMasked);
+        // Glare: hard-light (CSS .card__glare mix-blend-mode)
+        result = mix(result, blendHardLight(result, glare), mask * uCardOpacity * 0.8);
     }
 
     // ── FOIL: Etched foil shimmer ────────────────────
@@ -202,7 +214,7 @@ void main() {
         result = blendColorDodge(result, foilColor * foil * uCardOpacity * 0.5);
 
         // Subtle specular on foil areas
-        vec3 foilGlare = mix(vec3(0.5), vec3(glareCore * 0.5 + 0.5), foil * uCardOpacity * 0.4);
+        vec3 foilGlare = mix(vec3(0.5), vec3(glare.r * 0.5 + 0.5), foil * uCardOpacity * 0.4);
         result = blendOverlay(result, foilGlare);
     }
 
