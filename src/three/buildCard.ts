@@ -10,9 +10,10 @@ import {
   Vector2,
 } from 'three'
 import type { Texture } from 'three'
-import type { AppConfig, CardTransform, DerivedDimensions } from '@/types'
+import type { AppConfig, CardTransform, DerivedDimensions, ShaderStyle } from '@/types'
 import holoVert from '@/shaders/holo.vert'
 import holoFrag from '@/shaders/holo.frag'
+import parallaxFrag from '@/shaders/parallax.frag'
 
 export const CARD_ASPECT = 733 / 1024 // width / height
 
@@ -28,6 +29,7 @@ export function buildCardMesh(
   maskTexture: Texture | null,
   foilTexture: Texture | null,
   config: AppConfig,
+  shaderStyle: ShaderStyle = 'holo',
 ): Mesh {
   const cardH = dims.screenH * config.cardSize
   const cardW = cardH * CARD_ASPECT
@@ -49,7 +51,7 @@ export function buildCardMesh(
         uFade: { value: 1.0 },
       },
       vertexShader: holoVert,
-      fragmentShader: holoFrag,
+      fragmentShader: shaderStyle === 'parallax' ? parallaxFrag : holoFrag,
       side: DoubleSide,
       transparent: true,
     })

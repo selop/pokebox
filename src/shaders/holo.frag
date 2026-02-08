@@ -99,8 +99,8 @@ void main() {
     float spotlight = 1.0 - smoothstep(0.0, 0.8, spotDist);
 
     // ── SHINE LAYER 1: Rainbow stripes (color-dodge) ─
-    float rainbowSpeed = 2.6;
-    float rainbowT = uv.y * 3.0
+    float rainbowSpeed = 1.6;
+    float rainbowT = uv.y * 1.0
         + ((0.5 - bgY) * rainbowSpeed)
         + sin(uTime * 0.3) * 0.05;
     vec3 rainbow = sunpillarGradient(rainbowT);
@@ -185,7 +185,7 @@ void main() {
         vec3 foilColor = sunpillarGradient(foilT);
 
         // Spotlight modulation
-        foilColor *= 0.4 + spotlight * 0.6;
+        foilColor *= 0.1 + spotlight * 0.6;
 
         // High-frequency grain for etched texture
         vec2 grainUV = floor(uv * 250.0) / 250.0;

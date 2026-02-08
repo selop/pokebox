@@ -1,6 +1,15 @@
 import { computed, reactive, ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { AppConfig, CardDisplayMode, CardTransform, DerivedDimensions, EyePosition, RenderMode, SceneMode } from '@/types'
+import type {
+  AppConfig,
+  CardDisplayMode,
+  CardTransform,
+  DerivedDimensions,
+  EyePosition,
+  RenderMode,
+  SceneMode,
+  ShaderStyle,
+} from '@/types'
 import { CARD_DEFAULTS, DEFAULT_CARD, DEFAULT_CONFIG } from '@/data/defaults'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 
@@ -18,8 +27,9 @@ export const useAppStore = defineStore('app', () => {
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
-  const currentCardId = ref('009')
+  const currentCardId = ref('202')
   const cardDisplayMode = ref<CardDisplayMode>('single')
+  const shaderStyle = ref<ShaderStyle>('holo')
   const sceneSeed = ref(Date.now())
 
   // --- UI state ---
@@ -76,7 +86,7 @@ export const useAppStore = defineStore('app', () => {
     })
     config.holoIntensity = CARD_DEFAULTS.holoIntensity / 100
     config.cardSpinSpeed = CARD_DEFAULTS.cardSpinSpeed
-    currentCardId.value = '009'
+    currentCardId.value = '202'
   }
 
   function randomizeSeed() {
@@ -85,6 +95,10 @@ export const useAppStore = defineStore('app', () => {
 
   function toggleRenderMode() {
     renderMode.value = renderMode.value === 'xray' ? 'solid' : 'xray'
+  }
+
+  function toggleShaderStyle() {
+    shaderStyle.value = shaderStyle.value === 'holo' ? 'parallax' : 'holo'
   }
 
   function togglePanel() {
@@ -104,6 +118,7 @@ export const useAppStore = defineStore('app', () => {
     renderMode,
     currentCardId,
     cardDisplayMode,
+    shaderStyle,
     sceneSeed,
     isPanelOpen,
     isTrackingActive,
@@ -119,6 +134,7 @@ export const useAppStore = defineStore('app', () => {
     resetDefaults,
     randomizeSeed,
     toggleRenderMode,
+    toggleShaderStyle,
     togglePanel,
     setSceneMode,
   }

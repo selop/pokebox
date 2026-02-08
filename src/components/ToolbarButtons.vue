@@ -26,6 +26,13 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
     {{ store.cardDisplayMode === 'single' ? '&#x2630; Triple' : '&#x25A3; Single' }}
   </button>
   <button
+    v-show="store.sceneMode === 'cards'"
+    class="toolbar-btn shader-btn"
+    @click="store.toggleShaderStyle()"
+  >
+    {{ store.shaderStyle === 'holo' ? '&#x2728; Holo' : '&#x2734; Parallax' }}
+  </button>
+  <button
     v-show="store.sceneMode === 'furniture'"
     class="toolbar-btn randomize-btn"
     @click="store.randomizeSeed()"
@@ -36,6 +43,7 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
   <div v-show="store.sceneMode === 'cards'" class="nav-hint">
     <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
     <span v-show="store.cardDisplayMode === 'single'">&middot; <kbd>M</kbd> merge</span>
+    &middot; <kbd>H</kbd> shader
   </div>
 </template>
 
@@ -78,6 +86,9 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 }
 .display-btn {
   left: 350px;
+}
+.shader-btn {
+  left: 440px;
 }
 .randomize-btn {
   left: 350px;
