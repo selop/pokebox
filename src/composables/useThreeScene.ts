@@ -13,11 +13,16 @@ import {
 import { useAppStore } from '@/stores/app'
 import { buildBoxShell } from '@/three/buildBox'
 import { populateFurniture } from '@/three/buildFurniture'
-import { applyCardTransform, buildCardMesh, CARD_ASPECT } from '@/three/buildCard'
+import { buildCardMesh, CARD_ASPECT } from '@/three/buildCard'
 import { mulberry32 } from '@/three/utils'
 import { useCardLoader } from './useCardLoader'
 import { useMouseTilt } from './useMouseTilt'
 import { CARD_CATALOG } from '@/data/cardCatalog'
+
+const DISPLAY_IDS = CARD_CATALOG.slice(0, 3).map((c) => c.id)
+// Per-card offsets for staggering (x = fraction of spacing, z = fraction of boxD)
+const CARD_X_OFFSETS = [0.3, 0, -0.3]
+const CARD_Z_OFFSETS = [0.2, 0, -0.2]
 
 export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   const store = useAppStore()
@@ -29,11 +34,22 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let lastTime = performance.now() * 0.001
 
   // Card state
-  const cardMeshRef = shallowRef<Mesh | null>(null)
+  const cardMeshes = shallowRef<Mesh[]>([])
   let cardAngle = 0
-  let cardLastRevolution = 0
   let cardLoader: ReturnType<typeof useCardLoader> | null = null
   const mouseTilt = useMouseTilt()
+
+  function cardLayout() {
+    const dims = store.dimensions
+    const cardH = dims.screenH * store.config.cardSize
+    const cardW = cardH * CARD_ASPECT
+    const gap = cardW * 0.08
+    const spacing = cardW + gap
+    const centerX = (store.cardTransform.x / 100) * dims.screenW
+    const y = (store.cardTransform.y / 100) * dims.screenH
+    const z = -(store.cardTransform.z / 100) * dims.boxD
+    return { spacing, centerX, y, z, boxD: dims.boxD }
+  }
 
   function init() {
     const container = containerRef.value
@@ -69,8 +85,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     store.targetEye.y = 0
     store.targetEye.z = dims.eyeDefaultZ
 
-    // Load initial card then build
-    cardLoader.loadCard(store.currentCardId).then(() => {
+    // Load all display cards then build
+    cardLoader.loadCards(DISPLAY_IDS).then(() => {
       rebuildScene()
     })
 
@@ -90,7 +106,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
     // Clear scene
     while (scene.children.length) scene.remove(scene.children[0]!)
-    cardMeshRef.value = null
+    cardMeshes.value = []
 
     const dims = store.dimensions
     const renderMode = store.renderMode
@@ -106,18 +122,24 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       Math.random = origRandom
     }
 
-    // Card mode
-    if (store.sceneMode === 'cards' && cardLoader?.cardTexture.value) {
-      const mesh = buildCardMesh(
-        dims,
-        cardLoader.cardTexture.value,
-        cardLoader.maskTexture.value,
-        cardLoader.foilTexture.value,
-        store.config,
-      )
-      applyCardTransform(mesh, store.cardTransform, cardAngle, dims)
-      scene.add(mesh)
-      cardMeshRef.value = mesh
+    // Card mode — display 3 cards side by side
+    if (store.sceneMode === 'cards' && cardLoader) {
+      const { spacing, centerX, y, z, boxD } = cardLayout()
+      const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
+      const meshes: Mesh[] = []
+
+      DISPLAY_IDS.forEach((id, i) => {
+        const tex = cardLoader!.get(id)
+        if (!tex) return
+        const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config)
+        const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
+        mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
+        mesh.rotation.y = baseRotY
+        scene!.add(mesh)
+        meshes.push(mesh)
+      })
+
+      cardMeshes.value = meshes
     }
   }
 
@@ -167,72 +189,54 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Update mouse tilt springs
     mouseTilt.update(dt)
 
-    // Auto-rotate card
-    const cardMesh = cardMeshRef.value
-    if (cardMesh && store.config.cardSpinSpeed !== 0) {
+    // Auto-rotate cards
+    const meshes = cardMeshes.value
+    if (meshes.length > 0 && store.config.cardSpinSpeed !== 0) {
       cardAngle += store.config.cardSpinSpeed * (Math.PI / 180) * dt
-      const rev = Math.floor(cardAngle / (Math.PI * 2))
-      if (rev > cardLastRevolution) {
-        cardLastRevolution = rev
-        // Advance to next card
-        const idx = CARD_CATALOG.findIndex((c) => c.id === store.currentCardId)
-        const nextIdx = (idx + 1) % CARD_CATALOG.length
-        store.currentCardId = CARD_CATALOG[nextIdx]!.id
-        cardLoader?.loadCard(store.currentCardId).then(() => rebuildScene())
-      }
-      applyCardTransform(cardMesh, store.cardTransform, cardAngle, store.dimensions)
     }
 
-    // Apply mouse tilt to card rotation
-    if (cardMesh) {
-      const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
-      cardMesh.rotation.x = mouseTilt.state.rotateX
-      cardMesh.rotation.y = baseRotY + mouseTilt.state.rotateY
+    // Apply mouse tilt + rotation to all cards
+    const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
+    for (const mesh of meshes) {
+      mesh.rotation.x = mouseTilt.state.rotateX
+      mesh.rotation.y = baseRotY + mouseTilt.state.rotateY
     }
 
-    // Update holo card uniforms
-    if (cardMesh && (cardMesh.material as ShaderMaterial).isShaderMaterial) {
-      const mat = cardMesh.material as ShaderMaterial
-      const u = mat.uniforms
+    // Update holo shader uniforms for all cards
+    for (const mesh of meshes) {
+      if (!(mesh.material as ShaderMaterial).isShaderMaterial) continue
+      const u = (mesh.material as ShaderMaterial).uniforms
       u['uTime']!.value = time
 
-      if (mouseTilt.state.isActive || !mouseTilt.allSettled()) {
-        // Mouse-driven shader uniforms (spring-interpolated)
-        const mt = mouseTilt.state
-        ;(u['uPointer']!.value as Vector2).set(mt.pointerX, mt.pointerY)
-        ;(u['uBackground']!.value as Vector2).set(mt.backgroundX, mt.backgroundY)
-        u['uPointerFromCenter']!.value = mt.pointerFromCenter
-      } else {
-        // Eye-based shader uniforms (face tracking / keyboard)
-        cardMesh.updateMatrixWorld()
-        const cardPos = new Vector3()
-        cardMesh.getWorldPosition(cardPos)
+      // Eye-based shader uniforms (face tracking / keyboard)
+      mesh.updateMatrixWorld()
+      const cardPos = new Vector3()
+      mesh.getWorldPosition(cardPos)
 
-        const eyeVec = new Vector3(store.eyePos.x, store.eyePos.y, store.eyePos.z)
-        const dir = eyeVec.clone().sub(cardPos)
+      const eyeVec = new Vector3(store.eyePos.x, store.eyePos.y, store.eyePos.z)
+      const dir = eyeVec.clone().sub(cardPos)
 
-        const cardRight = new Vector3(1, 0, 0).applyQuaternion(cardMesh.quaternion)
-        const cardUp = new Vector3(0, 1, 0).applyQuaternion(cardMesh.quaternion)
+      const cardRight = new Vector3(1, 0, 0).applyQuaternion(mesh.quaternion)
+      const cardUp = new Vector3(0, 1, 0).applyQuaternion(mesh.quaternion)
 
-        const dims = store.dimensions
-        const cardH = dims.screenH * 0.5
-        const cardW = cardH * CARD_ASPECT
+      const dims = store.dimensions
+      const cardH = dims.screenH * store.config.cardSize
+      const cardW = cardH * CARD_ASPECT
 
-        const localX = dir.dot(cardRight) / cardW + 0.5
-        const localY = dir.dot(cardUp) / cardH + 0.5
+      const localX = dir.dot(cardRight) / cardW + 0.5
+      const localY = dir.dot(cardUp) / cardH + 0.5
 
-        const px = Math.max(0, Math.min(1, localX))
-        const py = Math.max(0, Math.min(1, localY))
-        ;(u['uPointer']!.value as Vector2).set(px, py)
+      const px = Math.max(0, Math.min(1, localX))
+      const py = Math.max(0, Math.min(1, localY))
+      ;(u['uPointer']!.value as Vector2).set(px, py)
 
-        const bx = 0.37 + Math.max(0, Math.min(1, localX)) * 0.26
-        const by = 0.37 + Math.max(0, Math.min(1, localY)) * 0.26
-        ;(u['uBackground']!.value as Vector2).set(bx, by)
+      const bx = 0.37 + Math.max(0, Math.min(1, localX)) * 0.26
+      const by = 0.37 + Math.max(0, Math.min(1, localY)) * 0.26
+      ;(u['uBackground']!.value as Vector2).set(bx, by)
 
-        const dx = px - 0.5,
-          dy = py - 0.5
-        u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
-      }
+      const dx = px - 0.5,
+        dy = py - 0.5
+      u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
     }
 
     // Animate scene objects
@@ -261,38 +265,43 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       store.config.screenHeightCm,
       store.config.viewingDistanceCm,
       store.config.boxDepthRatio,
+      store.config.cardSize,
     ],
     () => {
       rebuildScene()
     },
   )
 
-  // Watch card transform changes (no rebuild needed, just update position)
+  // Watch card transform changes (reposition all cards)
   watch(
-    () => [store.cardTransform.x, store.cardTransform.y, store.cardTransform.z, store.cardTransform.rotY],
+    () => [
+      store.cardTransform.x,
+      store.cardTransform.y,
+      store.cardTransform.z,
+      store.cardTransform.rotY,
+    ],
     () => {
-      if (cardMeshRef.value) {
-        applyCardTransform(cardMeshRef.value, store.cardTransform, cardAngle, store.dimensions)
-      }
+      const meshes = cardMeshes.value
+      if (!meshes.length) return
+      const { spacing, centerX, y, z, boxD } = cardLayout()
+      const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
+      meshes.forEach((mesh, i) => {
+        const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
+        mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
+        mesh.rotation.y = baseRotY
+      })
     },
   )
 
-  // Watch holo intensity (update uniform directly)
+  // Watch holo intensity (update uniform directly on all cards)
   watch(
     () => store.config.holoIntensity,
     (val) => {
-      const cardMesh = cardMeshRef.value
-      if (cardMesh && (cardMesh.material as ShaderMaterial).isShaderMaterial) {
-        ;(cardMesh.material as ShaderMaterial).uniforms['uCardOpacity']!.value = val
+      for (const mesh of cardMeshes.value) {
+        if ((mesh.material as ShaderMaterial).isShaderMaterial) {
+          ;(mesh.material as ShaderMaterial).uniforms['uCardOpacity']!.value = val
+        }
       }
-    },
-  )
-
-  // Watch card selection changes
-  watch(
-    () => store.currentCardId,
-    (id) => {
-      cardLoader?.loadCard(id).then(() => rebuildScene())
     },
   )
 

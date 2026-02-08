@@ -7,6 +7,7 @@ export interface AppConfig {
   boxDepthRatio: number
   smoothing: number
   holoIntensity: number
+  cardSize: number
   cardSpinSpeed: number
   nearPlane: number
   farPlane: number

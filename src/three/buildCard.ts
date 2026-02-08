@@ -29,7 +29,7 @@ export function buildCardMesh(
   foilTexture: Texture | null,
   config: AppConfig,
 ): Mesh {
-  const cardH = dims.screenH * 0.5
+  const cardH = dims.screenH * config.cardSize
   const cardW = cardH * CARD_ASPECT
   const cardGeo = new PlaneGeometry(cardW, cardH)
 

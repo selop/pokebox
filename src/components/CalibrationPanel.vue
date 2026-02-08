@@ -129,6 +129,15 @@ function formatValue(v: number): string {
         </select>
       </div>
       <div class="cal-row">
+        <span class="cal-label">Size</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="10" max="100" step="1"
+            :value="Math.round(store.config.cardSize * 100)"
+            @input="store.config.cardSize = parseFloat(($event.target as HTMLInputElement).value) / 100; store.triggerRebuild()" />
+          <span class="cal-value">{{ Math.round(store.config.cardSize * 100) }}%</span>
+        </div>
+      </div>
+      <div class="cal-row">
         <span class="cal-label">X pos</span>
         <div class="cal-slider-wrap">
           <input type="range" class="cal-slider" min="-50" max="50" step="1"

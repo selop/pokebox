@@ -1,57 +1,74 @@
-import { shallowRef } from 'vue'
 import { LinearFilter, LinearMipmapLinearFilter, TextureLoader } from 'three'
 import type { Texture, WebGLRenderer } from 'three'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 
+export interface CardTextures {
+  card: Texture
+  mask: Texture | null
+  foil: Texture | null
+}
+
 export function useCardLoader(renderer: WebGLRenderer) {
-  const cardTexture = shallowRef<Texture | null>(null)
-  const maskTexture = shallowRef<Texture | null>(null)
-  const foilTexture = shallowRef<Texture | null>(null)
+  const loaded = new Map<string, CardTextures>()
   const loader = new TextureLoader()
 
+  function applyFilters(tex: Texture, aniso = false): void {
+    tex.minFilter = LinearMipmapLinearFilter
+    tex.magFilter = LinearFilter
+    if (aniso) tex.anisotropy = renderer.capabilities.getMaxAnisotropy()
+  }
+
   function loadCard(id: string): Promise<void> {
+    if (loaded.has(id)) return Promise.resolve()
+
     const entry = CARD_CATALOG.find((c) => c.id === id)
     if (!entry) return Promise.resolve()
-
-    cardTexture.value = null
-    maskTexture.value = null
-    foilTexture.value = null
 
     const hasFoil = !!entry.foil
     const totalToLoad = hasFoil ? 3 : 2
 
     return new Promise<void>((resolve) => {
-      let loaded = 0
+      let count = 0
+      let cardTex: Texture | null = null
+      let maskTex: Texture | null = null
+      let foilTex: Texture | null = null
+
       const onReady = () => {
-        if (++loaded >= totalToLoad) resolve()
+        if (++count >= totalToLoad) {
+          loaded.set(id, { card: cardTex!, mask: maskTex, foil: foilTex })
+          resolve()
+        }
       }
 
       loader.load(entry.front, (tex) => {
-        tex.minFilter = LinearMipmapLinearFilter
-        tex.magFilter = LinearFilter
-        tex.anisotropy = renderer.capabilities.getMaxAnisotropy()
-        cardTexture.value = tex
+        applyFilters(tex, true)
+        cardTex = tex
         onReady()
       })
 
       loader.load(entry.mask, (tex) => {
-        tex.minFilter = LinearMipmapLinearFilter
-        tex.magFilter = LinearFilter
-        maskTexture.value = tex
+        applyFilters(tex)
+        maskTex = tex
         onReady()
       })
 
       if (hasFoil) {
         loader.load(entry.foil, (tex) => {
-          tex.minFilter = LinearMipmapLinearFilter
-          tex.magFilter = LinearFilter
-          tex.anisotropy = renderer.capabilities.getMaxAnisotropy()
-          foilTexture.value = tex
+          applyFilters(tex, true)
+          foilTex = tex
           onReady()
         })
       }
     })
   }
 
-  return { cardTexture, maskTexture, foilTexture, loadCard }
+  function loadCards(ids: string[]): Promise<void> {
+    return Promise.all(ids.map(loadCard)).then(() => {})
+  }
+
+  function get(id: string): CardTextures | undefined {
+    return loaded.get(id)
+  }
+
+  return { loadCard, loadCards, get }
 }

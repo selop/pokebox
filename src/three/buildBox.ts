@@ -17,11 +17,7 @@ import {
 } from 'three'
 import type { DerivedDimensions, RenderMode } from '@/types'
 
-export function buildBoxShell(
-  scene: Scene,
-  dims: DerivedDimensions,
-  renderMode: RenderMode,
-): void {
+export function buildBoxShell(scene: Scene, dims: DerivedDimensions, renderMode: RenderMode): void {
   const { screenW, screenH, boxD } = dims
   const hw = screenW / 2
   const hh = screenH / 2
@@ -33,7 +29,7 @@ export function buildBoxShell(
   const gridMatDim = new LineBasicMaterial({
     color: gridColorDim,
     transparent: true,
-    opacity: 0.4,
+    opacity: 0.9,
   })
 
   function drawGrid(
@@ -209,7 +205,7 @@ function createHangingLight(scene: Scene, dims: DerivedDimensions, renderMode: R
     new MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.6 }),
   )
   rose.position.set(0, ceilY - screenH * 0.004, lightZ)
-  scene.add(rose)
+  //scene.add(rose)
 
   // Shade
   const shadeR1 = screenH * 0.02,

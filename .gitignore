@@ -40,3 +40,9 @@ __screenshots__/
 
 test-results/
 playwright-report/
+
+public/cards/foils/
+
+public/cards/masks/
+
+public/cards/fronts/

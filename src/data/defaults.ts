@@ -9,6 +9,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   boxDepthRatio: 1.1,
   smoothing: 0.06,
   holoIntensity: 0.55,
+  cardSize: 0.5,
   cardSpinSpeed: 0,
   nearPlane: 0.05,
   farPlane: 1000,
@@ -16,14 +17,14 @@ export const DEFAULT_CONFIG: AppConfig = {
 
 export const DEFAULT_CARD: CardTransform = {
   x: 0,
-  y: 0,
+  y: -11,
   z: 50,
   rotY: 0,
 }
 
 export const CARD_DEFAULTS = {
   x: 0,
-  y: 0,
+  y: -11,
   z: 22,
   rotY: 0,
   holoIntensity: 75,
