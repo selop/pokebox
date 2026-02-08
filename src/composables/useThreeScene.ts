@@ -16,6 +16,7 @@ import { populateFurniture } from '@/three/buildFurniture'
 import { applyCardTransform, buildCardMesh, CARD_ASPECT } from '@/three/buildCard'
 import { mulberry32 } from '@/three/utils'
 import { useCardLoader } from './useCardLoader'
+import { useMouseTilt } from './useMouseTilt'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 
 export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
@@ -32,6 +33,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let cardAngle = 0
   let cardLastRevolution = 0
   let cardLoader: ReturnType<typeof useCardLoader> | null = null
+  const mouseTilt = useMouseTilt()
 
   function init() {
     const container = containerRef.value
@@ -46,6 +48,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = PCFSoftShadowMap
     container.appendChild(renderer.domElement)
+    mouseTilt.attach(renderer.domElement)
 
     camera = new PerspectiveCamera(
       60,
@@ -161,6 +164,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Update off-axis camera
     updateOffAxisCamera(store.eyePos.x, store.eyePos.y, store.eyePos.z)
 
+    // Update mouse tilt springs
+    mouseTilt.update(dt)
+
     // Auto-rotate card
     const cardMesh = cardMeshRef.value
     if (cardMesh && store.config.cardSpinSpeed !== 0) {
@@ -177,40 +183,56 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       applyCardTransform(cardMesh, store.cardTransform, cardAngle, store.dimensions)
     }
 
+    // Apply mouse tilt to card rotation
+    if (cardMesh) {
+      const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
+      cardMesh.rotation.x = mouseTilt.state.rotateX
+      cardMesh.rotation.y = baseRotY + mouseTilt.state.rotateY
+    }
+
     // Update holo card uniforms
     if (cardMesh && (cardMesh.material as ShaderMaterial).isShaderMaterial) {
       const mat = cardMesh.material as ShaderMaterial
       const u = mat.uniforms
       u['uTime']!.value = time
 
-      cardMesh.updateMatrixWorld()
-      const cardPos = new Vector3()
-      cardMesh.getWorldPosition(cardPos)
+      if (mouseTilt.state.isActive || !mouseTilt.allSettled()) {
+        // Mouse-driven shader uniforms (spring-interpolated)
+        const mt = mouseTilt.state
+        ;(u['uPointer']!.value as Vector2).set(mt.pointerX, mt.pointerY)
+        ;(u['uBackground']!.value as Vector2).set(mt.backgroundX, mt.backgroundY)
+        u['uPointerFromCenter']!.value = mt.pointerFromCenter
+      } else {
+        // Eye-based shader uniforms (face tracking / keyboard)
+        cardMesh.updateMatrixWorld()
+        const cardPos = new Vector3()
+        cardMesh.getWorldPosition(cardPos)
 
-      const eyeVec = new Vector3(store.eyePos.x, store.eyePos.y, store.eyePos.z)
-      const dir = eyeVec.clone().sub(cardPos)
+        const eyeVec = new Vector3(store.eyePos.x, store.eyePos.y, store.eyePos.z)
+        const dir = eyeVec.clone().sub(cardPos)
 
-      const cardRight = new Vector3(1, 0, 0).applyQuaternion(cardMesh.quaternion)
-      const cardUp = new Vector3(0, 1, 0).applyQuaternion(cardMesh.quaternion)
+        const cardRight = new Vector3(1, 0, 0).applyQuaternion(cardMesh.quaternion)
+        const cardUp = new Vector3(0, 1, 0).applyQuaternion(cardMesh.quaternion)
 
-      const dims = store.dimensions
-      const cardH = dims.screenH * 0.5
-      const cardW = cardH * CARD_ASPECT
+        const dims = store.dimensions
+        const cardH = dims.screenH * 0.5
+        const cardW = cardH * CARD_ASPECT
 
-      const localX = dir.dot(cardRight) / cardW + 0.5
-      const localY = dir.dot(cardUp) / cardH + 0.5
+        const localX = dir.dot(cardRight) / cardW + 0.5
+        const localY = dir.dot(cardUp) / cardH + 0.5
 
-      const px = Math.max(0, Math.min(1, localX))
-      const py = Math.max(0, Math.min(1, localY))
-      ;(u['uPointer']!.value as Vector2).set(px, py)
+        const px = Math.max(0, Math.min(1, localX))
+        const py = Math.max(0, Math.min(1, localY))
+        ;(u['uPointer']!.value as Vector2).set(px, py)
 
-      const bx = 0.37 + Math.max(0, Math.min(1, localX)) * 0.26
-      const by = 0.37 + Math.max(0, Math.min(1, localY)) * 0.26
-      ;(u['uBackground']!.value as Vector2).set(bx, by)
+        const bx = 0.37 + Math.max(0, Math.min(1, localX)) * 0.26
+        const by = 0.37 + Math.max(0, Math.min(1, localY)) * 0.26
+        ;(u['uBackground']!.value as Vector2).set(bx, by)
 
-      const dx = px - 0.5,
-        dy = py - 0.5
-      u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
+        const dx = px - 0.5,
+          dy = py - 0.5
+        u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
+      }
     }
 
     // Animate scene objects
@@ -277,6 +299,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   function dispose() {
     if (animationId !== null) cancelAnimationFrame(animationId)
     window.removeEventListener('resize', onResize)
+    mouseTilt.detach()
     renderer?.dispose()
   }
 
