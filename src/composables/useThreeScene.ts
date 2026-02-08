@@ -17,9 +17,6 @@ import { buildCardMesh, CARD_ASPECT } from '@/three/buildCard'
 import { mulberry32 } from '@/three/utils'
 import { useCardLoader } from './useCardLoader'
 import { useMouseTilt } from './useMouseTilt'
-import { CARD_CATALOG } from '@/data/cardCatalog'
-
-const DISPLAY_IDS = CARD_CATALOG.slice(0, 3).map((c) => c.id)
 // Per-card offsets for staggering (x = fraction of spacing, z = fraction of boxD)
 const CARD_X_OFFSETS = [0.3, 0, -0.3]
 const CARD_Z_OFFSETS = [0.2, 0, -0.2]
@@ -86,7 +83,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     store.targetEye.z = dims.eyeDefaultZ
 
     // Load all display cards then build
-    cardLoader.loadCards(DISPLAY_IDS).then(() => {
+    cardLoader.loadCards(store.displayCardIds).then(() => {
       rebuildScene()
     })
 
@@ -128,7 +125,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
       const meshes: Mesh[] = []
 
-      DISPLAY_IDS.forEach((id, i) => {
+      store.displayCardIds.forEach((id: string, i: number) => {
         const tex = cardLoader!.get(id)
         if (!tex) return
         const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config)
@@ -290,6 +287,15 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
         mesh.rotation.y = baseRotY
       })
+    },
+  )
+
+  // Watch display card selection changes (load + rebuild)
+  watch(
+    () => store.displayCardIds,
+    (ids) => {
+      if (!cardLoader) return
+      cardLoader.loadCards(ids).then(() => rebuildScene())
     },
   )
 

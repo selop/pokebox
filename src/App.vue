@@ -7,6 +7,7 @@ import TrackingData from './components/TrackingData.vue'
 import ToolbarButtons from './components/ToolbarButtons.vue'
 import CalibrationPanel from './components/CalibrationPanel.vue'
 import InstructionsModal from './components/InstructionsModal.vue'
+import CardSearch from './components/CardSearch.vue'
 import { useFaceTracking } from './composables/useFaceTracking'
 
 const videoFeedRef = ref<InstanceType<typeof VideoFeed> | null>(null)
@@ -34,5 +35,6 @@ function onEnableCamera() {
   <TrackingData />
   <ToolbarButtons />
   <CalibrationPanel />
+  <CardSearch />
   <InstructionsModal @enable-camera="onEnableCamera" />
 </template>

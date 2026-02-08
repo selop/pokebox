@@ -2,6 +2,7 @@ import { computed, reactive, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { AppConfig, CardTransform, DerivedDimensions, EyePosition, RenderMode, SceneMode } from '@/types'
 import { CARD_DEFAULTS, DEFAULT_CARD, DEFAULT_CONFIG } from '@/data/defaults'
+import { CARD_CATALOG } from '@/data/cardCatalog'
 
 export const useAppStore = defineStore('app', () => {
   // --- Config (reactive, slider-bound) ---
@@ -38,6 +39,15 @@ export const useAppStore = defineStore('app', () => {
     const boxD = screenH * config.boxDepthRatio
     const eyeDefaultZ = config.viewingDistanceCm * config.worldScale
     return { screenW, screenH, boxD, eyeDefaultZ }
+  })
+
+  // --- Display card IDs (center = currentCardId, left/right = neighbors) ---
+  const displayCardIds = computed(() => {
+    const idx = CARD_CATALOG.findIndex((c) => c.id === currentCardId.value)
+    if (idx < 0) return CARD_CATALOG.slice(0, 3).map((c) => c.id)
+    const prev = CARD_CATALOG[(idx - 1 + CARD_CATALOG.length) % CARD_CATALOG.length]!
+    const next = CARD_CATALOG[(idx + 1) % CARD_CATALOG.length]!
+    return [prev.id, currentCardId.value, next.id]
   })
 
   // --- Rebuild trigger (incremented to signal watchers) ---
@@ -97,6 +107,7 @@ export const useAppStore = defineStore('app', () => {
     viewportWidth,
     viewportHeight,
     dimensions,
+    displayCardIds,
     rebuildCounter,
     triggerRebuild,
     updateViewport,
