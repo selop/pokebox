@@ -2,6 +2,7 @@ import { onBeforeUnmount, shallowRef, watch, type Ref } from 'vue'
 import {
   Color,
   Mesh,
+  MeshBasicMaterial,
   PCFSoftShadowMap,
   PerspectiveCamera,
   Scene,
@@ -17,6 +18,7 @@ import { buildCardMesh, CARD_ASPECT } from '@/three/buildCard'
 import { mulberry32 } from '@/three/utils'
 import { useCardLoader } from './useCardLoader'
 import { useMouseTilt } from './useMouseTilt'
+import { CARD_CATALOG } from '@/data/cardCatalog'
 // Per-card offsets for staggering (x = fraction of spacing, z = fraction of boxD)
 const CARD_X_OFFSETS = [0.3, 0, -0.3]
 const CARD_Z_OFFSETS = [0.2, 0, -0.2]
@@ -35,6 +37,48 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let cardAngle = 0
   let cardLoader: ReturnType<typeof useCardLoader> | null = null
   const mouseTilt = useMouseTilt()
+
+  // Transition state
+  const TRANSITION_DURATION = 0.4
+  let departingMeshes: { mesh: Mesh; startZ: number }[] = []
+  let transitionStart = 0
+  let fadeInMeshes = false
+
+  function setCardFade(mesh: Mesh, fade: number) {
+    const mat = mesh.material as ShaderMaterial
+    if (mat.isShaderMaterial && mat.uniforms['uFade']) {
+      mat.uniforms['uFade']!.value = fade
+    } else {
+      ;(mesh.material as MeshBasicMaterial).opacity = fade
+    }
+  }
+
+  function finalizeDeparting() {
+    for (const { mesh } of departingMeshes) scene?.remove(mesh)
+    departingMeshes = []
+    fadeInMeshes = false
+  }
+
+  function navigateCard(dir: number) {
+    const idx = CARD_CATALOG.findIndex((c) => c.id === store.currentCardId)
+    if (idx < 0) return
+
+    // Finalize any in-progress transition
+    finalizeDeparting()
+    for (const mesh of cardMeshes.value) setCardFade(mesh, 1)
+
+    // Capture current meshes as departing
+    departingMeshes = cardMeshes.value.map((mesh) => ({
+      mesh,
+      startZ: mesh.position.z,
+    }))
+    transitionStart = performance.now() * 0.001
+    fadeInMeshes = true
+
+    // Advance selection — triggers displayCardIds watcher
+    const newIdx = (idx + dir + CARD_CATALOG.length) % CARD_CATALOG.length
+    store.currentCardId = CARD_CATALOG[newIdx]!.id
+  }
 
   function cardLayout() {
     const dims = store.dimensions
@@ -96,6 +140,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
     // Resize handler
     window.addEventListener('resize', onResize)
+    window.addEventListener('keydown', onKeydown)
   }
 
   function rebuildScene() {
@@ -236,12 +281,38 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
     }
 
+    // Animate card transitions (departing fade-out + push-back, arriving fade-in)
+    if (departingMeshes.length > 0) {
+      const elapsed = time - transitionStart
+      const t = Math.min(elapsed / TRANSITION_DURATION, 1)
+      const ease = 1 - (1 - t) * (1 - t) // ease-out quadratic
+
+      const pushZ = store.dimensions.boxD * 0.3
+      for (const { mesh, startZ } of departingMeshes) {
+        setCardFade(mesh, 1 - ease)
+        mesh.position.z = startZ - ease * pushZ
+      }
+
+      for (const mesh of cardMeshes.value) {
+        setCardFade(mesh, ease)
+      }
+
+      if (t >= 1) finalizeDeparting()
+    }
+
     // Animate scene objects
     scene.traverse((obj) => {
       if (obj.userData.animate) obj.userData.animate(time)
     })
 
     renderer.render(scene, camera)
+  }
+
+  function onKeydown(e: KeyboardEvent) {
+    if ((e.target as HTMLElement).tagName === 'INPUT') return
+    if (store.sceneMode !== 'cards') return
+    if (e.key === 'n') navigateCard(1)
+    if (e.key === 'b') navigateCard(-1)
   }
 
   function onResize() {
@@ -290,12 +361,20 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     },
   )
 
-  // Watch display card selection changes (load + rebuild)
+  // Watch display card selection changes (load + rebuild with transition)
   watch(
     () => store.displayCardIds,
     (ids) => {
       if (!cardLoader) return
-      cardLoader.loadCards(ids).then(() => rebuildScene())
+      cardLoader.loadCards(ids).then(() => {
+        rebuildScene()
+        // Re-add departing meshes for fade-out animation
+        for (const { mesh } of departingMeshes) scene?.add(mesh)
+        // Start new meshes faded if navigating
+        if (fadeInMeshes) {
+          for (const mesh of cardMeshes.value) setCardFade(mesh, 0)
+        }
+      })
     },
   )
 
@@ -314,6 +393,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   function dispose() {
     if (animationId !== null) cancelAnimationFrame(animationId)
     window.removeEventListener('resize', onResize)
+    window.removeEventListener('keydown', onKeydown)
     mouseTilt.detach()
     renderer?.dispose()
   }

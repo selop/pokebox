@@ -9,6 +9,7 @@ uniform vec2 uBackground;    // constrained 0.37-0.63
 uniform float uPointerFromCenter; // 0-1
 uniform float uCardOpacity;  // holo intensity 0-1
 uniform float uTime;
+uniform float uFade;         // overall card opacity 0-1 (for transitions)
 
 varying vec2 vUv;
 
@@ -73,7 +74,7 @@ void main() {
 
     // Back face: show card without holo
     if (!gl_FrontFacing) {
-        gl_FragColor = cardColor;
+        gl_FragColor = vec4(cardColor.rgb, cardColor.a * uFade);
         return;
     }
 
@@ -83,7 +84,7 @@ void main() {
 
     // Skip compositing if no effect present
     if (uCardOpacity < 0.01 || (mask < 0.01 && foil < 0.01)) {
-        gl_FragColor = cardColor;
+        gl_FragColor = vec4(cardColor.rgb, cardColor.a * uFade);
         return;
     }
 
@@ -205,5 +206,5 @@ void main() {
         result = blendOverlay(result, foilGlare);
     }
 
-    gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a);
+    gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
 }

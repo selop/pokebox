@@ -46,6 +46,7 @@ export function buildCardMesh(
         uPointerFromCenter: { value: 0.0 },
         uCardOpacity: { value: config.holoIntensity || 0.75 },
         uTime: { value: 0.0 },
+        uFade: { value: 1.0 },
       },
       vertexShader: holoVert,
       fragmentShader: holoFrag,
@@ -56,6 +57,7 @@ export function buildCardMesh(
     cardMat = new MeshBasicMaterial({
       map: cardTexture,
       side: DoubleSide,
+      transparent: true,
     })
   }
 
