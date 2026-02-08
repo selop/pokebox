@@ -36,6 +36,7 @@ export interface EyePosition {
 
 export type SceneMode = 'furniture' | 'cards'
 export type RenderMode = 'xray' | 'solid'
+export type CardDisplayMode = 'single' | 'triple'
 
 export interface DerivedDimensions {
   screenW: number

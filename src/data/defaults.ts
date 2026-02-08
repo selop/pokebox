@@ -17,16 +17,16 @@ export const DEFAULT_CONFIG: AppConfig = {
 
 export const DEFAULT_CARD: CardTransform = {
   x: 0,
-  y: -11,
-  z: 50,
+  y: -5,
+  z: 25,
   rotY: 0,
 }
 
 export const CARD_DEFAULTS = {
   x: 0,
-  y: -11,
-  z: 22,
+  y: -5,
+  z: 25,
   rotY: 0,
-  holoIntensity: 75,
+  holoIntensity: 40,
   cardSpinSpeed: 20,
 }

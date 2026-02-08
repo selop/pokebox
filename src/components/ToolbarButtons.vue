@@ -19,12 +19,24 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
     {{ store.renderMode === 'xray' ? '◈ X-Ray' : '◆ Solid' }}
   </button>
   <button
+    v-show="store.sceneMode === 'cards'"
+    class="toolbar-btn display-btn"
+    @click="store.cardDisplayMode = store.cardDisplayMode === 'single' ? 'triple' : 'single'"
+  >
+    {{ store.cardDisplayMode === 'single' ? '&#x2630; Triple' : '&#x25A3; Single' }}
+  </button>
+  <button
     v-show="store.sceneMode === 'furniture'"
     class="toolbar-btn randomize-btn"
     @click="store.randomizeSeed()"
   >
     &#x26A1; Randomize Interior
   </button>
+
+  <div v-show="store.sceneMode === 'cards'" class="nav-hint">
+    <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
+    <span v-show="store.cardDisplayMode === 'single'">&middot; <kbd>M</kbd> merge</span>
+  </div>
 </template>
 
 <style scoped>
@@ -64,7 +76,37 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
   border-color: #f72585;
   color: #f72585;
 }
+.display-btn {
+  left: 350px;
+}
 .randomize-btn {
   left: 350px;
+}
+
+.nav-hint {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.05em;
+}
+
+.nav-hint kbd {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.6);
 }
 </style>

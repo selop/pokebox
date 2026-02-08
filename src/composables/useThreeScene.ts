@@ -1,10 +1,12 @@
 import { onBeforeUnmount, shallowRef, watch, type Ref } from 'vue'
 import {
   Color,
+  DoubleSide,
   Mesh,
   MeshBasicMaterial,
   PCFSoftShadowMap,
   PerspectiveCamera,
+  PlaneGeometry,
   Scene,
   ShaderMaterial,
   Vector2,
@@ -16,9 +18,10 @@ import { buildBoxShell } from '@/three/buildBox'
 import { populateFurniture } from '@/three/buildFurniture'
 import { buildCardMesh, CARD_ASPECT } from '@/three/buildCard'
 import { mulberry32 } from '@/three/utils'
+import { CardNavigator } from '@/three/CardNavigator'
+import { MergeAnimator, SINGLE_CARD_SIZE } from '@/three/MergeAnimator'
 import { useCardLoader } from './useCardLoader'
 import { useMouseTilt } from './useMouseTilt'
-import { CARD_CATALOG } from '@/data/cardCatalog'
 // Per-card offsets for staggering (x = fraction of spacing, z = fraction of boxD)
 const CARD_X_OFFSETS = [0.3, 0, -0.3]
 const CARD_Z_OFFSETS = [0.2, 0, -0.2]
@@ -38,47 +41,14 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let cardLoader: ReturnType<typeof useCardLoader> | null = null
   const mouseTilt = useMouseTilt()
 
-  // Transition state
-  const TRANSITION_DURATION = 0.4
-  let departingMeshes: { mesh: Mesh; startZ: number }[] = []
-  let transitionStart = 0
-  let fadeInMeshes = false
-
-  function setCardFade(mesh: Mesh, fade: number) {
-    const mat = mesh.material as ShaderMaterial
-    if (mat.isShaderMaterial && mat.uniforms['uFade']) {
-      mat.uniforms['uFade']!.value = fade
-    } else {
-      ;(mesh.material as MeshBasicMaterial).opacity = fade
-    }
-  }
-
-  function finalizeDeparting() {
-    for (const { mesh } of departingMeshes) scene?.remove(mesh)
-    departingMeshes = []
-    fadeInMeshes = false
-  }
-
-  function navigateCard(dir: number) {
-    const idx = CARD_CATALOG.findIndex((c) => c.id === store.currentCardId)
-    if (idx < 0) return
-
-    // Finalize any in-progress transition
-    finalizeDeparting()
-    for (const mesh of cardMeshes.value) setCardFade(mesh, 1)
-
-    // Capture current meshes as departing
-    departingMeshes = cardMeshes.value.map((mesh) => ({
-      mesh,
-      startZ: mesh.position.z,
-    }))
-    transitionStart = performance.now() * 0.001
-    fadeInMeshes = true
-
-    // Advance selection — triggers displayCardIds watcher
-    const newIdx = (idx + dir + CARD_CATALOG.length) % CARD_CATALOG.length
-    store.currentCardId = CARD_CATALOG[newIdx]!.id
-  }
+  // Delegates
+  const mergeAnimator = new MergeAnimator(store)
+  const cardNavigator = new CardNavigator(
+    store,
+    () => scene,
+    cardMeshes,
+    () => mergeAnimator.reset(),
+  )
 
   function cardLayout() {
     const dims = store.dimensions
@@ -164,22 +134,81 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       Math.random = origRandom
     }
 
-    // Card mode — display 3 cards side by side
+    // Card mode
     if (store.sceneMode === 'cards' && cardLoader) {
-      const { spacing, centerX, y, z, boxD } = cardLayout()
       const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
       const meshes: Mesh[] = []
+      const centerX = (store.cardTransform.x / 100) * dims.screenW
+      const cy = (store.cardTransform.y / 100) * dims.screenH
+      const cz = -(store.cardTransform.z / 100) * dims.boxD
 
-      store.displayCardIds.forEach((id: string, i: number) => {
-        const tex = cardLoader!.get(id)
-        if (!tex) return
-        const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config)
-        const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
-        mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
-        mesh.rotation.y = baseRotY
-        scene!.add(mesh)
-        meshes.push(mesh)
-      })
+      if (store.cardDisplayMode === 'single') {
+        // Exploded layer view — layers fan diagonally front-left → back-right
+        // Order: holo composite (front-left) → mask (middle) → card art (back-right)
+        const id = store.displayCardIds[0]
+        if (id) {
+          const tex = cardLoader!.get(id)
+          if (tex) {
+            const cardH = dims.screenH * SINGLE_CARD_SIZE
+            const cardW = cardH * CARD_ASPECT
+            const zGap = dims.boxD * 0.08
+            const xGap = cardW * 0.35
+
+            const hasEffect = !!(tex.mask || tex.foil)
+
+            if (hasEffect) {
+              // Layer 0 (front-left): full composited result (card + holo shader)
+              const compositeMesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, {
+                ...store.config,
+                cardSize: SINGLE_CARD_SIZE,
+              })
+              compositeMesh.geometry.dispose()
+              compositeMesh.geometry = new PlaneGeometry(cardW, cardH)
+              compositeMesh.position.set(centerX - xGap, cy, cz)
+              compositeMesh.rotation.y = baseRotY
+              scene!.add(compositeMesh)
+              meshes.push(compositeMesh)
+
+              // Layer 1 (middle): mask texture
+              const maskMat = new MeshBasicMaterial({
+                map: tex.mask || tex.foil,
+                transparent: true,
+                side: DoubleSide,
+              })
+              const maskMesh = new Mesh(new PlaneGeometry(cardW, cardH), maskMat)
+              maskMesh.position.set(centerX, cy, cz - zGap)
+              maskMesh.rotation.y = baseRotY
+              scene!.add(maskMesh)
+              meshes.push(maskMesh)
+            }
+
+            // Layer 2 (back-right): card base art
+            const cardMat = new MeshBasicMaterial({
+              map: tex.card,
+              transparent: true,
+              side: DoubleSide,
+            })
+            const frontMesh = new Mesh(new PlaneGeometry(cardW, cardH), cardMat)
+            frontMesh.position.set(centerX + (hasEffect ? xGap : 0), cy, hasEffect ? cz - zGap * 2 : cz)
+            frontMesh.rotation.y = baseRotY
+            scene!.add(frontMesh)
+            meshes.push(frontMesh)
+          }
+        }
+      } else {
+        // Triple card layout
+        const { spacing, y, z, boxD } = cardLayout()
+        store.displayCardIds.forEach((id: string, i: number) => {
+          const tex = cardLoader!.get(id)
+          if (!tex) return
+          const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config)
+          const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
+          mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
+          mesh.rotation.y = baseRotY
+          scene!.add(mesh)
+          meshes.push(mesh)
+        })
+      }
 
       cardMeshes.value = meshes
     }
@@ -262,7 +291,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       const cardUp = new Vector3(0, 1, 0).applyQuaternion(mesh.quaternion)
 
       const dims = store.dimensions
-      const cardH = dims.screenH * store.config.cardSize
+      const effectiveSize = store.cardDisplayMode === 'single' ? SINGLE_CARD_SIZE : store.config.cardSize
+      const cardH = dims.screenH * effectiveSize
       const cardW = cardH * CARD_ASPECT
 
       const localX = dir.dot(cardRight) / cardW + 0.5
@@ -282,23 +312,10 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
 
     // Animate card transitions (departing fade-out + push-back, arriving fade-in)
-    if (departingMeshes.length > 0) {
-      const elapsed = time - transitionStart
-      const t = Math.min(elapsed / TRANSITION_DURATION, 1)
-      const ease = 1 - (1 - t) * (1 - t) // ease-out quadratic
+    cardNavigator.tick(time)
 
-      const pushZ = store.dimensions.boxD * 0.3
-      for (const { mesh, startZ } of departingMeshes) {
-        setCardFade(mesh, 1 - ease)
-        mesh.position.z = startZ - ease * pushZ
-      }
-
-      for (const mesh of cardMeshes.value) {
-        setCardFade(mesh, ease)
-      }
-
-      if (t >= 1) finalizeDeparting()
-    }
+    // Animate merge/explode for single card layers
+    mergeAnimator.tick(meshes)
 
     // Animate scene objects
     scene.traverse((obj) => {
@@ -311,8 +328,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   function onKeydown(e: KeyboardEvent) {
     if ((e.target as HTMLElement).tagName === 'INPUT') return
     if (store.sceneMode !== 'cards') return
-    if (e.key === 'n') navigateCard(1)
-    if (e.key === 'b') navigateCard(-1)
+    if (!cardNavigator.handleKeydown(e)) {
+      mergeAnimator.handleKeydown(e, cardMeshes.value.length)
+    }
   }
 
   function onResize() {
@@ -334,6 +352,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       store.config.viewingDistanceCm,
       store.config.boxDepthRatio,
       store.config.cardSize,
+      store.cardDisplayMode,
     ],
     () => {
       rebuildScene()
@@ -351,13 +370,31 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     () => {
       const meshes = cardMeshes.value
       if (!meshes.length) return
-      const { spacing, centerX, y, z, boxD } = cardLayout()
+      const dims = store.dimensions
       const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
-      meshes.forEach((mesh, i) => {
-        const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
-        mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
-        mesh.rotation.y = baseRotY
-      })
+      const centerX = (store.cardTransform.x / 100) * dims.screenW
+      const cy = (store.cardTransform.y / 100) * dims.screenH
+      const cz = -(store.cardTransform.z / 100) * dims.boxD
+
+      if (store.cardDisplayMode === 'single') {
+        const cardH = dims.screenH * SINGLE_CARD_SIZE
+        const cardW = cardH * CARD_ASPECT
+        const zGap = dims.boxD * 0.08
+        const xGap = cardW * 0.35
+        const n = meshes.length
+        meshes.forEach((mesh, i) => {
+          const xOff = n > 1 ? (i - 1) * xGap : 0
+          mesh.position.set(centerX + xOff, cy, cz - i * zGap)
+          mesh.rotation.y = baseRotY
+        })
+      } else {
+        const { spacing, y, z, boxD } = cardLayout()
+        meshes.forEach((mesh, i) => {
+          const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
+          mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
+          mesh.rotation.y = baseRotY
+        })
+      }
     },
   )
 
@@ -368,12 +405,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       if (!cardLoader) return
       cardLoader.loadCards(ids).then(() => {
         rebuildScene()
-        // Re-add departing meshes for fade-out animation
-        for (const { mesh } of departingMeshes) scene?.add(mesh)
-        // Start new meshes faded if navigating
-        if (fadeInMeshes) {
-          for (const mesh of cardMeshes.value) setCardFade(mesh, 0)
-        }
+        cardNavigator.onSceneRebuilt()
       })
     },
   )
