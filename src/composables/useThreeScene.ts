@@ -109,6 +109,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         dims,
         cardLoader.cardTexture.value,
         cardLoader.maskTexture.value,
+        cardLoader.foilTexture.value,
         store.config,
       )
       applyCardTransform(mesh, store.cardTransform, cardAngle, dims)

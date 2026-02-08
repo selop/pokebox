@@ -6,6 +6,7 @@ import { CARD_CATALOG } from '@/data/cardCatalog'
 export function useCardLoader(renderer: WebGLRenderer) {
   const cardTexture = shallowRef<Texture | null>(null)
   const maskTexture = shallowRef<Texture | null>(null)
+  const foilTexture = shallowRef<Texture | null>(null)
   const loader = new TextureLoader()
 
   function loadCard(id: string): Promise<void> {
@@ -14,11 +15,15 @@ export function useCardLoader(renderer: WebGLRenderer) {
 
     cardTexture.value = null
     maskTexture.value = null
+    foilTexture.value = null
+
+    const hasFoil = !!entry.foil
+    const totalToLoad = hasFoil ? 3 : 2
 
     return new Promise<void>((resolve) => {
       let loaded = 0
       const onReady = () => {
-        if (++loaded >= 2) resolve()
+        if (++loaded >= totalToLoad) resolve()
       }
 
       loader.load(entry.front, (tex) => {
@@ -35,8 +40,18 @@ export function useCardLoader(renderer: WebGLRenderer) {
         maskTexture.value = tex
         onReady()
       })
+
+      if (hasFoil) {
+        loader.load(entry.foil, (tex) => {
+          tex.minFilter = LinearMipmapLinearFilter
+          tex.magFilter = LinearFilter
+          tex.anisotropy = renderer.capabilities.getMaxAnisotropy()
+          foilTexture.value = tex
+          onReady()
+        })
+      }
     })
   }
 
-  return { cardTexture, maskTexture, loadCard }
+  return { cardTexture, maskTexture, foilTexture, loadCard }
 }

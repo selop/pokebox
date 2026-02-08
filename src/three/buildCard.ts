@@ -1,9 +1,12 @@
 import {
+  DataTexture,
   DoubleSide,
   Mesh,
   MeshBasicMaterial,
   PlaneGeometry,
+  RGBAFormat,
   ShaderMaterial,
+  UnsignedByteType,
   Vector2,
 } from 'three'
 import type { Texture } from 'three'
@@ -13,10 +16,17 @@ import holoFrag from '@/shaders/holo.frag'
 
 export const CARD_ASPECT = 733 / 1024 // width / height
 
+const blackPixel = new DataTexture(
+  new Uint8Array([0, 0, 0, 255]),
+  1, 1, RGBAFormat, UnsignedByteType,
+)
+blackPixel.needsUpdate = true
+
 export function buildCardMesh(
   dims: DerivedDimensions,
   cardTexture: Texture,
   maskTexture: Texture | null,
+  foilTexture: Texture | null,
   config: AppConfig,
 ): Mesh {
   const cardH = dims.screenH * 0.5
@@ -24,11 +34,13 @@ export function buildCardMesh(
   const cardGeo = new PlaneGeometry(cardW, cardH)
 
   let cardMat
-  if (maskTexture) {
+  if (maskTexture || foilTexture) {
     cardMat = new ShaderMaterial({
       uniforms: {
         uCardTex: { value: cardTexture },
-        uMaskTex: { value: maskTexture },
+        uMaskTex: { value: maskTexture || blackPixel },
+        uFoilTex: { value: foilTexture || blackPixel },
+        uHasFoil: { value: foilTexture ? 1.0 : 0.0 },
         uPointer: { value: new Vector2(0.5, 0.5) },
         uBackground: { value: new Vector2(0.5, 0.5) },
         uPointerFromCenter: { value: 0.0 },

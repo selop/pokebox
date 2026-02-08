@@ -2,6 +2,8 @@ precision highp float;
 
 uniform sampler2D uCardTex;
 uniform sampler2D uMaskTex;
+uniform sampler2D uFoilTex;
+uniform float uHasFoil;
 uniform vec2 uPointer;       // eye projected onto card UV (0-1)
 uniform vec2 uBackground;    // constrained 0.37-0.63
 uniform float uPointerFromCenter; // 0-1
@@ -75,11 +77,12 @@ void main() {
         return;
     }
 
-    // ── Mask (white = holo areas) ────────────────────
+    // ── Mask & foil (white = effect areas) ───────────
     float mask = texture2D(uMaskTex, uv).r;
+    float foil = uHasFoil > 0.5 ? texture2D(uFoilTex, uv).r : 0.0;
 
-    // Skip holo compositing if no effect or no mask
-    if (uCardOpacity < 0.01 || mask < 0.01) {
+    // Skip compositing if no effect present
+    if (uCardOpacity < 0.01 || (mask < 0.01 && foil < 0.01)) {
         gl_FragColor = cardColor;
         return;
     }
@@ -89,6 +92,10 @@ void main() {
     float bgY = uBackground.y;
     float ptrX = uPointer.x;
     float ptrY = uPointer.y;
+
+    // Radial spotlight from pointer (shared by holo & foil)
+    float spotDist = length(uv - vec2(ptrX, ptrY));
+    float spotlight = 1.0 - smoothstep(0.0, 0.8, spotDist);
 
     // ── SHINE LAYER 1: Rainbow stripes (color-dodge) ─
     float rainbowSpeed = 2.6;
@@ -113,9 +120,7 @@ void main() {
     vec3 barColor = mix(vec3(0.0), vec3(0.7), bar * 0.6);
     rainbow = blendScreen(rainbow, barColor);
 
-    // Radial spotlight from pointer
-    float spotDist = length(uv - vec2(ptrX, ptrY));
-    float spotlight = 1.0 - smoothstep(0.0, 0.8, spotDist);
+    // Apply spotlight
     rainbow *= 0.5 + spotlight * 0.5;
 
     // Filter: brightness(0.85) contrast(2.75) saturate(0.65)
@@ -145,9 +150,8 @@ void main() {
     shine2 = clamp(shine2, 0.0, 1.0);
 
     // ── GLARE: Radial white specular ─────────────────
-    float glareDist = length(uv - vec2(ptrX, ptrY));
-    float glareCore = smoothstep(0.6, 0.0, glareDist);
-    float glareEdge = smoothstep(1.0, 0.3, glareDist) * 0.1;
+    float glareCore = smoothstep(0.6, 0.0, spotDist);
+    float glareEdge = smoothstep(1.0, 0.3, spotDist) * 0.1;
     vec3 glare = vec3(glareCore * 0.9 + glareEdge);
 
     // Glare filter: brightness(0.8) contrast(1.5)
@@ -157,17 +161,49 @@ void main() {
 
     // ── Compose layers ───────────────────────────────
     vec3 base = cardColor.rgb;
+    vec3 result = base;
 
-    // Shine 1: color-dodge blend
-    vec3 result = blendColorDodge(base, shine1 * mask * uCardOpacity);
+    // Holo mask layers (shine1 + shine2 + glare)
+    if (mask > 0.01) {
+        result = blendColorDodge(base, shine1 * mask * uCardOpacity);
 
-    // Shine 2: soft-light blend
-    vec3 shine2Masked = mix(vec3(0.5), shine2, mask * uCardOpacity);
-    result = blendSoftLight(result, shine2Masked);
+        vec3 shine2Masked = mix(vec3(0.5), shine2, mask * uCardOpacity);
+        result = blendSoftLight(result, shine2Masked);
 
-    // Glare: overlay blend
-    vec3 glareMasked = mix(vec3(0.5), glare, mask * uCardOpacity * 0.8);
-    result = blendOverlay(result, glareMasked);
+        vec3 glareMasked = mix(vec3(0.5), glare, mask * uCardOpacity * 0.8);
+        result = blendOverlay(result, glareMasked);
+    }
+
+    // ── FOIL: Etched foil shimmer ────────────────────
+    if (foil > 0.01) {
+        // Diagonal rainbow driven by UV and viewing angle
+        float foilT = uv.y * 4.0 + uv.x * 3.0
+            + ((0.5 - bgY) * 2.0)
+            + ((0.5 - bgX) * 1.5)
+            + sin(uTime * 0.15) * 0.03;
+        vec3 foilColor = sunpillarGradient(foilT);
+
+        // Spotlight modulation
+        foilColor *= 0.4 + spotlight * 0.6;
+
+        // High-frequency grain for etched texture
+        vec2 grainUV = floor(uv * 250.0) / 250.0;
+        float grain = fract(sin(dot(grainUV, vec2(12.9898, 78.233))) * 43758.5453);
+        foilColor *= 0.8 + grain * 0.2;
+
+        // Filter: subtler than main holo
+        foilColor = adjustBrightness(foilColor, 0.75);
+        foilColor = adjustContrast(foilColor, 2.0);
+        foilColor = adjustSaturate(foilColor, 0.7);
+        foilColor = clamp(foilColor, 0.0, 1.0);
+
+        // Color-dodge blend for foil shimmer
+        result = blendColorDodge(result, foilColor * foil * uCardOpacity * 0.5);
+
+        // Subtle specular on foil areas
+        vec3 foilGlare = mix(vec3(0.5), vec3(glareCore * 0.5 + 0.5), foil * uCardOpacity * 0.4);
+        result = blendOverlay(result, foilGlare);
+    }
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a);
 }

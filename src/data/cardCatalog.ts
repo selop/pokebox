@@ -26,7 +26,7 @@ export const CARD_CATALOG: CardCatalogEntry[] = [
     id: '182',
     label: '#182 Venusaur ex',
     front: 'cards/fronts/182_front.png',
-    mask: 'cards/masks/182_foil_holo_sun_pillar.png',
-    foil: 'cards/foils/182_foil_etched_sun_pillar_2x',
+    mask: 'cards/masks/182_foil_etched_sun_pillar_2x.png',
+    foil: 'cards/foils/182_foil_etched_sun_pillar_2x.png',
   },
 ]
