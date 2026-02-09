@@ -164,6 +164,14 @@ const HOLO_SV_HOLO = new Set([
   15, 26, 34, 45, 68, 85, 94, 101, 105, 110, 113, 121, 122, 130, 132, 134, 135, 136, 139, 141,
   142, 144, 146, 149, 150,
 ])
+// Special illustration rare: cards #198-204 with iridescent glitter textures
+const SPECIAL_ILLUSTRATION_RARE = new Set([
+  198, 199, 200, 201, 202, 203, 204,
+])
+// Double rare: ex cards with birthday holo textures
+const DOUBLE_RARE = new Set([
+  3, 6, 9, 24, 38, 40, 65, 76, 115, 124, 145, 151,
+])
 
 type MaskType =
   | 'foil_holo_sun_pillar'
@@ -181,6 +189,8 @@ function getMaskType(num: number): MaskType {
 }
 
 function getHoloType(num: number): HoloType {
+  if (SPECIAL_ILLUSTRATION_RARE.has(num)) return 'special-illustration-rare'
+  if (DOUBLE_RARE.has(num)) return 'double-rare'
   if (HOLO_SV_HOLO.has(num)) return 'regular-holo'
   return 'illustration-rare'
 }

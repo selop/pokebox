@@ -177,11 +177,10 @@ void main() {
     // Holo mask layers (shine1 + shine2 + glare)
     if (mask > 0.01) {
         // Shine 1: color-dodge
-        result = blendColorDodge(base, shine1 * mask * uCardOpacity);
+        result = mix(result, blendColorDodge(result, shine1), mask * uCardOpacity);
 
         // Shine 2: exclusion (CSS :after mix-blend-mode)
-        vec3 shine2Contrib = shine2 * mask * uCardOpacity;
-        result = mix(result, blendExclusion(result, shine2Contrib), mask * uCardOpacity);
+        result = mix(result, blendExclusion(result, shine2), mask * uCardOpacity);
 
         // Glare: hard-light (CSS .card__glare mix-blend-mode)
         result = mix(result, blendHardLight(result, glare), mask * uCardOpacity * 0.8);

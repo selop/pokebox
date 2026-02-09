@@ -98,10 +98,14 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function toggleShaderStyle() {
-    // Cycle through: illustration-rare -> regular-holo -> parallax -> illustration-rare
+    // Cycle through: illustration-rare -> regular-holo -> special-illustration-rare -> double-rare -> parallax -> illustration-rare
     if (shaderStyle.value === 'illustration-rare') {
       shaderStyle.value = 'regular-holo'
     } else if (shaderStyle.value === 'regular-holo') {
+      shaderStyle.value = 'special-illustration-rare'
+    } else if (shaderStyle.value === 'special-illustration-rare') {
+      shaderStyle.value = 'double-rare'
+    } else if (shaderStyle.value === 'double-rare') {
       shaderStyle.value = 'parallax'
     } else {
       shaderStyle.value = 'illustration-rare'

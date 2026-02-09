@@ -99,6 +99,12 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Init card loader
     cardLoader = useCardLoader(renderer)
 
+    // Load iridescent textures for special illustration rare cards
+    cardLoader.loadIriTextures()
+
+    // Load birthday textures for double rare cards
+    cardLoader.loadBirthdayTextures()
+
     // Set initial eye position
     const dims = store.dimensions
     store.eyePos.x = 0
@@ -171,10 +177,16 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
             if (hasEffect) {
               // Layer 0 (front-left): full composited result (card + holo shader)
               const effectiveShader = getEffectiveShader(id)
+              const iriTextures = effectiveShader === 'special-illustration-rare'
+                ? cardLoader!.getIriTextures()
+                : null
+              const birthdayTextures = effectiveShader === 'double-rare'
+                ? cardLoader!.getBirthdayTextures()
+                : null
               const compositeMesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, {
                 ...store.config,
                 cardSize: SINGLE_CARD_SIZE,
-              }, effectiveShader)
+              }, effectiveShader, iriTextures, birthdayTextures)
               compositeMesh.geometry.dispose()
               compositeMesh.geometry = new PlaneGeometry(cardW, cardH)
               compositeMesh.position.set(centerX - xGap, cy, cz)
@@ -215,7 +227,13 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           const tex = cardLoader!.get(id)
           if (!tex) return
           const effectiveShader = getEffectiveShader(id)
-          const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config, effectiveShader)
+          const iriTextures = effectiveShader === 'special-illustration-rare'
+            ? cardLoader!.getIriTextures()
+            : null
+          const birthdayTextures = effectiveShader === 'double-rare'
+            ? cardLoader!.getBirthdayTextures()
+            : null
+          const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config, effectiveShader, iriTextures, birthdayTextures)
           const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
           mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
           mesh.rotation.y = baseRotY

@@ -35,7 +35,11 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
         ? '&#x2728; Illus. Rare'
         : store.shaderStyle === 'regular-holo'
           ? '&#x2606; Regular Holo'
-          : '&#x2734; Parallax'
+          : store.shaderStyle === 'special-illustration-rare'
+            ? '&#x2747; Special IR'
+            : store.shaderStyle === 'double-rare'
+              ? '&#x2605; Double Rare'
+              : '&#x2734; Parallax'
     }}
   </button>
   <button

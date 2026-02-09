@@ -38,8 +38,17 @@ export interface EyePosition {
 export type SceneMode = 'furniture' | 'cards'
 export type RenderMode = 'xray' | 'solid'
 export type CardDisplayMode = 'single' | 'triple'
-export type ShaderStyle = 'illustration-rare' | 'regular-holo' | 'parallax'
-export type HoloType = 'illustration-rare' | 'regular-holo'
+export type ShaderStyle =
+  | 'illustration-rare'
+  | 'regular-holo'
+  | 'special-illustration-rare'
+  | 'double-rare'
+  | 'parallax'
+export type HoloType =
+  | 'illustration-rare'
+  | 'regular-holo'
+  | 'special-illustration-rare'
+  | 'double-rare'
 
 export interface DerivedDimensions {
   screenW: number

@@ -8,9 +8,22 @@ export interface CardTextures {
   foil: Texture | null
 }
 
+export interface IriTextures {
+  iri7: Texture
+  iri8: Texture
+  iri9: Texture
+}
+
+export interface BirthdayTextures {
+  dank: Texture
+  dank2: Texture
+}
+
 export function useCardLoader(renderer: WebGLRenderer) {
   const loaded = new Map<string, CardTextures>()
   const loader = new TextureLoader()
+  let iriTextures: IriTextures | null = null
+  let birthdayTextures: BirthdayTextures | null = null
 
   function applyFilters(tex: Texture, aniso = false): void {
     tex.minFilter = LinearMipmapLinearFilter
@@ -70,5 +83,78 @@ export function useCardLoader(renderer: WebGLRenderer) {
     return loaded.get(id)
   }
 
-  return { loadCard, loadCards, get }
+  function loadIriTextures(): Promise<IriTextures> {
+    if (iriTextures) return Promise.resolve(iriTextures)
+
+    return new Promise<IriTextures>((resolve) => {
+      let count = 0
+      let iri7: Texture | null = null
+      let iri8: Texture | null = null
+      let iri9: Texture | null = null
+
+      const onReady = () => {
+        if (++count >= 3) {
+          iriTextures = { iri7: iri7!, iri8: iri8!, iri9: iri9! }
+          resolve(iriTextures)
+        }
+      }
+
+      loader.load('img/151/iri-7.webp', (tex) => {
+        applyFilters(tex)
+        iri7 = tex
+        onReady()
+      })
+
+      loader.load('img/151/iri-8.webp', (tex) => {
+        applyFilters(tex)
+        iri8 = tex
+        onReady()
+      })
+
+      loader.load('img/151/iri-9.webp', (tex) => {
+        applyFilters(tex)
+        iri9 = tex
+        onReady()
+      })
+    })
+  }
+
+  function getIriTextures(): IriTextures | null {
+    return iriTextures
+  }
+
+  function loadBirthdayTextures(): Promise<BirthdayTextures> {
+    if (birthdayTextures) return Promise.resolve(birthdayTextures)
+
+    return new Promise<BirthdayTextures>((resolve) => {
+      let count = 0
+      let dank: Texture | null = null
+      let dank2: Texture | null = null
+
+      const onReady = () => {
+        if (++count >= 2) {
+          birthdayTextures = { dank: dank!, dank2: dank2! }
+          resolve(birthdayTextures)
+        }
+      }
+
+      loader.load('img/151/birthday-holo-dank.webp', (tex) => {
+        applyFilters(tex)
+        dank = tex
+        onReady()
+      })
+
+      loader.load('img/151/birthday-holo-dank-2.webp', (tex) => {
+        applyFilters(tex)
+        dank2 = tex
+        onReady()
+      })
+    })
+  }
+
+  function getBirthdayTextures(): BirthdayTextures | null {
+    return birthdayTextures
+  }
+
+  return { loadCard, loadCards, get, loadIriTextures, getIriTextures, loadBirthdayTextures, getBirthdayTextures }
 }
