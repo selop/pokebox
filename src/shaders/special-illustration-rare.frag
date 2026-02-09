@@ -39,6 +39,9 @@ vec3 blendExclusion(vec3 base, vec3 blend) {
 vec3 blendPlusLighter(vec3 base, vec3 blend) {
     return min(base + blend, vec3(1.0));
 }
+vec3 blendScreen(vec3 base, vec3 blend) {
+    return 1.0 - (1.0 - base) * (1.0 - blend);
+}
 
 // ── Filter helpers ───────────────────────────────────
 vec3 adjustBrightness(vec3 c, float b) {
@@ -162,6 +165,45 @@ void main() {
     shineAfter = adjustSaturate(shineAfter, 0.8);
     shineAfter = clamp(shineAfter, 0.0, 1.0);
 
+    // ── TILT-REVEALED VERTICAL SUNPILLAR EFFECT ─────────
+    // Vertical rainbow bars revealed by viewing angle (similar to illustration-rare 128.5° bars)
+    // Oriented vertically (90° angle) and controlled by bgY tilt
+
+    // Vertical bar angle (90 degrees = vertical bars)
+    float sunpillarAngle = 90.0 * 3.14159 / 180.0;
+    float sunpillarCoord = dot(uv, vec2(cos(sunpillarAngle), sin(sunpillarAngle)));
+
+    // Layer 1: Controlled by vertical tilt (bgY)
+    float sunpillarOffset1 = ((0.5 - bgY) * 2.5) + (bgX * 0.8);
+    float sunpillar1T = (sunpillarCoord + sunpillarOffset1) * 2.0;
+
+    // Generate rainbow gradient
+    vec3 sunpillar1Color = sunpillarGradient(sunpillar1T);
+
+    // Create bar pattern with gaps
+    float sunpillar1Pattern = fract(sunpillar1T);
+    float sunpillar1Mask = smoothstep(0.25, 0.35, sunpillar1Pattern) * (1.0 - smoothstep(0.45, 0.55, sunpillar1Pattern));
+    sunpillar1Color *= sunpillar1Mask;
+
+    // Layer 2: Inverted offset for dual-layer effect
+    float sunpillarOffset2 = ((0.5 - bgY) * -1.8) - (bgX * 0.6);
+    float sunpillar2T = (sunpillarCoord + sunpillarOffset2) * 1.0;
+
+    vec3 sunpillar2Color = sunpillarGradient(sunpillar2T);
+
+    float sunpillar2Pattern = fract(sunpillar2T);
+    float sunpillar2Mask = smoothstep(0.25, 0.35, sunpillar2Pattern) * (1.0 - smoothstep(0.45, 0.55, sunpillar2Pattern));
+    sunpillar2Color *= sunpillar2Mask;
+
+    // Combine layers with screen blend (like illustration-rare bars)
+    vec3 sunpillars = blendScreen(sunpillar1Color, sunpillar2Color);
+
+    // Apply filters for holographic effect
+    sunpillars = adjustBrightness(sunpillars, 1.8);
+    sunpillars = adjustContrast(sunpillars, 2.2);
+    sunpillars = adjustSaturate(sunpillars, 2.0);
+    sunpillars = clamp(sunpillars, 0.2, 1.0);
+
     // ── IRIDESCENT GLITTER LAYERS (using textures) ──────
     // CSS var(--glitter-size): 150px 150px
     float glitterTileSize = 300.0 / 1024.0; // Assuming card is ~1024px height
@@ -189,8 +231,8 @@ void main() {
     // CSS: filter: brightness(2) contrast(1.2) saturate(2)
     // CSS: mix-blend-mode: overlay
     // CSS: opacity: var(--pointer-from-top)
-    glitterBefore = adjustBrightness(glitterBefore, 2.0);
-    glitterBefore = adjustContrast(glitterBefore, 1.2);
+    glitterBefore = adjustBrightness(glitterBefore, 1.0);
+    glitterBefore = adjustContrast(glitterBefore, 1.8);
     glitterBefore = adjustSaturate(glitterBefore, 2.0);
     glitterBefore = clamp(glitterBefore, 0.0, 1.0);
 
@@ -241,14 +283,17 @@ void main() {
         // Apply diagonal rainbow shine with overlay blend
         result = mix(result, blendOverlay(result, shineBefore), mask * uCardOpacity * 0.2);
 
+        // Apply animated vertical sunpillars with plus-lighter blend
+        result = mix(result, blendPlusLighter(result, sunpillars), mask * uCardOpacity * 0.1);
+
         // Apply main glitter with plus-lighter blend
         result = mix(result, blendPlusLighter(result, glitter), mask * glitterOpacity * 0.8);
 
         // Apply glitter :before with overlay blend
-        result = mix(result, blendOverlay(result, glitterBefore), mask * uCardOpacity * ptrFromTop * 0.3);
+        result = mix(result, blendOverlay(result, glitterBefore), mask * uCardOpacity * ptrFromTop * 0.9);
 
         // Apply glitter :after with overlay blend
-        result = mix(result, blendOverlay(result, glitterAfter), mask * uCardOpacity * (1.0 - ptrFromTop) * 0.3);
+        result = mix(result, blendOverlay(result, glitterAfter), mask * uCardOpacity * (1.0 - ptrFromTop) * 1.0);
 
         // Apply bright glare with multiply blend (subtle darkening)
         result = mix(result, blendMultiply(result, glare), mask * uCardOpacity * 0.2);

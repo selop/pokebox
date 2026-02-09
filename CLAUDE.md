@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Overview section
+
+This is a Three.js + Vue 3 + TypeScript project for rendering Pokemon cards with holographic/parallax shader effects. Always consider WebGL/shader context when making changes to rendering code.
+
 ## Commands
 
 ```bash
@@ -40,18 +44,19 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 
 ### Key modules
 
-| Directory | Role |
-|-----------|------|
-| `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode) |
-| `src/composables/` | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen` |
-| `src/three/` | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `geometryHelpers`, `utils` |
-| `src/shaders/` | GLSL shaders imported as strings via `vite-plugin-glsl` |
-| `src/data/` | `cardCatalog.ts` (card entries with front/mask/foil texture paths), `defaults.ts` (initial config values) |
-| `src/types/` | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `CardTransform`, `EyePosition`, `DerivedDimensions` |
+| Directory           | Role                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode)                                                                     |
+| `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`     |
+| `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `geometryHelpers`, `utils` |
+| `src/shaders/`      | GLSL shaders imported as strings via `vite-plugin-glsl`                                                                                                      |
+| `src/data/`         | `cardCatalog.ts` (card entries with front/mask/foil texture paths), `defaults.ts` (initial config values)                                                    |
+| `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `CardTransform`, `EyePosition`, `DerivedDimensions`                                                  |
 
 ### Card catalog & texture system
 
 Each `CardCatalogEntry` defines texture paths and shader type (relative to `public/`):
+
 - `front` — base card image
 - `mask` — grayscale holo area mask (white = rainbow effect)
 - `foil` — grayscale etched foil mask (empty string = no foil; used by special illustration rare for glitter overlay)
@@ -62,6 +67,7 @@ Each `CardCatalogEntry` defines texture paths and shader type (relative to `publ
 ### State-driven rebuilds
 
 The scene watches store properties and rebuilds accordingly:
+
 - **Full rebuild** (clears scene): screen dimensions, box depth, scene mode, render mode changes
 - **Transform update** (no rebuild): card position/rotation changes
 - **Uniform update** (no rebuild): holo intensity, eye position, time
