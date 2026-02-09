@@ -5,7 +5,7 @@ import type { useAppStore } from '@/stores/app'
 
 export const SINGLE_CARD_SIZE = 0.85
 
-const MERGE_LERP_RATE = 0.12
+const MERGE_LERP_RATE = 0.06
 
 /**
  * Animates the merge/explode transition of card layers in single-card mode.
@@ -42,8 +42,8 @@ export class MergeAnimator {
     const dims = this.store.dimensions
     const cardH = dims.screenH * SINGLE_CARD_SIZE
     const cardW = cardH * CARD_ASPECT
-    const zGap = dims.boxD * 0.08
-    const xGap = cardW * 0.35
+    const zGap = dims.boxD * 0.16
+    const xGap = cardW * 0.5
     const spread = 1 - this.mergeProgress // 1 = exploded, 0 = merged
     const cx = (this.store.cardTransform.x / 100) * dims.screenW
     const cy = (this.store.cardTransform.y / 100) * dims.screenH
