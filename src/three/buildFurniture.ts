@@ -48,7 +48,6 @@ const FURNITURE_CATALOG: Record<string, FurnitureFactory> = {
     const back = wireBox(chW, backH, screenH * 0.025, lm, renderMode)
     back.position.set(0, seatH + backH / 2, -chD / 2)
     g.add(back)
-
     ;[-1, 1].forEach((s) => {
       const arm = wireBox(screenH * 0.02, screenH * 0.07, chD, lm, renderMode)
       arm.position.set(s * (chW / 2), seatH + screenH * 0.035, 0)
@@ -107,7 +106,12 @@ const FURNITURE_CATALOG: Record<string, FurnitureFactory> = {
       ] as [number, number][]
     ).forEach(([sx, sz]) => {
       g.add(
-        posAt(wireCyl(screenH * 0.006, seatH, 6, lm, renderMode), sx * sW * 0.45, seatH / 2, sz * sD * 0.4),
+        posAt(
+          wireCyl(screenH * 0.006, seatH, 6, lm, renderMode),
+          sx * sW * 0.45,
+          seatH / 2,
+          sz * sD * 0.4,
+        ),
       )
     })
 
@@ -133,7 +137,12 @@ const FURNITURE_CATALOG: Record<string, FurnitureFactory> = {
       ] as [number, number][]
     ).forEach(([sx, sz]) => {
       g.add(
-        posAt(wireCyl(screenH * 0.004, tH, 6, lm, renderMode), sx * tW * 0.42, tH / 2, sz * tD * 0.42),
+        posAt(
+          wireCyl(screenH * 0.004, tH, 6, lm, renderMode),
+          sx * tW * 0.42,
+          tH / 2,
+          sz * tD * 0.42,
+        ),
       )
     })
 
@@ -237,7 +246,7 @@ const FURNITURE_CATALOG: Record<string, FurnitureFactory> = {
     shade.position.set(posX, floorY + poleH - screenH * 0.01, posZ)
     items.push(shade)
 
-    const light = new PointLight(randColor(0xffddaa, 0xffeebb), 0.3, boxD * 1.2, 2)
+    const light = new PointLight(randColor(0xffddaa, 0xffeebb), 0.25, boxD * 1.2, 2)
     light.position.set(posX, floorY + poleH - screenH * 0.03, posZ)
     items.push(light)
 
@@ -277,9 +286,7 @@ const FURNITURE_CATALOG: Record<string, FurnitureFactory> = {
       const cr = screenH * 0.025
       for (let i = 0; i <= 24; i++) {
         const a = (i / 24) * Math.PI * 2
-        clockPts.push(
-          new Vector3(Math.cos(a) * cr, cr + screenH * 0.005, Math.sin(a) * cr * 0.15),
-        )
+        clockPts.push(new Vector3(Math.cos(a) * cr, cr + screenH * 0.005, Math.sin(a) * cr * 0.15))
       }
       const clock = new Line(
         new BufferGeometry().setFromPoints(clockPts),
@@ -338,11 +345,7 @@ const FURNITURE_CATALOG: Record<string, FurnitureFactory> = {
     for (let i = 0; i <= 32; i++) {
       const a = (i / 32) * Math.PI * 2
       pts.push(
-        new Vector3(
-          posX + (Math.cos(a) * rw) / 2,
-          floorY + 0.0003,
-          posZ + (Math.sin(a) * rd) / 2,
-        ),
+        new Vector3(posX + (Math.cos(a) * rw) / 2, floorY + 0.0003, posZ + (Math.sin(a) * rd) / 2),
       )
     }
     items.push(
@@ -402,7 +405,7 @@ const FURNITURE_CATALOG: Record<string, FurnitureFactory> = {
     bulb.position.set(posX, bulbY, posZ)
     items.push(bulb)
 
-    const pl = new PointLight(randColor(0xffddaa, 0xffeebb), 0.35, boxD * 1, 2)
+    const pl = new PointLight(randColor(0xffddaa, 0xffeebb), 0.5, boxD * 1, 2)
     pl.position.set(posX, bulbY, posZ)
     items.push(pl)
 

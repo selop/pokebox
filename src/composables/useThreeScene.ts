@@ -9,10 +9,12 @@ import {
   PlaneGeometry,
   Scene,
   ShaderMaterial,
+  TextureLoader,
   Vector2,
   Vector3,
   WebGLRenderer,
 } from 'three'
+import type { Texture } from 'three'
 import { useAppStore } from '@/stores/app'
 import { buildBoxShell } from '@/three/buildBox'
 import { populateFurniture } from '@/three/buildFurniture'
@@ -41,6 +43,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   const cardMeshes = shallowRef<Mesh[]>([])
   let cardAngle = 0
   let cardLoader: ReturnType<typeof useCardLoader> | null = null
+  let wallTexture: Texture | null = null
   const mouseTilt = useMouseTilt()
 
   // Delegates
@@ -105,6 +108,13 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Load birthday textures for double rare cards
     cardLoader.loadBirthdayTextures()
 
+    // Load wall texture for box interior
+    const textureLoader = new TextureLoader()
+    textureLoader.load('151-pattern-default.webp', (texture) => {
+      wallTexture = texture
+      rebuildScene()
+    })
+
     // Set initial eye position
     const dims = store.dimensions
     store.eyePos.x = 0
@@ -142,7 +152,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     const renderMode = store.renderMode
 
     // Build box shell
-    buildBoxShell(scene, dims, renderMode)
+    buildBoxShell(scene, dims, renderMode, wallTexture)
 
     // Furniture mode
     if (store.sceneMode === 'furniture') {
