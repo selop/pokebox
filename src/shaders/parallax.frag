@@ -1,6 +1,7 @@
 precision highp float;
 
 uniform sampler2D uCardTex;
+uniform sampler2D uCardBackTex;
 uniform sampler2D uMaskTex;
 uniform sampler2D uFoilTex;
 uniform float uHasFoil;
@@ -108,7 +109,8 @@ void main() {
     vec4 cardColor = texture2D(uCardTex, uv);
 
     if (!gl_FrontFacing) {
-        gl_FragColor = vec4(cardColor.rgb, cardColor.a * uFade);
+        vec4 backColor = texture2D(uCardBackTex, uv);
+        gl_FragColor = vec4(backColor.rgb, backColor.a * uFade);
         return;
     }
 
@@ -116,7 +118,8 @@ void main() {
     float foil = uHasFoil > 0.5 ? texture2D(uFoilTex, uv).r : 0.0;
 
     if (uCardOpacity < 0.01 || (mask < 0.01 && foil < 0.01)) {
-        gl_FragColor = vec4(cardColor.rgb, cardColor.a * uFade);
+        vec4 backColor = texture2D(uCardBackTex, uv);
+        gl_FragColor = vec4(backColor.rgb, backColor.a * uFade);
         return;
     }
 

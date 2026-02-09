@@ -1,6 +1,7 @@
 precision highp float;
 
 uniform sampler2D uCardTex;
+uniform sampler2D uCardBackTex;
 uniform sampler2D uMaskTex;
 uniform sampler2D uFoilTex;
 uniform sampler2D uIri7Tex;  // Iridescent texture layer 7
@@ -91,7 +92,8 @@ void main() {
 
     // Back face: show card without holo
     if (!gl_FrontFacing) {
-        gl_FragColor = vec4(cardColor.rgb, cardColor.a * uFade);
+        vec4 backColor = texture2D(uCardBackTex, uv);
+        gl_FragColor = vec4(backColor.rgb, backColor.a * uFade);
         return;
     }
 
@@ -101,7 +103,8 @@ void main() {
 
     // Skip compositing if no effect present
     if (uCardOpacity < 0.01 || (mask < 0.01 && foil < 0.01)) {
-        gl_FragColor = vec4(cardColor.rgb, cardColor.a * uFade);
+        vec4 backColor = texture2D(uCardBackTex, uv);
+        gl_FragColor = vec4(backColor.rgb, backColor.a * uFade);
         return;
     }
 

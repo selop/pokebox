@@ -196,6 +196,7 @@ function getMaskType(num: number): MaskType {
 }
 
 function getHoloType(num: number): HoloType {
+  if (num >= 182 && num <= 197) return 'ultra-rare' // Full Art cards
   if (SPECIAL_ILLUSTRATION_RARE.has(num)) return 'special-illustration-rare'
   if (DOUBLE_RARE.has(num)) return 'double-rare'
   if (HOLO_SV_HOLO.has(num)) return 'regular-holo'
@@ -209,15 +210,25 @@ function buildEntry(num: number): CardCatalogEntry {
   const maskType = getMaskType(num)
   const maskFile = `${id}_${maskType}_2x.webp`
   const isEtched = maskType.includes('etched')
+  const holoType = getHoloType(num)
 
-  return {
+  const entry: CardCatalogEntry = {
     id,
     label,
     front: `cards/fronts/${id}_front_2x.webp`,
     mask: `cards/masks/${maskFile}`,
     foil: isEtched ? `cards/foils/${maskFile}` : '',
-    holoType: getHoloType(num),
+    holoType,
   }
+
+  // Add iridescent textures for special-illustration-rare and ultra-rare cards
+  if (holoType === 'special-illustration-rare' || holoType === 'ultra-rare') {
+    entry.iri7 = 'img/151/iri-7.webp'
+    entry.iri8 = 'img/151/iri-8.webp'
+    entry.iri9 = 'img/151/iri-9.webp'
+  }
+
+  return entry
 }
 
 export const CARD_CATALOG: CardCatalogEntry[] = Array.from({ length: 207 }, (_, i) =>

@@ -111,6 +111,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Load glitter texture for illustration rare cards
     cardLoader.loadGlitterTexture()
 
+    // Load card-back texture
+    cardLoader.loadCardBackTexture()
+
     // Load wall texture for box interior
     const textureLoader = new TextureLoader()
     textureLoader.load('151-pattern-default.webp', (texture) => {
@@ -190,17 +193,18 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
             if (hasEffect) {
               // Layer 0 (front-left): full composited result (card + holo shader)
               const effectiveShader = getEffectiveShader(id)
-              const iriTextures = effectiveShader === 'special-illustration-rare'
+              const iriTextures = (effectiveShader === 'special-illustration-rare' || effectiveShader === 'ultra-rare')
                 ? cardLoader!.getIriTextures()
                 : null
               const birthdayTextures = effectiveShader === 'double-rare'
                 ? cardLoader!.getBirthdayTextures()
                 : null
               const glitterTexture = cardLoader!.getGlitterTexture()
+              const cardBackTexture = cardLoader!.getCardBackTexture()
               const compositeMesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, {
                 ...store.config,
                 cardSize: SINGLE_CARD_SIZE,
-              }, effectiveShader, iriTextures, birthdayTextures, glitterTexture)
+              }, effectiveShader, iriTextures, birthdayTextures, glitterTexture, cardBackTexture)
               compositeMesh.geometry.dispose()
               compositeMesh.geometry = new PlaneGeometry(cardW, cardH)
               compositeMesh.position.set(centerX - xGap, cy, cz)
@@ -241,14 +245,15 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           const tex = cardLoader!.get(id)
           if (!tex) return
           const effectiveShader = getEffectiveShader(id)
-          const iriTextures = effectiveShader === 'special-illustration-rare'
+          const iriTextures = (effectiveShader === 'special-illustration-rare' || effectiveShader === 'ultra-rare')
             ? cardLoader!.getIriTextures()
             : null
           const birthdayTextures = effectiveShader === 'double-rare'
             ? cardLoader!.getBirthdayTextures()
             : null
           const glitterTexture = cardLoader!.getGlitterTexture()
-          const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config, effectiveShader, iriTextures, birthdayTextures, glitterTexture)
+          const cardBackTexture = cardLoader!.getCardBackTexture()
+          const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config, effectiveShader, iriTextures, birthdayTextures, glitterTexture, cardBackTexture)
           const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
           mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
           mesh.rotation.y = baseRotY
@@ -357,6 +362,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       const dx = px - 0.5,
         dy = py - 0.5
       u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
+
+      // Additional uniforms for ultra-rare shader
+      if (u['uPointerFromLeft']) u['uPointerFromLeft']!.value = px
+      if (u['uPointerFromTop']) u['uPointerFromTop']!.value = py
+      if (u['uRotateX']) u['uRotateX']!.value = mesh.rotation.y * (180 / Math.PI)
     }
 
     // Animate card transitions (departing fade-out + push-back, arriving fade-in)

@@ -27,7 +27,7 @@ export const useAppStore = defineStore('app', () => {
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
-  const currentCardId = ref('171')
+  const currentCardId = ref('185')
   const cardDisplayMode = ref<CardDisplayMode>('single')
   const shaderStyle = ref<ShaderStyle>('illustration-rare')
   const sceneSeed = ref(Date.now())
@@ -86,7 +86,7 @@ export const useAppStore = defineStore('app', () => {
     })
     config.holoIntensity = CARD_DEFAULTS.holoIntensity / 100
     config.cardSpinSpeed = CARD_DEFAULTS.cardSpinSpeed
-    currentCardId.value = '171'
+    currentCardId.value = '185'
   }
 
   function randomizeSeed() {
@@ -98,7 +98,7 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function toggleShaderStyle() {
-    // Cycle through: illustration-rare -> regular-holo -> special-illustration-rare -> double-rare -> parallax -> illustration-rare
+    // Cycle through: illustration-rare -> regular-holo -> special-illustration-rare -> double-rare -> ultra-rare -> parallax -> illustration-rare
     if (shaderStyle.value === 'illustration-rare') {
       shaderStyle.value = 'regular-holo'
     } else if (shaderStyle.value === 'regular-holo') {
@@ -106,6 +106,8 @@ export const useAppStore = defineStore('app', () => {
     } else if (shaderStyle.value === 'special-illustration-rare') {
       shaderStyle.value = 'double-rare'
     } else if (shaderStyle.value === 'double-rare') {
+      shaderStyle.value = 'ultra-rare'
+    } else if (shaderStyle.value === 'ultra-rare') {
       shaderStyle.value = 'parallax'
     } else {
       shaderStyle.value = 'illustration-rare'

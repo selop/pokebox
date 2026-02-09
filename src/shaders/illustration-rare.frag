@@ -1,6 +1,7 @@
 precision highp float;
 
 uniform sampler2D uCardTex;
+uniform sampler2D uCardBackTex;
 uniform sampler2D uMaskTex;
 uniform sampler2D uFoilTex;
 uniform sampler2D uGlitterTex;
@@ -77,9 +78,10 @@ void main() {
     // ── Base card ────────────────────────────────────
     vec4 cardColor = texture2D(uCardTex, uv);
 
-    // Back face: show card without holo
+    // Back face: show card-back texture
     if (!gl_FrontFacing) {
-        gl_FragColor = vec4(cardColor.rgb, cardColor.a * uFade);
+        vec4 backColor = texture2D(uCardBackTex, uv);
+        gl_FragColor = vec4(backColor.rgb, backColor.a * uFade);
         return;
     }
 
@@ -109,7 +111,7 @@ void main() {
 
     // ── SHINE LAYER 1: Rainbow + bars (color-dodge) ──
     // CSS: repeating sunpillar gradient (0deg, 200% 700% ≈ 3.5 vertical repeats)
-    float rainbowT = uv.y * 4.0
+    float rainbowT = uv.y * 2.0
         + ((0.5 - bgY) * 3.5)
         + sin(uTime * 0.3) * 0.05;
     vec3 rainbow = sunpillarGradient(rainbowT);
@@ -119,7 +121,7 @@ void main() {
     float barAngle = 133.0 * 3.14159 / 180.0;
     float barCoord = dot(uv, vec2(cos(barAngle), sin(barAngle)));
     float barOffset = ((0.5 - bgX) * 1.65) + (bgY * 0.5);
-    float barT = fract((barCoord + barOffset) * 4.0);  // More frequent bars
+    float barT = fract((barCoord + barOffset) * 2.0);  // More frequent bars
 
     // Bright saturated gradient: medium cyan → bright cyan → medium cyan
     // Peak at center of band (0.045 = 4.5% of 12% period)

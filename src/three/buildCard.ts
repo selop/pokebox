@@ -16,6 +16,7 @@ import illustrationRareFrag from '@/shaders/illustration-rare.frag'
 import regularHoloFrag from '@/shaders/regular-holo.frag'
 import specialIllustrationRareFrag from '@/shaders/special-illustration-rare.frag'
 import doubleRareFrag from '@/shaders/double-rare.frag'
+import ultraRareFrag from '@/shaders/ultra-rare.frag'
 import parallaxFrag from '@/shaders/parallax.frag'
 
 export const CARD_ASPECT = 733 / 1024 // width / height
@@ -36,6 +37,7 @@ export function buildCardMesh(
   iriTextures?: { iri7: Texture; iri8: Texture; iri9: Texture } | null,
   birthdayTextures?: { dank: Texture; dank2: Texture } | null,
   glitterTexture?: Texture | null,
+  cardBackTexture?: Texture | null,
 ): Mesh {
   const cardH = dims.screenH * config.cardSize
   const cardW = cardH * CARD_ASPECT
@@ -53,12 +55,15 @@ export function buildCardMesh(
       fragmentShader = specialIllustrationRareFrag
     } else if (shaderStyle === 'double-rare') {
       fragmentShader = doubleRareFrag
+    } else if (shaderStyle === 'ultra-rare') {
+      fragmentShader = ultraRareFrag
     } else if (shaderStyle === 'illustration-rare') {
       fragmentShader = illustrationRareFrag
     }
 
     const uniforms: any = {
       uCardTex: { value: cardTexture },
+      uCardBackTex: { value: cardBackTexture || cardTexture },
       uMaskTex: { value: maskTexture || blackPixel },
       uFoilTex: { value: foilTexture || blackPixel },
       uGlitterTex: { value: glitterTexture || blackPixel },
@@ -67,9 +72,12 @@ export function buildCardMesh(
       uPointer: { value: new Vector2(0.5, 0.5) },
       uBackground: { value: new Vector2(0.5, 0.5) },
       uPointerFromCenter: { value: 0.0 },
+      uPointerFromLeft: { value: 0.5 },
+      uPointerFromTop: { value: 0.5 },
       uCardOpacity: { value: config.holoIntensity || 0.75 },
       uTime: { value: 0.0 },
       uFade: { value: 1.0 },
+      uRotateX: { value: 0.0 },
     }
 
     // Add iridescent textures for special illustration rare shader
@@ -77,11 +85,35 @@ export function buildCardMesh(
       uniforms.uIri7Tex = { value: iriTextures.iri7 }
       uniforms.uIri8Tex = { value: iriTextures.iri8 }
       uniforms.uIri9Tex = { value: iriTextures.iri9 }
+      uniforms.uHasIri7 = { value: 1.0 }
+      uniforms.uHasIri8 = { value: 1.0 }
+      uniforms.uHasIri9 = { value: 1.0 }
     } else if (shaderStyle === 'special-illustration-rare') {
       // Fallback to black pixels if textures not provided
       uniforms.uIri7Tex = { value: blackPixel }
       uniforms.uIri8Tex = { value: blackPixel }
       uniforms.uIri9Tex = { value: blackPixel }
+      uniforms.uHasIri7 = { value: 0.0 }
+      uniforms.uHasIri8 = { value: 0.0 }
+      uniforms.uHasIri9 = { value: 0.0 }
+    }
+
+    // Add iridescent textures for ultra rare shader
+    if (shaderStyle === 'ultra-rare' && iriTextures) {
+      uniforms.uIri7Tex = { value: iriTextures.iri7 }
+      uniforms.uIri8Tex = { value: iriTextures.iri8 }
+      uniforms.uIri9Tex = { value: iriTextures.iri9 }
+      uniforms.uHasIri7 = { value: 1.0 }
+      uniforms.uHasIri8 = { value: 1.0 }
+      uniforms.uHasIri9 = { value: 1.0 }
+    } else if (shaderStyle === 'ultra-rare') {
+      // Fallback to black pixels if textures not provided
+      uniforms.uIri7Tex = { value: blackPixel }
+      uniforms.uIri8Tex = { value: blackPixel }
+      uniforms.uIri9Tex = { value: blackPixel }
+      uniforms.uHasIri7 = { value: 0.0 }
+      uniforms.uHasIri8 = { value: 0.0 }
+      uniforms.uHasIri9 = { value: 0.0 }
     }
 
     // Add birthday textures for double rare shader

@@ -27,6 +27,9 @@ export interface CardCatalogEntry {
   mask: string // path relative to public/
   foil: string // path relative to public/
   holoType: HoloType // which holo shader to use
+  iri7?: string // iridescent texture 7 (for special-illustration-rare and ultra-rare)
+  iri8?: string // iridescent texture 8 (for special-illustration-rare and ultra-rare)
+  iri9?: string // iridescent texture 9 (for special-illustration-rare and ultra-rare)
 }
 
 export interface EyePosition {
@@ -43,12 +46,14 @@ export type ShaderStyle =
   | 'regular-holo'
   | 'special-illustration-rare'
   | 'double-rare'
+  | 'ultra-rare'
   | 'parallax'
 export type HoloType =
   | 'illustration-rare'
   | 'regular-holo'
   | 'special-illustration-rare'
   | 'double-rare'
+  | 'ultra-rare'
 
 export interface DerivedDimensions {
   screenW: number

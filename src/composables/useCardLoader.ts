@@ -25,6 +25,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
   let iriTextures: IriTextures | null = null
   let birthdayTextures: BirthdayTextures | null = null
   let glitterTexture: Texture | null = null
+  let cardBackTexture: Texture | null = null
 
   function applyFilters(tex: Texture, aniso = false): void {
     tex.minFilter = LinearMipmapLinearFilter
@@ -174,5 +175,21 @@ export function useCardLoader(renderer: WebGLRenderer) {
     return glitterTexture
   }
 
-  return { loadCard, loadCards, get, loadIriTextures, getIriTextures, loadBirthdayTextures, getBirthdayTextures, loadGlitterTexture, getGlitterTexture }
+  function loadCardBackTexture(): Promise<Texture> {
+    if (cardBackTexture) return Promise.resolve(cardBackTexture)
+
+    return new Promise<Texture>((resolve) => {
+      loader.load('img/card-back.png', (tex) => {
+        applyFilters(tex, true)
+        cardBackTexture = tex
+        resolve(cardBackTexture)
+      })
+    })
+  }
+
+  function getCardBackTexture(): Texture | null {
+    return cardBackTexture
+  }
+
+  return { loadCard, loadCards, get, loadIriTextures, getIriTextures, loadBirthdayTextures, getBirthdayTextures, loadGlitterTexture, getGlitterTexture, loadCardBackTexture, getCardBackTexture }
 }
