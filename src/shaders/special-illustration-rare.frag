@@ -164,7 +164,7 @@ void main() {
 
     // ── IRIDESCENT GLITTER LAYERS (using textures) ──────
     // CSS var(--glitter-size): 150px 150px
-    float glitterTileSize = 150.0 / 1024.0; // Assuming card is ~1024px height
+    float glitterTileSize = 300.0 / 1024.0; // Assuming card is ~1024px height
 
     // Main glitter layer - iri9 texture
     // CSS: background-image: var(--iri9)
@@ -172,12 +172,12 @@ void main() {
     // CSS: mix-blend-mode: plus-lighter
     vec3 glitter = sampleIriTexture(uIri9Tex, uv, 1.0 / glitterTileSize);
     glitter = adjustBrightness(glitter, 1.0);
-    glitter = adjustContrast(glitter, 2.0);
+    glitter = adjustContrast(glitter, 1.0);
     glitter = adjustSaturate(glitter, 1.2);
     glitter = clamp(glitter, 0.0, 1.0);
 
     // CSS: opacity: calc(var(--card-opacity) * (0.2 + var(--pointer-from-center) * 0.5))
-    float glitterOpacity = uCardOpacity * (0.2 + uPointerFromCenter * 0.5);
+    float glitterOpacity = uCardOpacity * (1.0 + uPointerFromCenter * 0.5);
 
     // Glitter :before layer - iri8 texture (shifted by pointer)
     // CSS: background-image: var(--iri8)
@@ -211,7 +211,7 @@ void main() {
     // CSS: radial-gradient from pointer
     // CSS: hsl(0, 0%, 80%) 10%, hsl(0, 0%, 50%) 70%
     // CSS: mix-blend-mode: multiply, filter: contrast(1.5)
-    vec3 glareLight = vec3(1.0);   // Bright white center
+    vec3 glareLight = vec3(5.0);   // Bright white center
     vec3 glareDark = vec3(0.85);   // Light gray edge
 
     float glareMix = smoothstep(0.0, 0.15, spotDist) + smoothstep(0.15, 0.8, spotDist);
@@ -239,10 +239,10 @@ void main() {
         result = mix(result, blendHardLight(result, shineAfter), mask * uCardOpacity * 0.4);
 
         // Apply diagonal rainbow shine with overlay blend
-        result = mix(result, blendOverlay(result, shineBefore), mask * uCardOpacity * 0.6);
+        result = mix(result, blendOverlay(result, shineBefore), mask * uCardOpacity * 0.2);
 
         // Apply main glitter with plus-lighter blend
-        result = mix(result, blendPlusLighter(result, glitter), mask * glitterOpacity * 0.5);
+        result = mix(result, blendPlusLighter(result, glitter), mask * glitterOpacity * 0.8);
 
         // Apply glitter :before with overlay blend
         result = mix(result, blendOverlay(result, glitterBefore), mask * uCardOpacity * ptrFromTop * 0.3);
