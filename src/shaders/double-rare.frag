@@ -148,13 +148,21 @@ void main() {
     glitterRainbow = blendHardLight(glitterRainbow, glitterBarColor);
 
     // Apply spotlight
-    glitterRainbow *= -0.5 + spotlight * 0.5;
+    glitterRainbow *= 0.5 + spotlight * 0.5;
 
     // Birthday dank textures (140% and 120% size)
-    vec2 dankUV1 = uv * (1.0 / 1.6);  // 140% size = scale down UV
-    vec2 dankUV2 = uv * (1.0 / 1.4);  // 120% size
+    // Textures stay fixed on card surface
+    vec2 dankUV1 = uv * (1.0 / 1.4);  // 140% size = scale down UV
+    vec2 dankUV2 = uv * (1.0 / 1.2);  // 120% size
     vec3 birthdayDank = texture2D(uBirthdayDankTex, dankUV1).rgb;
     vec3 birthdayDank2 = texture2D(uBirthdayDank2Tex, dankUV2).rgb;
+
+    // Tilt-based visibility: only show birthday sparkles on strong top-to-bottom tilt
+    // bgY ranges from 0.37 to 0.63, center is 0.5
+    // Adjust visibility based on Y-axis tilt angle
+    float tiltReveal = smoothstep(0.0, 0.13, abs(bgY - 0.5)); // Fade in as you tilt away from center
+    birthdayDank *= tiltReveal;
+    birthdayDank2 *= tiltReveal;
 
     // Blend birthday textures into the rainbow base
     vec3 glitter = blendHue(glitterRainbow, birthdayDank);
