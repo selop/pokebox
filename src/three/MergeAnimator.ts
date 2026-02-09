@@ -49,9 +49,15 @@ export class MergeAnimator {
     const cy = (this.store.cardTransform.y / 100) * dims.screenH
     const cz = -(this.store.cardTransform.z / 100) * dims.boxD
 
+    // Rotation offset when exploded: -42 degrees
+    const explodeRotation = (-42 * Math.PI / 180) * spread
+
     meshes.forEach((mesh, i) => {
       const xOff = (i - 1) * xGap * spread
       mesh.position.set(cx + xOff, cy, cz - i * zGap * spread)
+
+      // Store the explode rotation offset for the animation loop to use
+      mesh.userData.explodeRotationY = explodeRotation
 
       // Fade non-composite layers (index > 0) when merging
       if (i > 0) {

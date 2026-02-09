@@ -312,7 +312,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
     for (const mesh of meshes) {
       mesh.rotation.x = mouseTilt.state.rotateX
-      mesh.rotation.y = baseRotY + mouseTilt.state.rotateY
+      const explodeRotY = mesh.userData.explodeRotationY || 0
+      mesh.rotation.y = baseRotY + mouseTilt.state.rotateY + explodeRotY
     }
 
     // Update holo shader uniforms for all cards
