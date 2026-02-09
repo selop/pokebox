@@ -1,18 +1,12 @@
 import {
   AmbientLight,
   BufferGeometry,
-  CylinderGeometry,
-  EdgesGeometry,
   Line,
   LineBasicMaterial,
-  LineSegments,
   Mesh,
-  MeshBasicMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
-  PointLight,
   Scene,
-  SphereGeometry,
   Vector3,
 } from 'three'
 import type { Texture } from 'three'
