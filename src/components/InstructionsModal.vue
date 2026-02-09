@@ -14,10 +14,15 @@ function onSceneChange(value: string) {
 function onStart() {
   emit('enableCamera')
 }
+
+function onClose() {
+  store.showInstructions = false
+}
 </script>
 
 <template>
   <div class="instructions" :class="{ hidden: !store.showInstructions }">
+    <button class="close-btn" @click="onClose" aria-label="Close">×</button>
     <h2>Virtual Pokebox Demo</h2>
     <p>
       This demonstrates off-axis perspective projection. Your webcam tracks your head
@@ -136,5 +141,29 @@ function onStart() {
   margin-top: 16px;
   margin-bottom: 0;
   font-size: 0.7rem;
+}
+
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.close-btn:hover {
+  color: #fff;
+  transform: scale(1.1);
 }
 </style>
