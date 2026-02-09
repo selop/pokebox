@@ -119,7 +119,7 @@ void main() {
     // ── SHINE LAYER :before - Diagonal rainbow ───────
     // CSS: repeating-linear-gradient(15deg, holo colors)
     // Much finer diagonal lines for subtle shimmer
-    float shineAngle = 15.0 * 3.14159 / 180.0;
+    float shineAngle = 45.0 * 3.14159 / 180.0;
     float shineCoord = dot(uv - 0.5, vec2(cos(shineAngle), sin(shineAngle)));
     float shineT = shineCoord * 8.0; // Increased frequency for finer lines
     vec3 rainbow = sunpillarGradient(shineT);

@@ -108,6 +108,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Load birthday textures for double rare cards
     cardLoader.loadBirthdayTextures()
 
+    // Load glitter texture for illustration rare cards
+    cardLoader.loadGlitterTexture()
+
     // Load wall texture for box interior
     const textureLoader = new TextureLoader()
     textureLoader.load('151-pattern-default.webp', (texture) => {
@@ -193,10 +196,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
               const birthdayTextures = effectiveShader === 'double-rare'
                 ? cardLoader!.getBirthdayTextures()
                 : null
+              const glitterTexture = cardLoader!.getGlitterTexture()
               const compositeMesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, {
                 ...store.config,
                 cardSize: SINGLE_CARD_SIZE,
-              }, effectiveShader, iriTextures, birthdayTextures)
+              }, effectiveShader, iriTextures, birthdayTextures, glitterTexture)
               compositeMesh.geometry.dispose()
               compositeMesh.geometry = new PlaneGeometry(cardW, cardH)
               compositeMesh.position.set(centerX - xGap, cy, cz)
@@ -243,7 +247,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           const birthdayTextures = effectiveShader === 'double-rare'
             ? cardLoader!.getBirthdayTextures()
             : null
-          const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config, effectiveShader, iriTextures, birthdayTextures)
+          const glitterTexture = cardLoader!.getGlitterTexture()
+          const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config, effectiveShader, iriTextures, birthdayTextures, glitterTexture)
           const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
           mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
           mesh.rotation.y = baseRotY

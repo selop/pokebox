@@ -157,21 +157,28 @@ const POKEMON_NAMES: Record<string, string> = {
 
 // Mask type groupings (cards not listed default to reverse_flat_silver)
 const HOLO_SUN_PILLAR = new Set([
-  3, 6, 9, 24, 38, 40, 65, 76, 115, 124, 145, 151,
+  3,
+  6,
+  9,
+  24,
+  38,
+  40,
+  65,
+  76,
+  115,
+  124,
+  145,
+  151,
   ...Array.from({ length: 16 }, (_, i) => 166 + i), // 166–181
 ])
 const HOLO_SV_HOLO = new Set([
-  15, 26, 34, 45, 68, 85, 94, 101, 105, 110, 113, 121, 122, 130, 132, 134, 135, 136, 139, 141,
-  142, 144, 146, 149, 150,
+  15, 26, 34, 45, 68, 85, 94, 101, 105, 110, 113, 121, 122, 130, 132, 134, 135, 136, 139, 141, 142,
+  144, 146, 149, 150,
 ])
 // Special illustration rare: cards #198-204 with iridescent glitter textures
-const SPECIAL_ILLUSTRATION_RARE = new Set([
-  198, 199, 200, 201, 202, 203, 204,
-])
+const SPECIAL_ILLUSTRATION_RARE = new Set([198, 199, 200, 201, 202, 203, 204, 205, 206, 207])
 // Double rare: ex cards with birthday holo textures
-const DOUBLE_RARE = new Set([
-  3, 6, 9, 24, 38, 40, 65, 76, 115, 124, 145, 151,
-])
+const DOUBLE_RARE = new Set([3, 6, 9, 24, 38, 40, 65, 76, 115, 124, 145, 151])
 
 type MaskType =
   | 'foil_holo_sun_pillar'

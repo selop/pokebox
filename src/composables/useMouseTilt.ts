@@ -44,8 +44,9 @@ export function useMouseTilt() {
     const nx = (e.clientX - rect.left) / rect.width
     const ny = 1 - (e.clientY - rect.top) / rect.height // Y-flipped for GL
 
-    springs.rotateX.target = -(ny - 0.5) * MAX_TILT * 2
-    springs.rotateY.target = (nx - 0.5) * MAX_TILT * 2
+    // Inverted: hovering top tilts top towards user (+Z), hovering left tilts left towards user
+    springs.rotateX.target = (ny - 0.5) * MAX_TILT * 2
+    springs.rotateY.target = -(nx - 0.5) * MAX_TILT * 2
   }
 
   function onPointerLeave() {

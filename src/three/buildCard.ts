@@ -35,6 +35,7 @@ export function buildCardMesh(
   shaderStyle: ShaderStyle = 'illustration-rare',
   iriTextures?: { iri7: Texture; iri8: Texture; iri9: Texture } | null,
   birthdayTextures?: { dank: Texture; dank2: Texture } | null,
+  glitterTexture?: Texture | null,
 ): Mesh {
   const cardH = dims.screenH * config.cardSize
   const cardW = cardH * CARD_ASPECT
@@ -60,7 +61,9 @@ export function buildCardMesh(
       uCardTex: { value: cardTexture },
       uMaskTex: { value: maskTexture || blackPixel },
       uFoilTex: { value: foilTexture || blackPixel },
+      uGlitterTex: { value: glitterTexture || blackPixel },
       uHasFoil: { value: foilTexture ? 1.0 : 0.0 },
+      uHasGlitter: { value: glitterTexture ? 1.0 : 0.0 },
       uPointer: { value: new Vector2(0.5, 0.5) },
       uBackground: { value: new Vector2(0.5, 0.5) },
       uPointerFromCenter: { value: 0.0 },

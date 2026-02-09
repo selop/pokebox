@@ -3,7 +3,9 @@ precision highp float;
 uniform sampler2D uCardTex;
 uniform sampler2D uMaskTex;
 uniform sampler2D uFoilTex;
+uniform sampler2D uGlitterTex;
 uniform float uHasFoil;
+uniform float uHasGlitter;
 uniform vec2 uPointer;       // eye projected onto card UV (0-1)
 uniform vec2 uBackground;    // constrained 0.37-0.63
 uniform float uPointerFromCenter; // 0-1
@@ -84,6 +86,7 @@ void main() {
     // ── Mask & foil (white = effect areas) ───────────
     float mask = texture2D(uMaskTex, uv).r;
     float foil = uHasFoil > 0.5 ? texture2D(uFoilTex, uv).r : 0.0;
+    float glitter = uHasGlitter > 0.5 ? texture2D(uGlitterTex, uv * 2.0).r : 1.0;
 
     // Skip compositing if no effect present
     if (uCardOpacity < 0.01 || (mask < 0.01 && foil < 0.01)) {
@@ -106,53 +109,63 @@ void main() {
 
     // ── SHINE LAYER 1: Rainbow + bars (color-dodge) ──
     // CSS: repeating sunpillar gradient (0deg, 200% 700% ≈ 3.5 vertical repeats)
-    float rainbowT = uv.y * 10.0
+    float rainbowT = uv.y * 4.0
         + ((0.5 - bgY) * 3.5)
         + sin(uTime * 0.3) * 0.05;
     vec3 rainbow = sunpillarGradient(rainbowT);
 
-    // CSS: repeating-linear-gradient(128.5deg, #0e152e → hsl(180,29%,66%) → #0e152e)
-    float barAngle = 128.5 * 3.14159 / 180.0;
+    // CSS: repeating-linear-gradient(133deg, bright saturated diagonal bars)
+    // Pattern: medium → bright peak → medium (narrow bright bands)
+    float barAngle = 133.0 * 3.14159 / 180.0;
     float barCoord = dot(uv, vec2(cos(barAngle), sin(barAngle)));
     float barOffset = ((0.5 - bgX) * 1.65) + (bgY * 0.5);
-    float barT = fract((barCoord + barOffset) * 4.0);
-    // Narrow cyan band (0–32% of period), dark gap (32–100%)
-    float barIntensity = smoothstep(0.0, 0.24, barT) * (1.0 - smoothstep(0.28, 0.55, barT));
-    vec3 barDark = vec3(0.055, 0.082, 0.18);    // #0e152e
-    vec3 barBright = vec3(0.45, 0.76, 0.76);    // hsl(180, 29%, 66%)
-    vec3 barColor = mix(barDark, barBright, barIntensity);
+    float barT = fract((barCoord + barOffset) * 4.0);  // More frequent bars
+
+    // Bright saturated gradient: medium cyan → bright cyan → medium cyan
+    // Peak at center of band (0.045 = 4.5% of 12% period)
+    float barIntensity = smoothstep(0.0, 0.038, barT) * smoothstep(0.10, 0.052, barT);
+    vec3 barMedium = vec3(0.60, 0.67, 0.67);    // hsl(180, 10%, 60%) - medium cyan
+    vec3 barBright = vec3(0.52, 0.85, 0.85);    // hsl(180, 50%, 68%) - bright saturated cyan
+    vec3 barColor = mix(barMedium, barBright, barIntensity);
 
     // CSS: background-blend-mode hard-light for bar layer
     rainbow = blendHardLight(rainbow, barColor);
 
+    // Apply glitter texture under the rainbow (creates sparkle base)
+    rainbow *= 0.7 + glitter * 0.3;
+
     // Apply spotlight
     rainbow *= 0.5 + spotlight * 0.5;
 
-    // CSS filter: brightness(pfc*0.4+0.5) contrast(2.5) saturate(0.66)
-    vec3 shine1 = adjustBrightness(rainbow, ptrBrightness);
-    shine1 = adjustContrast(shine1, 2.5);
-    shine1 = adjustSaturate(shine1, 1.0);
+    // CSS filter: brightness(.8) contrast(2.95) saturate(.65)
+    vec3 shine1 = adjustBrightness(rainbow, ptrBrightness * 1.0);
+    shine1 = adjustContrast(shine1, 2.95);
+    shine1 = adjustSaturate(shine1, 0.65);
     shine1 = clamp(shine1, 0.0, 1.0);
 
     // ── SHINE LAYER 2: Shifted copy (exclusion blend) ─
     // CSS :after: inverted positions, mix-blend-mode: exclusion
-    float rainbow2T = uv.y * 8.0
+    float rainbow2T = uv.y * 5.0
         + ((0.5 - bgY) * -2.5)
         + cos(uTime * 0.25) * 0.04;
     vec3 rainbow2 = sunpillarGradient(rainbow2T);
 
-    // Inverted bar offset
+    // Inverted bar offset for second layer
     float barOffset2 = ((0.5 - bgX) * -0.9) - (bgY * 0.75);
-    float barT2 = fract((barCoord + barOffset2) * 4.0);
-    float barIntensity2 = smoothstep(0.0, 0.24, barT2) * (1.0 - smoothstep(0.28, 0.55, barT2));
-    vec3 barColor2 = mix(barDark, barBright, barIntensity2);
+    float barT2 = fract((barCoord + barOffset2) * 6.0);
+    float barIntensity2 = smoothstep(0.0, 0.045, barT2) * smoothstep(0.12, 0.055, barT2);
+    vec3 barColor2 = mix(barMedium, barBright, barIntensity2);
     rainbow2 = blendHardLight(rainbow2, barColor2);
+
+    // Apply glitter texture to second layer as well
+    //rainbow2 *= 0.7 + glitter * 0.3;
+
     rainbow2 *= 0.5 + spotlight * 0.5;
 
-    // CSS :after filter: brightness(pfc*0.4+0.5) contrast(1.66) saturate(1.0)
+    // CSS :after filter: brightness(1) contrast(2.5) saturate(1.75)
     vec3 shine2 = adjustBrightness(rainbow2, ptrBrightness);
-    shine2 = adjustContrast(shine2, 1.66);
-    shine2 = adjustSaturate(shine2, 1.0);
+    shine2 = adjustContrast(shine2, 1.5);
+    shine2 = adjustSaturate(shine2, 1.75);
     shine2 = clamp(shine2, 0.0, 1.0);
 
     // ── GLARE: Warm-to-cool radial (hard-light) ─────
@@ -167,7 +180,7 @@ void main() {
     glare = mix(glare, glareWarm, glareMix2);
 
     // CSS filter: brightness(0.8)
-    glare = adjustBrightness(glare, 1.0);
+    glare = adjustBrightness(glare, 0.8);
     glare = clamp(glare, 0.0, 1.0);
 
     // ── Compose layers ───────────────────────────────
@@ -179,13 +192,14 @@ void main() {
         // Shine 1: color-dodge
         result = mix(result, blendColorDodge(result, shine1), mask * uCardOpacity);
 
-        // Shine 2: exclusion (CSS :after mix-blend-mode)
-        result = mix(result, blendExclusion(result, shine2), mask * uCardOpacity);
+        // Shine 2: soft-light (CSS :after mix-blend-mode: soft-light)
+        result = mix(result, blendSoftLight(result, shine2), mask * uCardOpacity * 0.9);
 
         // Glare: hard-light (CSS .card__glare mix-blend-mode)
-        result = mix(result, blendHardLight(result, glare), mask * uCardOpacity * 0.8);
+        result = mix(result, blendHardLight(result, glare), mask * uCardOpacity * 0.4);
     }
 
+    // TODO: remove this part once Full Art Rare and Full ARt Trainer are implemented
     // ── FOIL: Etched foil shimmer ────────────────────
     if (foil > 0.01) {
         // Diagonal rainbow driven by UV and viewing angle
