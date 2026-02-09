@@ -27,9 +27,9 @@ export const useAppStore = defineStore('app', () => {
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
-  const currentCardId = ref('202')
+  const currentCardId = ref('171')
   const cardDisplayMode = ref<CardDisplayMode>('single')
-  const shaderStyle = ref<ShaderStyle>('holo')
+  const shaderStyle = ref<ShaderStyle>('illustration-rare')
   const sceneSeed = ref(Date.now())
 
   // --- UI state ---
@@ -86,7 +86,7 @@ export const useAppStore = defineStore('app', () => {
     })
     config.holoIntensity = CARD_DEFAULTS.holoIntensity / 100
     config.cardSpinSpeed = CARD_DEFAULTS.cardSpinSpeed
-    currentCardId.value = '202'
+    currentCardId.value = '171'
   }
 
   function randomizeSeed() {
@@ -98,7 +98,14 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function toggleShaderStyle() {
-    shaderStyle.value = shaderStyle.value === 'holo' ? 'parallax' : 'holo'
+    // Cycle through: illustration-rare -> regular-holo -> parallax -> illustration-rare
+    if (shaderStyle.value === 'illustration-rare') {
+      shaderStyle.value = 'regular-holo'
+    } else if (shaderStyle.value === 'regular-holo') {
+      shaderStyle.value = 'parallax'
+    } else {
+      shaderStyle.value = 'illustration-rare'
+    }
   }
 
   function togglePanel() {

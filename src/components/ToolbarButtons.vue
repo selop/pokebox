@@ -30,7 +30,13 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
     class="toolbar-btn shader-btn"
     @click="store.toggleShaderStyle()"
   >
-    {{ store.shaderStyle === 'holo' ? '&#x2728; Holo' : '&#x2734; Parallax' }}
+    {{
+      store.shaderStyle === 'illustration-rare'
+        ? '&#x2728; Illus. Rare'
+        : store.shaderStyle === 'regular-holo'
+          ? '&#x2606; Regular Holo'
+          : '&#x2734; Parallax'
+    }}
   </button>
   <button
     v-show="store.sceneMode === 'furniture'"

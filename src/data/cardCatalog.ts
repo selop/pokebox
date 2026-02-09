@@ -1,4 +1,4 @@
-import type { CardCatalogEntry } from '@/types'
+import type { CardCatalogEntry, HoloType } from '@/types'
 
 // Gen 1 Pokédex names (001–151)
 const POKEMON_NAMES: Record<string, string> = {
@@ -180,6 +180,11 @@ function getMaskType(num: number): MaskType {
   return 'foil_reverse_flat_silver'
 }
 
+function getHoloType(num: number): HoloType {
+  if (HOLO_SV_HOLO.has(num)) return 'regular-holo'
+  return 'illustration-rare'
+}
+
 function buildEntry(num: number): CardCatalogEntry {
   const id = String(num).padStart(3, '0')
   const name = POKEMON_NAMES[id]
@@ -194,6 +199,7 @@ function buildEntry(num: number): CardCatalogEntry {
     front: `cards/fronts/${id}_front_2x.webp`,
     mask: `cards/masks/${maskFile}`,
     foil: isEtched ? `cards/foils/${maskFile}` : '',
+    holoType: getHoloType(num),
   }
 }
 

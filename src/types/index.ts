@@ -26,6 +26,7 @@ export interface CardCatalogEntry {
   front: string // path relative to public/
   mask: string // path relative to public/
   foil: string // path relative to public/
+  holoType: HoloType // which holo shader to use
 }
 
 export interface EyePosition {
@@ -37,7 +38,8 @@ export interface EyePosition {
 export type SceneMode = 'furniture' | 'cards'
 export type RenderMode = 'xray' | 'solid'
 export type CardDisplayMode = 'single' | 'triple'
-export type ShaderStyle = 'holo' | 'parallax'
+export type ShaderStyle = 'illustration-rare' | 'regular-holo' | 'parallax'
+export type HoloType = 'illustration-rare' | 'regular-holo'
 
 export interface DerivedDimensions {
   screenW: number

@@ -22,6 +22,8 @@ import { CardNavigator } from '@/three/CardNavigator'
 import { MergeAnimator, SINGLE_CARD_SIZE } from '@/three/MergeAnimator'
 import { useCardLoader } from './useCardLoader'
 import { useMouseTilt } from './useMouseTilt'
+import { CARD_CATALOG } from '@/data/cardCatalog'
+import type { ShaderStyle } from '@/types'
 // Per-card offsets for staggering (x = fraction of spacing, z = fraction of boxD)
 const CARD_X_OFFSETS = [0.3, 0, -0.3]
 const CARD_Z_OFFSETS = [0.2, 0, -0.2]
@@ -49,6 +51,16 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     cardMeshes,
     () => mergeAnimator.reset(),
   )
+
+  // Helper to get the effective shader for a card
+  function getEffectiveShader(cardId: string): ShaderStyle {
+    // Parallax mode overrides per-card shader
+    if (store.shaderStyle === 'parallax') return 'parallax'
+
+    // Otherwise use the card's holoType
+    const card = CARD_CATALOG.find(c => c.id === cardId)
+    return card?.holoType || 'illustration-rare'
+  }
 
   function cardLayout() {
     const dims = store.dimensions
@@ -158,10 +170,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
             if (hasEffect) {
               // Layer 0 (front-left): full composited result (card + holo shader)
+              const effectiveShader = getEffectiveShader(id)
               const compositeMesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, {
                 ...store.config,
                 cardSize: SINGLE_CARD_SIZE,
-              }, store.shaderStyle)
+              }, effectiveShader)
               compositeMesh.geometry.dispose()
               compositeMesh.geometry = new PlaneGeometry(cardW, cardH)
               compositeMesh.position.set(centerX - xGap, cy, cz)
@@ -201,7 +214,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         store.displayCardIds.forEach((id: string, i: number) => {
           const tex = cardLoader!.get(id)
           if (!tex) return
-          const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config, store.shaderStyle)
+          const effectiveShader = getEffectiveShader(id)
+          const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config, effectiveShader)
           const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
           mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
           mesh.rotation.y = baseRotY

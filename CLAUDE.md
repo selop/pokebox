@@ -21,10 +21,19 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 1. **Face tracking** (`useFaceTracking`) polls MediaPipe for head position → writes to `store.targetEye`
 2. **Scene loop** (`useThreeScene.animate`) smoothly interpolates eye position, computes off-axis projection matrix, updates shader uniforms per frame
 3. **Off-axis camera** maps real-world eye coordinates to an asymmetric frustum so the 3D scene responds to head movement
-4. **Card shader** (`holo.frag`) composites multiple effect layers driven by the eye-to-card vector:
-   - **Mask layer** (holo): rainbow sunpillar gradient + scanlines + diagonal bars + spotlight, blended via color-dodge / soft-light / overlay
-   - **Foil layer** (etched): diagonal rainbow with high-frequency grain, blended via color-dodge + specular overlay
-   - Both are masked by separate grayscale textures (`uMaskTex`, `uFoilTex`)
+4. **Card shaders** — Each card uses one of two holo shader types, automatically selected based on card type:
+   - **Illustration Rare** (`illustration-rare.frag`): Multiple vertical rainbow bands with diagonal bars + glare, matching Pokémon illustration rare holo cards
+   - **Regular Holo** (`regular-holo.frag`): Diagonal rainbow gradient with rotating bar patterns + layered radial glare, matching standard holo cards
+   - **Parallax** (`parallax.frag`): Alternative shader with parallax offset effect (global toggle)
+   - Both holo types use the same uniforms and are masked by grayscale textures (`uMaskTex`, `uFoilTex`)
+
+### Shader selection logic
+
+- Cards are assigned a `holoType` in `cardCatalog.ts` based on their card number:
+  - Cards in `HOLO_SV_HOLO` set → `'regular-holo'`
+  - Cards in `HOLO_SUN_PILLAR` set → `'illustration-rare'`
+- The global shader toggle (H key / toolbar button) can override to `'parallax'` mode for all cards
+- When not in parallax mode, each card uses its assigned `holoType`
 
 ### Key modules
 
@@ -39,12 +48,13 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 
 ### Card catalog & texture system
 
-Each `CardCatalogEntry` defines three texture paths (relative to `public/`):
+Each `CardCatalogEntry` defines texture paths and shader type (relative to `public/`):
 - `front` — base card image
 - `mask` — grayscale holo area mask (white = rainbow effect)
 - `foil` — grayscale etched foil mask (empty string = no foil)
+- `holoType` — which holo shader to use: `'illustration-rare'` or `'regular-holo'`
 
-`useCardLoader` loads all non-empty textures in parallel and resolves when all are ready. `buildCardMesh` uses `ShaderMaterial` when any effect texture is present, otherwise falls back to `MeshBasicMaterial`.
+`useCardLoader` loads all non-empty textures in parallel and resolves when all are ready. `buildCardMesh` uses `ShaderMaterial` when any effect texture is present (selecting the appropriate fragment shader based on `holoType`), otherwise falls back to `MeshBasicMaterial`.
 
 ### State-driven rebuilds
 
