@@ -203,21 +203,36 @@ function getHoloType(num: number): HoloType {
   return 'illustration-rare'
 }
 
+// Helper to determine mask suffix for new file format
+function getMaskSuffix(num: number): 'ph' | 'std' {
+  // Cards with _std suffix in new format (based on file listing)
+  const stdCards = new Set([
+    3, 6, 9, 15, 24, 26, 34, 38, 40, 45, 65, 68, 76, 85, 94, 101, 105, 110, 113, 115, 121, 122, 124,
+    130, 132, 134, 135, 136, 139, 141, 142, 144, 145, 146, 149, 150, 151,
+    ...Array.from({ length: 42 }, (_, i) => 166 + i), // 166-207 all use std
+  ])
+  return stdCards.has(num) ? 'std' : 'ph'
+}
+
 function buildEntry(num: number): CardCatalogEntry {
   const id = String(num).padStart(3, '0')
   const name = POKEMON_NAMES[id]
   const label = name ? `#${id} ${name}` : `#${id}`
   const maskType = getMaskType(num)
-  const maskFile = `${id}_${maskType}_2x.webp`
   const isEtched = maskType.includes('etched')
   const holoType = getHoloType(num)
+
+  // Use new file naming pattern (sv3-5_en format)
+  const maskSuffix = getMaskSuffix(num)
+  const maskFile = `sv3-5_en_${id}_${maskSuffix}.foil_up.webp`
+  const foilFile = `sv3-5_en_${id}_std.etch_4x.webp`
 
   const entry: CardCatalogEntry = {
     id,
     label,
     front: `cards/fronts/${id}_front_2x.webp`,
-    mask: `cards/masks/${maskFile}`,
-    foil: isEtched ? `cards/foils/${maskFile}` : '',
+    mask: `cards/holo-masks/${maskFile}`,
+    foil: isEtched ? `cards/etch-foils/${foilFile}` : '',
     holoType,
   }
 

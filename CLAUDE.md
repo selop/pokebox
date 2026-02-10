@@ -58,8 +58,8 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 Each `CardCatalogEntry` defines texture paths and shader type (relative to `public/`):
 
 - `front` — base card image
-- `mask` — grayscale holo area mask (white = rainbow effect)
-- `foil` — grayscale etched foil mask (empty string = no foil; used by special illustration rare for glitter overlay)
+- `mask` — grayscale holo area mask (white = holographic effect area; stored in `cards/holo-masks/`)
+- `foil` — grayscale etched foil texture (empty string = no etch; stored in `cards/etch-foils/`)
 - `holoType` — which holo shader to use: `'illustration-rare'`, `'regular-holo'`, or `'special-illustration-rare'`
 
 `useCardLoader` loads all non-empty textures in parallel and resolves when all are ready. `buildCardMesh` uses `ShaderMaterial` when any effect texture is present (selecting the appropriate fragment shader based on `holoType`), otherwise falls back to `MeshBasicMaterial`.
@@ -77,6 +77,6 @@ The scene watches store properties and rebuilds accordingly:
 - Path alias `@/` → `src/`
 - Shader uniforms prefixed `u` (e.g. `uCardTex`), varyings prefixed `v` (e.g. `vUv`)
 - Use `shallowRef` for Three.js objects to avoid deep reactivity overhead
-- Card assets live under `public/cards/{fronts,masks,foils}/`
+- Card assets live under `public/cards/{fronts,holo-masks,etch-foils}/`
 - Seeded PRNG (`mulberry32`) for reproducible procedural layouts
 - MediaPipe is dynamically imported to avoid bundling the full library
