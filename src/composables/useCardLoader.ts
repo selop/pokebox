@@ -191,5 +191,17 @@ export function useCardLoader(renderer: WebGLRenderer) {
     return cardBackTexture
   }
 
-  return { loadCard, loadCards, get, loadIriTextures, getIriTextures, loadBirthdayTextures, getBirthdayTextures, loadGlitterTexture, getGlitterTexture, loadCardBackTexture, getCardBackTexture }
+  return {
+    loadCard,
+    loadCards,
+    get,
+    loadIriTextures,
+    getIriTextures,
+    loadBirthdayTextures,
+    getBirthdayTextures,
+    loadGlitterTexture,
+    getGlitterTexture,
+    loadCardBackTexture,
+    getCardBackTexture,
+  }
 }

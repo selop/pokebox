@@ -27,13 +27,14 @@ export const useAppStore = defineStore('app', () => {
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
-  const currentCardId = ref('006')
+  const currentCardId = ref('170')
   const cardDisplayMode = ref<CardDisplayMode>('single')
   const shaderStyle = ref<ShaderStyle>('illustration-rare')
   const sceneSeed = ref(Date.now())
 
   // --- UI state ---
   const isPanelOpen = ref(false)
+  const isShaderPanelOpen = ref(false)
   const isTrackingActive = ref(false)
   const statusText = ref('Waiting for camera')
   const showInstructions = ref(true)
@@ -86,7 +87,7 @@ export const useAppStore = defineStore('app', () => {
     })
     config.holoIntensity = CARD_DEFAULTS.holoIntensity / 100
     config.cardSpinSpeed = CARD_DEFAULTS.cardSpinSpeed
-    currentCardId.value = '006'
+    currentCardId.value = '170'
   }
 
   function randomizeSeed() {
@@ -98,7 +99,7 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function toggleShaderStyle() {
-    // Cycle through: illustration-rare -> regular-holo -> special-illustration-rare -> double-rare -> ultra-rare -> parallax -> illustration-rare
+    // Cycle through: illustration-rare -> regular-holo -> special-illustration-rare -> double-rare -> ultra-rare -> parallax -> metallic -> illustration-rare
     if (shaderStyle.value === 'illustration-rare') {
       shaderStyle.value = 'regular-holo'
     } else if (shaderStyle.value === 'regular-holo') {
@@ -109,6 +110,8 @@ export const useAppStore = defineStore('app', () => {
       shaderStyle.value = 'ultra-rare'
     } else if (shaderStyle.value === 'ultra-rare') {
       shaderStyle.value = 'parallax'
+    } else if (shaderStyle.value === 'parallax') {
+      shaderStyle.value = 'metallic'
     } else {
       shaderStyle.value = 'illustration-rare'
     }
@@ -116,6 +119,10 @@ export const useAppStore = defineStore('app', () => {
 
   function togglePanel() {
     isPanelOpen.value = !isPanelOpen.value
+  }
+
+  function toggleShaderPanel() {
+    isShaderPanelOpen.value = !isShaderPanelOpen.value
   }
 
   function setSceneMode(mode: SceneMode) {
@@ -134,6 +141,7 @@ export const useAppStore = defineStore('app', () => {
     shaderStyle,
     sceneSeed,
     isPanelOpen,
+    isShaderPanelOpen,
     isTrackingActive,
     statusText,
     showInstructions,
@@ -149,6 +157,7 @@ export const useAppStore = defineStore('app', () => {
     toggleRenderMode,
     toggleShaderStyle,
     togglePanel,
+    toggleShaderPanel,
     setSceneMode,
   }
 })

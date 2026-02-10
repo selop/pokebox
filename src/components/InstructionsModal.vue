@@ -25,21 +25,23 @@ function onClose() {
     <button class="close-btn" @click="onClose" aria-label="Close">×</button>
     <h2>Virtual Pokebox Demo</h2>
     <p>
-      This demonstrates off-axis perspective projection. Your webcam tracks your head
-      position and renders a 3D box behind the screen. Move your head to peek around
-      the edges — like looking through a window into a real box.
+      This demonstrates off-axis perspective projection. Your webcam tracks your head position and
+      renders a 3D box behind the screen. Move your head to peek around the edges — like looking
+      through a window into a real box.
     </p>
     <div class="scene-select-wrapper">
       <label>Scene</label>
-      <select class="cal-select scene-select" :value="store.sceneMode" @change="onSceneChange(($event.target as HTMLSelectElement).value)">
+      <select
+        class="cal-select scene-select"
+        :value="store.sceneMode"
+        @change="onSceneChange(($event.target as HTMLSelectElement).value)"
+      >
         <option value="furniture">Furnished Room</option>
         <option value="cards">Pokemon Cards</option>
       </select>
     </div>
     <button class="start-btn" @click="onStart">Enable Camera</button>
-    <p class="keyboard-hint">
-      Or use arrow keys + W/S to test without camera
-    </p>
+    <p class="keyboard-hint">Or use arrow keys + W/S to test without camera</p>
   </div>
 </template>
 
@@ -159,7 +161,9 @@ function onClose() {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .close-btn:hover {

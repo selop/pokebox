@@ -127,10 +127,10 @@ void main() {
     float angle2 = (uRotateX - rotateDelta) * 1.45;
 
     // First gradient: angle1, position bgY * 1.7
-    vec3 grad1 = linearGradient(uv, angle1, bgY * 1.7);
+    vec3 grad1 = linearGradient(uv, angle1, bgY * 1.6);
 
     // Second gradient: angle2, position bgY * -1.3
-    vec3 grad2 = linearGradient(uv, angle2, bgY * -1.3);
+    vec3 grad2 = linearGradient(uv, angle2, bgY * -0.7);
 
     // Exclusion blend between gradients
     vec3 shineAfter = blendExclusion(grad1, grad2);
@@ -176,8 +176,8 @@ void main() {
             (uPointerFromTop - 0.5) * shift * 2.0
         );
         vec3 iri7 = texture2D(uIri7Tex, shiftedUV * (1000.0 / 150.0)).rgb;
-        iri7 = adjustBrightness(iri7, 2.0);
-        iri7 = adjustContrast(iri7, 1.2);
+        iri7 = adjustBrightness(iri7, 1.0);
+        iri7 = adjustContrast(iri7, 0.5);
         iri7 = adjustSaturate(iri7, 2.0);
         glitterAfter = iri7;
     }
@@ -202,15 +202,15 @@ void main() {
     if (mask > 0.01) {
         // Base shine filter: brightness(.6) contrast(1.5) saturate(1)
         vec3 shineBase = result;
-        shineBase = adjustBrightness(shineBase, 2.6);
-        shineBase = adjustContrast(shineBase, 2.9);
-        shineBase = adjustSaturate(shineBase, 1.2);
+        shineBase = adjustBrightness(shineBase, 3.0);
+        shineBase = adjustContrast(shineBase, 1.0);
+        shineBase = adjustSaturate(shineBase, 2.2);
 
         // Apply shine before (overlay)
         shineBase = mix(shineBase, blendOverlay(shineBase, shineBefore), effectStrength);
 
         // Apply shine after (hard-light)
-        result = mix(result, blendHardLight(shineBase, shineAfter), effectStrength);
+        result = mix(result, blendHardLight(shineBase, shineAfter), effectStrength * uCardOpacity);
 
         // Apply glitter (plus-lighter) with mask
         result = mix(result, blendPlusLighter(result, glitter), effectStrength * glitterOpacity);

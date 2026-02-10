@@ -11,6 +11,21 @@ export interface AppConfig {
   cardSpinSpeed: number
   nearPlane: number
   farPlane: number
+  // Illustration Rare shader parameters
+  illustRareRainbowScale: number
+  illustRareBarAngle: number
+  illustRareBarDensity: number
+  illustRareBarWidth: number
+  illustRareBarIntensity: number
+  illustRareBarHue: number
+  illustRareBarMediumSaturation: number
+  illustRareBarMediumLightness: number
+  illustRareBarBrightSaturation: number
+  illustRareBarBrightLightness: number
+  illustRareShine1Contrast: number
+  illustRareShine1Saturation: number
+  illustRareShine2Opacity: number
+  illustRareGlareOpacity: number
 }
 
 export interface CardTransform {
@@ -48,6 +63,7 @@ export type ShaderStyle =
   | 'double-rare'
   | 'ultra-rare'
   | 'parallax'
+  | 'metallic'
 export type HoloType =
   | 'illustration-rare'
   | 'regular-holo'

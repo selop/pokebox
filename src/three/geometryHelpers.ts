@@ -56,10 +56,7 @@ export function solidOrWireEdges(
 ): Mesh | LineSegments {
   if (renderMode === 'solid') {
     const color = lineMat.color ? lineMat.color.getHex() : 0x888888
-    const m = new Mesh(
-      geo,
-      new MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.15 }),
-    )
+    const m = new Mesh(geo, new MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.15 }))
     m.castShadow = true
     m.receiveShadow = true
     return m

@@ -6,6 +6,7 @@ import StatusIndicator from './components/StatusIndicator.vue'
 import TrackingData from './components/TrackingData.vue'
 import ToolbarButtons from './components/ToolbarButtons.vue'
 import CalibrationPanel from './components/CalibrationPanel.vue'
+import ShaderControlsPanel from './components/ShaderControlsPanel.vue'
 import InstructionsModal from './components/InstructionsModal.vue'
 import CardSearch from './components/CardSearch.vue'
 import { useFaceTracking } from './composables/useFaceTracking'
@@ -35,6 +36,7 @@ function onEnableCamera() {
   <TrackingData />
   <ToolbarButtons />
   <CalibrationPanel />
+  <ShaderControlsPanel />
   <CardSearch />
   <InstructionsModal @enable-camera="onEnableCamera" />
 </template>

@@ -39,8 +39,19 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
             ? '&#x2747; Special IR'
             : store.shaderStyle === 'double-rare'
               ? '&#x2605; Double Rare'
-              : '&#x2734; Parallax'
+              : store.shaderStyle === 'ultra-rare'
+                ? '&#x2605; Ultra Rare'
+                : store.shaderStyle === 'parallax'
+                  ? '&#x2734; Parallax'
+                  : '&#x2694; Metallic'
     }}
+  </button>
+  <button
+    v-show="store.sceneMode === 'cards'"
+    class="toolbar-btn shader-controls-btn"
+    @click="store.toggleShaderPanel()"
+  >
+    &#x2699; Shader
   </button>
   <button
     v-show="store.sceneMode === 'furniture'"
@@ -99,6 +110,9 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 }
 .shader-btn {
   left: 440px;
+}
+.shader-controls-btn {
+  left: 570px;
 }
 .randomize-btn {
   left: 350px;

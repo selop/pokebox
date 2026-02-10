@@ -164,6 +164,6 @@ export function buildBoxShell(
   })
 
   // ── Ambient light (only light source) ──
-  const ambIntensity = renderMode === 'solid' ? 0.1 : 0.5
+  const ambIntensity = renderMode === 'solid' ? 0.05 : 0.5
   scene.add(new AmbientLight(0xffffff, ambIntensity))
 }

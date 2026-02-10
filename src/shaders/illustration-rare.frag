@@ -14,6 +14,22 @@ uniform float uCardOpacity;  // holo intensity 0-1
 uniform float uTime;
 uniform float uFade;         // overall card opacity 0-1 (for transitions)
 
+// Illustration Rare shader parameters
+uniform float uRainbowScale;
+uniform float uBarAngle;
+uniform float uBarDensity;
+uniform float uBarWidth;
+uniform float uBarIntensity;
+uniform float uBarHue;
+uniform float uBarMediumSaturation;
+uniform float uBarMediumLightness;
+uniform float uBarBrightSaturation;
+uniform float uBarBrightLightness;
+uniform float uShine1Contrast;
+uniform float uShine1Saturation;
+uniform float uShine2Opacity;
+uniform float uGlareOpacity;
+
 varying vec2 vUv;
 
 // ── Blend modes (matching CSS blend modes) ──────────
@@ -38,6 +54,30 @@ vec3 blendScreen(vec3 base, vec3 blend) {
 }
 vec3 blendExclusion(vec3 base, vec3 blend) {
     return base + blend - 2.0 * base * blend;
+}
+
+// ── HSL to RGB conversion ────────────────────────────
+vec3 hslToRgb(float h, float s, float l) {
+    float c = (1.0 - abs(2.0 * l - 1.0)) * s;
+    float x = c * (1.0 - abs(mod(h / 60.0, 2.0) - 1.0));
+    float m = l - c / 2.0;
+
+    vec3 rgb;
+    if (h < 60.0) {
+        rgb = vec3(c, x, 0.0);
+    } else if (h < 120.0) {
+        rgb = vec3(x, c, 0.0);
+    } else if (h < 180.0) {
+        rgb = vec3(0.0, c, x);
+    } else if (h < 240.0) {
+        rgb = vec3(0.0, x, c);
+    } else if (h < 300.0) {
+        rgb = vec3(x, 0.0, c);
+    } else {
+        rgb = vec3(c, 0.0, x);
+    }
+
+    return rgb + m;
 }
 
 // ── Filter helpers ───────────────────────────────────
@@ -107,28 +147,33 @@ void main() {
 
     // Radial spotlight from pointer (shared by holo & foil)
     float spotDist = length(uv - vec2(ptrX, ptrY));
-    float spotlight = 1.0 - smoothstep(0.0, 0.8, spotDist);
+    float spotlight = 0.75 - smoothstep(0.1, 0.9, spotDist);
 
     // ── SHINE LAYER 1: Rainbow + bars (color-dodge) ──
     // CSS: repeating sunpillar gradient (0deg, 200% 700% ≈ 3.5 vertical repeats)
-    float rainbowT = uv.y * 2.0
+    float rainbowT = uv.y * uRainbowScale
         + ((0.5 - bgY) * 3.5)
         + sin(uTime * 0.3) * 0.05;
     vec3 rainbow = sunpillarGradient(rainbowT);
 
     // CSS: repeating-linear-gradient(133deg, bright saturated diagonal bars)
-    // Pattern: medium → bright peak → medium (narrow bright bands)
-    float barAngle = 133.0 * 3.14159 / 180.0;
+    // Pattern matching double-rare spacing with illustration-rare colors
+    float barAngle = uBarAngle * 3.14159 / 180.0;
     float barCoord = dot(uv, vec2(cos(barAngle), sin(barAngle)));
-    float barOffset = ((0.5 - bgX) * 1.65) + (bgY * 0.5);
-    float barT = fract((barCoord + barOffset) * 2.0);  // More frequent bars
+    float barT = fract((barCoord + bgX + bgY) * uBarDensity); // 300% x 100%
 
-    // Bright saturated gradient: medium cyan → bright cyan → medium cyan
-    // Peak at center of band (0.045 = 4.5% of 12% period)
-    float barIntensity = smoothstep(0.0, 0.038, barT) * smoothstep(0.10, 0.052, barT);
-    vec3 barMedium = vec3(0.60, 0.67, 0.67);    // hsl(180, 10%, 60%) - medium cyan
-    vec3 barBright = vec3(0.52, 0.85, 0.85);    // hsl(180, 50%, 68%) - bright saturated cyan
-    vec3 barColor = mix(barMedium, barBright, barIntensity);
+    // Bar pattern: controllable HSL colors
+    vec3 barMedium = hslToRgb(uBarHue, uBarMediumSaturation, uBarMediumLightness);
+    vec3 barBright = hslToRgb(uBarHue, uBarBrightSaturation, uBarBrightLightness);
+
+    // Bar width control via adjustable smoothstep ranges
+    float barEdge1 = 0.028 * uBarWidth;
+    float barEdge2 = 0.035 * uBarWidth;
+    float barEdge3 = 0.042 * uBarWidth;
+    float barIntensity = smoothstep(0.0, barEdge1, barT) * (1.0 - smoothstep(barEdge2, barEdge3, barT));
+
+    // Mix bar colors with intensity control
+    vec3 barColor = mix(barMedium, barBright, barIntensity * uBarIntensity);
 
     // CSS: background-blend-mode hard-light for bar layer
     rainbow = blendHardLight(rainbow, barColor);
@@ -141,21 +186,20 @@ void main() {
 
     // CSS filter: brightness(.8) contrast(2.95) saturate(.65)
     vec3 shine1 = adjustBrightness(rainbow, ptrBrightness * 1.0);
-    shine1 = adjustContrast(shine1, 2.95);
-    shine1 = adjustSaturate(shine1, 0.65);
+    shine1 = adjustContrast(shine1, uShine1Contrast);
+    shine1 = adjustSaturate(shine1, uShine1Saturation);
     shine1 = clamp(shine1, 0.0, 1.0);
 
     // ── SHINE LAYER 2: Shifted copy (exclusion blend) ─
     // CSS :after: inverted positions, mix-blend-mode: exclusion
-    float rainbow2T = uv.y * 5.0
+    float rainbow2T = uv.y * (uRainbowScale * 2.5)
         + ((0.5 - bgY) * -2.5)
         + cos(uTime * 0.25) * 0.04;
     vec3 rainbow2 = sunpillarGradient(rainbow2T);
 
-    // Inverted bar offset for second layer
-    float barOffset2 = ((0.5 - bgX) * -0.9) - (bgY * 0.75);
-    float barT2 = fract((barCoord + barOffset2) * 6.0);
-    float barIntensity2 = smoothstep(0.0, 0.045, barT2) * smoothstep(0.12, 0.055, barT2);
+    // Inverted bar offset for second layer (matching double-rare pattern)
+    float barT2 = fract((barCoord - bgX - bgY) * uBarDensity);
+    float barIntensity2 = smoothstep(0.0, 0.028, barT2) * (1.0 - smoothstep(0.035, 0.042, barT2));
     vec3 barColor2 = mix(barMedium, barBright, barIntensity2);
     rainbow2 = blendHardLight(rainbow2, barColor2);
 
@@ -195,10 +239,10 @@ void main() {
         result = mix(result, blendColorDodge(result, shine1), mask * uCardOpacity);
 
         // Shine 2: soft-light (CSS :after mix-blend-mode: soft-light)
-        result = mix(result, blendSoftLight(result, shine2), mask * uCardOpacity * 0.9);
+        result = mix(result, blendSoftLight(result, shine2), mask * uCardOpacity * uShine2Opacity);
 
         // Glare: hard-light (CSS .card__glare mix-blend-mode)
-        result = mix(result, blendHardLight(result, glare), mask * uCardOpacity * 0.4);
+        result = mix(result, blendHardLight(result, glare), mask * uCardOpacity * uGlareOpacity);
     }
 
     // TODO: remove this part once Full Art Rare and Full ARt Trainer are implemented

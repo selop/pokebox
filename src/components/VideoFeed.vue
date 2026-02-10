@@ -12,7 +12,7 @@ defineExpose({ videoEl })
 <style scoped>
 .video-feed {
   position: fixed;
-  bottom: 80%;
+  bottom: 5%;
   right: 20px;
   width: 160px;
   height: 120px;

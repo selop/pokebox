@@ -18,12 +18,16 @@ import specialIllustrationRareFrag from '@/shaders/special-illustration-rare.fra
 import doubleRareFrag from '@/shaders/double-rare.frag'
 import ultraRareFrag from '@/shaders/ultra-rare.frag'
 import parallaxFrag from '@/shaders/parallax.frag'
+import metallicFrag from '@/shaders/metallic.frag'
 
 export const CARD_ASPECT = 733 / 1024 // width / height
 
 const blackPixel = new DataTexture(
   new Uint8Array([0, 0, 0, 255]),
-  1, 1, RGBAFormat, UnsignedByteType,
+  1,
+  1,
+  RGBAFormat,
+  UnsignedByteType,
 )
 blackPixel.needsUpdate = true
 
@@ -49,6 +53,8 @@ export function buildCardMesh(
     let fragmentShader = illustrationRareFrag
     if (shaderStyle === 'parallax') {
       fragmentShader = parallaxFrag
+    } else if (shaderStyle === 'metallic') {
+      fragmentShader = metallicFrag
     } else if (shaderStyle === 'regular-holo') {
       fragmentShader = regularHoloFrag
     } else if (shaderStyle === 'special-illustration-rare') {
@@ -78,6 +84,24 @@ export function buildCardMesh(
       uTime: { value: 0.0 },
       uFade: { value: 1.0 },
       uRotateX: { value: 0.0 },
+    }
+
+    // Add illustration-rare shader-specific uniforms
+    if (shaderStyle === 'illustration-rare') {
+      uniforms.uRainbowScale = { value: config.illustRareRainbowScale }
+      uniforms.uBarAngle = { value: config.illustRareBarAngle }
+      uniforms.uBarDensity = { value: config.illustRareBarDensity }
+      uniforms.uBarWidth = { value: config.illustRareBarWidth }
+      uniforms.uBarIntensity = { value: config.illustRareBarIntensity }
+      uniforms.uBarHue = { value: config.illustRareBarHue }
+      uniforms.uBarMediumSaturation = { value: config.illustRareBarMediumSaturation }
+      uniforms.uBarMediumLightness = { value: config.illustRareBarMediumLightness }
+      uniforms.uBarBrightSaturation = { value: config.illustRareBarBrightSaturation }
+      uniforms.uBarBrightLightness = { value: config.illustRareBarBrightLightness }
+      uniforms.uShine1Contrast = { value: config.illustRareShine1Contrast }
+      uniforms.uShine1Saturation = { value: config.illustRareShine1Saturation }
+      uniforms.uShine2Opacity = { value: config.illustRareShine2Opacity }
+      uniforms.uGlareOpacity = { value: config.illustRareGlareOpacity }
     }
 
     // Add iridescent textures for special illustration rare shader

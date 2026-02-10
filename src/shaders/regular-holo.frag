@@ -118,7 +118,7 @@ void main() {
     // CSS: background-blend-mode: overlay
     // CSS: filter: brightness(1.25) contrast(3) saturate(0.75)
     // CSS: mix-blend-mode: overlay
-    vec3 shine = adjustBrightness(rainbow, 1.25);
+    vec3 shine = adjustBrightness(rainbow, 1.5);
     shine = adjustContrast(shine, 3.0);
     shine = adjustSaturate(shine, 0.75);
     shine = clamp(shine, 0.0, 1.0);

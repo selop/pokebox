@@ -61,7 +61,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     if (store.shaderStyle === 'parallax') return 'parallax'
 
     // Otherwise use the card's holoType
-    const card = CARD_CATALOG.find(c => c.id === cardId)
+    const card = CARD_CATALOG.find((c) => c.id === cardId)
     return card?.holoType || 'illustration-rare'
   }
 
@@ -193,18 +193,29 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
             if (hasEffect) {
               // Layer 0 (front-left): full composited result (card + holo shader)
               const effectiveShader = getEffectiveShader(id)
-              const iriTextures = (effectiveShader === 'special-illustration-rare' || effectiveShader === 'ultra-rare')
-                ? cardLoader!.getIriTextures()
-                : null
-              const birthdayTextures = effectiveShader === 'double-rare'
-                ? cardLoader!.getBirthdayTextures()
-                : null
+              const iriTextures =
+                effectiveShader === 'special-illustration-rare' || effectiveShader === 'ultra-rare'
+                  ? cardLoader!.getIriTextures()
+                  : null
+              const birthdayTextures =
+                effectiveShader === 'double-rare' ? cardLoader!.getBirthdayTextures() : null
               const glitterTexture = cardLoader!.getGlitterTexture()
               const cardBackTexture = cardLoader!.getCardBackTexture()
-              const compositeMesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, {
-                ...store.config,
-                cardSize: SINGLE_CARD_SIZE,
-              }, effectiveShader, iriTextures, birthdayTextures, glitterTexture, cardBackTexture)
+              const compositeMesh = buildCardMesh(
+                dims,
+                tex.card,
+                tex.mask,
+                tex.foil,
+                {
+                  ...store.config,
+                  cardSize: SINGLE_CARD_SIZE,
+                },
+                effectiveShader,
+                iriTextures,
+                birthdayTextures,
+                glitterTexture,
+                cardBackTexture,
+              )
               compositeMesh.geometry.dispose()
               compositeMesh.geometry = new PlaneGeometry(cardW, cardH)
               compositeMesh.position.set(centerX - xGap, cy, cz)
@@ -232,7 +243,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
               side: DoubleSide,
             })
             const frontMesh = new Mesh(new PlaneGeometry(cardW, cardH), cardMat)
-            frontMesh.position.set(centerX + (hasEffect ? xGap : 0), cy, hasEffect ? cz - zGap * 2 : cz)
+            frontMesh.position.set(
+              centerX + (hasEffect ? xGap : 0),
+              cy,
+              hasEffect ? cz - zGap * 2 : cz,
+            )
             frontMesh.rotation.y = baseRotY
             scene!.add(frontMesh)
             meshes.push(frontMesh)
@@ -245,15 +260,26 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           const tex = cardLoader!.get(id)
           if (!tex) return
           const effectiveShader = getEffectiveShader(id)
-          const iriTextures = (effectiveShader === 'special-illustration-rare' || effectiveShader === 'ultra-rare')
-            ? cardLoader!.getIriTextures()
-            : null
-          const birthdayTextures = effectiveShader === 'double-rare'
-            ? cardLoader!.getBirthdayTextures()
-            : null
+          const iriTextures =
+            effectiveShader === 'special-illustration-rare' || effectiveShader === 'ultra-rare'
+              ? cardLoader!.getIriTextures()
+              : null
+          const birthdayTextures =
+            effectiveShader === 'double-rare' ? cardLoader!.getBirthdayTextures() : null
           const glitterTexture = cardLoader!.getGlitterTexture()
           const cardBackTexture = cardLoader!.getCardBackTexture()
-          const mesh = buildCardMesh(dims, tex.card, tex.mask, tex.foil, store.config, effectiveShader, iriTextures, birthdayTextures, glitterTexture, cardBackTexture)
+          const mesh = buildCardMesh(
+            dims,
+            tex.card,
+            tex.mask,
+            tex.foil,
+            store.config,
+            effectiveShader,
+            iriTextures,
+            birthdayTextures,
+            glitterTexture,
+            cardBackTexture,
+          )
           const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
           mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
           mesh.rotation.y = baseRotY
@@ -344,7 +370,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       const cardUp = new Vector3(0, 1, 0).applyQuaternion(mesh.quaternion)
 
       const dims = store.dimensions
-      const effectiveSize = store.cardDisplayMode === 'single' ? SINGLE_CARD_SIZE : store.config.cardSize
+      const effectiveSize =
+        store.cardDisplayMode === 'single' ? SINGLE_CARD_SIZE : store.config.cardSize
       const cardH = dims.screenH * effectiveSize
       const cardW = cardH * CARD_ASPECT
 
@@ -480,6 +507,203 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       for (const mesh of cardMeshes.value) {
         if ((mesh.material as ShaderMaterial).isShaderMaterial) {
           ;(mesh.material as ShaderMaterial).uniforms['uCardOpacity']!.value = val
+        }
+      }
+    },
+  )
+
+  // Watch illustration-rare shader parameters
+  watch(
+    () => store.config.illustRareRainbowScale,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uRainbowScale']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uRainbowScale']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarAngle,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarAngle']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarAngle']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarDensity,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarDensity']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarDensity']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarWidth,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarWidth']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarWidth']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarIntensity,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarIntensity']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensity']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarHue,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarHue']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarHue']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarMediumSaturation,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarMediumSaturation']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarMediumSaturation']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarMediumLightness,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarMediumLightness']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarMediumLightness']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarBrightSaturation,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarBrightSaturation']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarBrightSaturation']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarBrightLightness,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarBrightLightness']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarBrightLightness']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareShine1Contrast,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uShine1Contrast']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uShine1Contrast']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareShine1Saturation,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uShine1Saturation']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uShine1Saturation']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareShine2Opacity,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uShine2Opacity']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uShine2Opacity']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareGlareOpacity,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uGlareOpacity']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uGlareOpacity']!.value = val
         }
       }
     },

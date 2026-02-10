@@ -50,7 +50,7 @@ export class MergeAnimator {
     const cz = -(this.store.cardTransform.z / 100) * dims.boxD
 
     // Rotation offset when exploded: -42 degrees
-    const explodeRotation = (-42 * Math.PI / 180) * spread
+    const explodeRotation = ((-42 * Math.PI) / 180) * spread
 
     meshes.forEach((mesh, i) => {
       const xOff = (i - 1) * xGap * spread
