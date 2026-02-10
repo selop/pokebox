@@ -28,6 +28,24 @@ export const DEFAULT_CONFIG: AppConfig = {
   illustRareShine1Saturation: 0.3,
   illustRareShine2Opacity: 0.9,
   illustRareGlareOpacity: 0.3,
+  // Ultra Rare shader defaults (from shader hardcoded values)
+  ultraRareBaseBrightness: 1.0,
+  ultraRareShineBrightness: 0.65,
+  ultraRareShineContrast: 4.1,
+  ultraRareShineSaturation: 19.0,
+  ultraRareShineAfterBrightness: 2.3,
+  ultraRareShineAfterContrast: 1.6,
+  ultraRareShineAfterSaturation: 1.0,
+  ultraRareShineBaseBrightness: 2.15,
+  ultraRareShineBaseContrast: 1.0,
+  ultraRareShineBaseSaturation: 5.0,
+  ultraRareGlareContrast: 0.55,
+  ultraRareGlare2Contrast: 0.8,
+  ultraRareRotateDelta: 99.0,
+  ultraRareAngle1Mult: 0.65,
+  ultraRareAngle2Mult: 0.65,
+  ultraRareBgYMult1: 0.45,
+  ultraRareBgYMult2: 1.2,
 }
 
 export const DEFAULT_CARD: CardTransform = {

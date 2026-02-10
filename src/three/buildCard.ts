@@ -122,24 +122,6 @@ export function buildCardMesh(
       uniforms.uHasIri9 = { value: 0.0 }
     }
 
-    // Add iridescent textures for ultra rare shader
-    if (shaderStyle === 'ultra-rare' && iriTextures) {
-      uniforms.uIri7Tex = { value: iriTextures.iri7 }
-      uniforms.uIri8Tex = { value: iriTextures.iri8 }
-      uniforms.uIri9Tex = { value: iriTextures.iri9 }
-      uniforms.uHasIri7 = { value: 1.0 }
-      uniforms.uHasIri8 = { value: 1.0 }
-      uniforms.uHasIri9 = { value: 1.0 }
-    } else if (shaderStyle === 'ultra-rare') {
-      // Fallback to black pixels if textures not provided
-      uniforms.uIri7Tex = { value: blackPixel }
-      uniforms.uIri8Tex = { value: blackPixel }
-      uniforms.uIri9Tex = { value: blackPixel }
-      uniforms.uHasIri7 = { value: 0.0 }
-      uniforms.uHasIri8 = { value: 0.0 }
-      uniforms.uHasIri9 = { value: 0.0 }
-    }
-
     // Add birthday textures for double rare shader
     if (shaderStyle === 'double-rare' && birthdayTextures) {
       uniforms.uBirthdayDankTex = { value: birthdayTextures.dank }
@@ -148,6 +130,27 @@ export function buildCardMesh(
       // Fallback to black pixels if textures not provided
       uniforms.uBirthdayDankTex = { value: blackPixel }
       uniforms.uBirthdayDank2Tex = { value: blackPixel }
+    }
+
+    // Add ultra-rare shader-specific uniforms
+    if (shaderStyle === 'ultra-rare') {
+      uniforms.uBaseBrightness = { value: config.ultraRareBaseBrightness }
+      uniforms.uShineBrightness = { value: config.ultraRareShineBrightness }
+      uniforms.uShineContrast = { value: config.ultraRareShineContrast }
+      uniforms.uShineSaturation = { value: config.ultraRareShineSaturation }
+      uniforms.uShineAfterBrightness = { value: config.ultraRareShineAfterBrightness }
+      uniforms.uShineAfterContrast = { value: config.ultraRareShineAfterContrast }
+      uniforms.uShineAfterSaturation = { value: config.ultraRareShineAfterSaturation }
+      uniforms.uShineBaseBrightness = { value: config.ultraRareShineBaseBrightness }
+      uniforms.uShineBaseContrast = { value: config.ultraRareShineBaseContrast }
+      uniforms.uShineBaseSaturation = { value: config.ultraRareShineBaseSaturation }
+      uniforms.uGlareContrast = { value: config.ultraRareGlareContrast }
+      uniforms.uGlare2Contrast = { value: config.ultraRareGlare2Contrast }
+      uniforms.uRotateDelta = { value: config.ultraRareRotateDelta }
+      uniforms.uAngle1Mult = { value: config.ultraRareAngle1Mult }
+      uniforms.uAngle2Mult = { value: config.ultraRareAngle2Mult }
+      uniforms.uBgYMult1 = { value: config.ultraRareBgYMult1 }
+      uniforms.uBgYMult2 = { value: config.ultraRareBgYMult2 }
     }
 
     cardMat = new ShaderMaterial({

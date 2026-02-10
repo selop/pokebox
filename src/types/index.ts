@@ -26,6 +26,24 @@ export interface AppConfig {
   illustRareShine1Saturation: number
   illustRareShine2Opacity: number
   illustRareGlareOpacity: number
+  // Ultra Rare shader parameters
+  ultraRareBaseBrightness: number
+  ultraRareShineBrightness: number
+  ultraRareShineContrast: number
+  ultraRareShineSaturation: number
+  ultraRareShineAfterBrightness: number
+  ultraRareShineAfterContrast: number
+  ultraRareShineAfterSaturation: number
+  ultraRareShineBaseBrightness: number
+  ultraRareShineBaseContrast: number
+  ultraRareShineBaseSaturation: number
+  ultraRareGlareContrast: number
+  ultraRareGlare2Contrast: number
+  ultraRareRotateDelta: number
+  ultraRareAngle1Mult: number
+  ultraRareAngle2Mult: number
+  ultraRareBgYMult1: number
+  ultraRareBgYMult2: number
 }
 
 export interface CardTransform {
