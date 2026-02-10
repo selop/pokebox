@@ -27,7 +27,7 @@ export const useAppStore = defineStore('app', () => {
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
-  const currentCardId = ref('185')
+  const currentCardId = ref('006')
   const cardDisplayMode = ref<CardDisplayMode>('single')
   const shaderStyle = ref<ShaderStyle>('illustration-rare')
   const sceneSeed = ref(Date.now())
@@ -86,7 +86,7 @@ export const useAppStore = defineStore('app', () => {
     })
     config.holoIntensity = CARD_DEFAULTS.holoIntensity / 100
     config.cardSpinSpeed = CARD_DEFAULTS.cardSpinSpeed
-    currentCardId.value = '185'
+    currentCardId.value = '006'
   }
 
   function randomizeSeed() {
