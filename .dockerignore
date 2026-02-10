@@ -1,0 +1,60 @@
+# Dependencies
+node_modules
+.pnpm-store
+.bun
+
+# Build output
+dist
+dist-ssr
+*.local
+
+# Development
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+coverage
+.nyc_output
+test-results
+playwright-report
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Documentation (optional - uncomment if you want to exclude)
+# README.md
+# CLAUDE.md
+# LICENSE
