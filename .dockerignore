@@ -54,6 +54,10 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Temporary files
+*.zip
+*.tar.gz
+
 # Documentation (optional - uncomment if you want to exclude)
 # README.md
 # CLAUDE.md
