@@ -32,29 +32,9 @@ uniform float uGlareOpacity;
 
 varying vec2 vUv;
 
-// ── Blend modes (matching CSS blend modes) ──────────
-vec3 blendColorDodge(vec3 base, vec3 blend) {
-    return min(base / max(1.0 - blend, 0.001), vec3(1.0));
-}
-vec3 blendOverlay(vec3 base, vec3 blend) {
-    return mix(
-        2.0 * base * blend,
-        1.0 - 2.0 * (1.0 - base) * (1.0 - blend),
-        step(0.5, base)
-    );
-}
-vec3 blendSoftLight(vec3 base, vec3 blend) {
-    return (1.0 - 2.0 * blend) * base * base + 2.0 * blend * base;
-}
-vec3 blendHardLight(vec3 base, vec3 blend) {
-    return blendOverlay(blend, base);
-}
-vec3 blendScreen(vec3 base, vec3 blend) {
-    return 1.0 - (1.0 - base) * (1.0 - blend);
-}
-vec3 blendExclusion(vec3 base, vec3 blend) {
-    return base + blend - 2.0 * base * blend;
-}
+#include "common/blend.glsl"
+#include "common/filters.glsl"
+#include "common/rainbow.glsl"
 
 // ── HSL to RGB conversion ────────────────────────────
 vec3 hslToRgb(float h, float s, float l) {
@@ -78,38 +58,6 @@ vec3 hslToRgb(float h, float s, float l) {
     }
 
     return rgb + m;
-}
-
-// ── Filter helpers ───────────────────────────────────
-vec3 adjustBrightness(vec3 c, float b) {
-    return c * b;
-}
-vec3 adjustContrast(vec3 c, float k) {
-    return (c - 0.5) * k + 0.5;
-}
-vec3 adjustSaturate(vec3 c, float s) {
-    float grey = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    return mix(vec3(grey), c, s);
-}
-
-// ── Sunpillar rainbow colors ─────────────────────────
-vec3 getSunColor(int i) {
-    if (i == 0) return vec3(1.0, 0.46, 0.46);   // hsl(2, 100%, 73%)
-    if (i == 1) return vec3(1.0, 0.90, 0.38);   // hsl(53, 100%, 69%)
-    if (i == 2) return vec3(0.58, 1.0, 0.38);   // hsl(93, 100%, 69%)
-    if (i == 3) return vec3(0.52, 1.0, 0.92);   // hsl(176, 100%, 76%)
-    if (i == 4) return vec3(0.48, 0.53, 1.0);   // hsl(228, 100%, 74%)
-    return vec3(0.74, 0.46, 1.0);                // hsl(283, 100%, 73%)
-}
-
-// ── Rainbow gradient (vertical repeating) ────────────
-vec3 sunpillarGradient(float t) {
-    float f = fract(t) * 6.0;
-    int idx = int(floor(f));
-    float blend = fract(f);
-    vec3 c0 = getSunColor(idx);
-    vec3 c1 = getSunColor(int(mod(float(idx + 1), 6.0)));
-    return mix(c0, c1, blend);
 }
 
 void main() {
@@ -202,9 +150,6 @@ void main() {
     float barIntensity2 = smoothstep(0.0, 0.028, barT2) * (1.0 - smoothstep(0.035, 0.042, barT2));
     vec3 barColor2 = mix(barMedium, barBright, barIntensity2);
     rainbow2 = blendHardLight(rainbow2, barColor2);
-
-    // Apply glitter texture to second layer as well
-    //rainbow2 *= 0.7 + glitter * 0.3;
 
     rainbow2 *= 0.5 + spotlight * 0.5;
 

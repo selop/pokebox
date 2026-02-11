@@ -50,30 +50,26 @@ Add to your GitHub Actions or CI pipeline:
 
 This prevents broken shaders from reaching production.
 
-## How the Tests Caught the `blendScreen` Error
+## Shared Shader Includes
 
-### The Problem
+Common functions live in `src/shaders/common/` and are included via `#include` directives (resolved by `vite-plugin-glsl` at build time and during tests via `vitest.config.ts`):
+
+| File | Contents |
+|------|----------|
+| `common/blend.glsl` | Blend modes: overlay, screen, color-dodge, hard-light, exclusion, multiply, plus-lighter, soft-light, luminosity, darken, lighten, hue, color-burn |
+| `common/filters.glsl` | `adjustBrightness`, `adjustContrast`, `adjustSaturate` |
+| `common/rainbow.glsl` | `getSunColor` (6-hue palette), `sunpillarGradient` (interpolated rainbow) |
+
+**Important**: Changes to shared includes affect ALL shaders that use them. Always run `bun test:shader` after modifying any file in `common/`.
+
+Usage in a shader:
 ```glsl
-// In ultra-rare.frag line 167:
-sparkleColor = blendScreen(sparkleFoil, rainbow * 0.3);
-
-// But blendScreen() was never defined!
+#include "common/blend.glsl"
+#include "common/filters.glsl"
+#include "common/rainbow.glsl"
 ```
 
-### How Each Test Catches It
-
-**Static Validation** would catch this:
-```
-❌ Undefined functions found: blendScreen
-   Defined functions: blendOverlay, blendHardLight, blendExclusion,
-                      blendMultiply, blendPlusLighter, ...
-```
-
-**Runtime Compilation** would catch this:
-```
-❌ WebGL shader compilation error:
-   ERROR: 0:167: 'blendScreen' : no matching overloaded function found
-```
+Note: `parallax.frag` and `metallic.frag` define their own blend modes locally (different signatures with opacity parameters) and do not use the shared includes.
 
 ## Adding Tests for New Shaders
 
@@ -127,16 +123,17 @@ Install [Shader languages support](https://marketplace.visualstudio.com/items?it
 ## Best Practices
 
 1. **Run tests before committing** shader changes
-2. **Use descriptive function names** that won't collide with GLSL builtins
-3. **Declare all blend modes** at the top of the shader file
+2. **Use shared includes** (`common/blend.glsl`, `common/filters.glsl`, `common/rainbow.glsl`) instead of copy-pasting blend modes and helpers
+3. **Use descriptive function names** that won't collide with GLSL builtins
 4. **Add comments** for complex shader math
 5. **Test in browser** after tests pass to verify visual output
+6. **When modifying shared includes**, run full shader tests and visually verify all shader types
 
 ## Common Shader Errors
 
 | Error | Test That Catches It | Prevention |
 |-------|---------------------|------------|
-| Undefined function | Static validation | Define all helpers |
+| Undefined function | Static validation | Use `#include "common/blend.glsl"` |
 | Undeclared uniform | Static validation | Declare before use |
 | Type mismatch | Runtime compilation | Check vec3/float ops |
 | Missing semicolon | Runtime compilation | Use GLSL formatter |

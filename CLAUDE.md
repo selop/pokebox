@@ -27,11 +27,18 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 1. **Face tracking** (`useFaceTracking`) polls MediaPipe for head position → writes to `store.targetEye`
 2. **Scene loop** (`useThreeScene.animate`) smoothly interpolates eye position, computes off-axis projection matrix, updates shader uniforms per frame
 3. **Off-axis camera** maps real-world eye coordinates to an asymmetric frustum so the 3D scene responds to head movement
-4. **Card shaders** — Each card uses one of three holo shader types, automatically selected based on card type:
+4. **Card shaders** — Each card uses one of several holo shader types, automatically selected based on card type:
    - **Illustration Rare** (`illustration-rare.frag`): Multiple vertical rainbow bands with diagonal bars + glare, matching Pokémon illustration rare holo cards
    - **Regular Holo** (`regular-holo.frag`): Diagonal rainbow gradient with rotating bar patterns + layered radial glare, matching standard holo cards
    - **Special Illustration Rare** (`special-illustration-rare.frag`): Diagonal rainbow + fine line texture + three iridescent texture layers (iri-7, iri-8, iri-9) with pointer-responsive shifts, matching special illustration rare cards with silvery holographic finish
+   - **Double Rare** (`double-rare.frag`): Birthday holo with grain texture, dual dank textures, and tilt-revealed sparkles
+   - **Ultra Rare** (`ultra-rare.frag`): Metallic sparkle with fully parameterized brightness/contrast/bar controls
    - **Parallax** (`parallax.frag`): Alternative shader with parallax offset effect (global toggle)
+   - **Metallic** (`metallic.frag`): Brushed metal with anisotropic reflection (global toggle)
+   - Shared GLSL functions live in `src/shaders/common/` and are included via `#include` (resolved by `vite-plugin-glsl`):
+     - `common/blend.glsl` — blend modes (overlay, screen, color-dodge, hard-light, etc.)
+     - `common/filters.glsl` — adjustBrightness, adjustContrast, adjustSaturate
+     - `common/rainbow.glsl` — getSunColor, sunpillarGradient (6-hue rainbow palette)
    - All holo types use the same base uniforms and are masked by grayscale textures (`uMaskTex`, `uFoilTex`)
    - Special illustration rare additionally uses three iridescent textures loaded from `public/img/151/iri-{7,8,9}.webp`
 
@@ -51,7 +58,7 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 | `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode)                                                                     |
 | `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`     |
 | `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `geometryHelpers`, `utils` |
-| `src/shaders/`      | GLSL shaders imported as strings via `vite-plugin-glsl`                                                                                                      |
+| `src/shaders/`      | GLSL fragment shaders; shared functions in `common/` subdir, included via `#include` (resolved by `vite-plugin-glsl`)                                        |
 | `src/data/`         | `cardCatalog.ts` (card entries with front/mask/foil texture paths), `defaults.ts` (initial config values)                                                    |
 | `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `CardTransform`, `EyePosition`, `DerivedDimensions`                                                  |
 
@@ -108,10 +115,15 @@ The shader test suite (`src/shaders/__tests__/`) includes:
    - Validates uniform configuration
 
 **When adding new shaders**:
-1. Add shader to both test files
-2. List required uniforms in compilation test
-3. Run `bun test:shader` to verify
-4. Add uniforms to `AppConfig` type, `defaults.ts`, and `buildCard.ts`
+1. Use shared includes (`#include "common/blend.glsl"`, etc.) instead of copy-pasting blend modes/filters
+2. Add shader to both test files
+3. List required uniforms in compilation test
+4. Run `bun test:shader` to verify
+5. Add uniforms to `AppConfig` type, `defaults.ts`, and `buildCard.ts`
+
+**When modifying shared includes** (`src/shaders/common/*.glsl`):
+- Changes affect ALL shaders that include them — run `bun test:shader` and visually verify
+- Never remove a function from a shared include without checking all consuming shaders
 
 **Common errors caught by tests**:
 - Undefined blend mode functions (e.g., `blendScreen` not defined)

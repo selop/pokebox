@@ -44,45 +44,8 @@ uniform float uSparkleColorShift;
 
 varying vec2 vUv;
 
-// ── Blend modes (matching CSS blend modes) ──────────
-vec3 blendOverlay(vec3 base, vec3 blend) {
-    return mix(
-        2.0 * base * blend,
-        1.0 - 2.0 * (1.0 - base) * (1.0 - blend),
-        step(0.5, base)
-    );
-}
-vec3 blendHardLight(vec3 base, vec3 blend) {
-    return mix(
-        2.0 * base * blend,
-        1.0 - 2.0 * (1.0 - base) * (1.0 - blend),
-        step(0.5, blend)
-    );
-}
-vec3 blendExclusion(vec3 base, vec3 blend) {
-    return base + blend - 2.0 * base * blend;
-}
-vec3 blendMultiply(vec3 base, vec3 blend) {
-    return base * blend;
-}
-vec3 blendPlusLighter(vec3 base, vec3 blend) {
-    return min(base + blend, vec3(1.0));
-}
-vec3 blendScreen(vec3 base, vec3 blend) {
-    return 1.0 - (1.0 - base) * (1.0 - blend);
-}
-
-// ── Filter helpers ───────────────────────────────────
-vec3 adjustBrightness(vec3 c, float b) {
-    return c * b;
-}
-vec3 adjustContrast(vec3 c, float k) {
-    return (c - 0.5) * k + 0.5;
-}
-vec3 adjustSaturate(vec3 c, float s) {
-    float grey = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    return mix(vec3(grey), c, s);
-}
+#include "common/blend.glsl"
+#include "common/filters.glsl"
 
 // ── Linear gradient helper (angled) ──────────────────
 // CSS: linear-gradient with stops: black 24%, gray 30%, black 36%
@@ -177,8 +140,6 @@ void main() {
     vec3 metallic = sparkleColor * sparkleSpotlight * uSparkleIntensity;
 
     // ── SHINE LAYER (before): Simple gradient overlay ─
-    // CSS: repeating-linear-gradient(15deg, var(--holo))
-    // Since CSS just uses var(--holo) which is the same color, this is essentially a solid with overlay
     vec3 shineBefore = vec3(1.5); // neutral gray for overlay blend
     shineBefore = adjustBrightness(shineBefore, uShineBrightness);
     shineBefore = adjustContrast(shineBefore, uShineContrast);
@@ -186,7 +147,6 @@ void main() {
     shineBefore = clamp(shineBefore, 0.0, 1.0);
 
     // ── SHINE LAYER (after): Angled gradients with exclusion ─
-    // CSS: Two linear gradients at different angles
     float rotateDelta = uRotateDelta;
     float angle1 = (uRotateX - rotateDelta) * uAngle1Mult;
     float angle2 = (uRotateX - rotateDelta) * uAngle2Mult;
@@ -223,7 +183,7 @@ void main() {
     float effectStrength = mask * uCardOpacity;
 
     if (mask > 0.01) {
-        // Base shine filter: brightness(.6) contrast(1.5) saturate(1)
+        // Base shine filter
         vec3 shineBase = result;
         shineBase = adjustBrightness(shineBase, uShineBaseBrightness);
         shineBase = adjustContrast(shineBase, uShineBaseContrast);
@@ -251,7 +211,6 @@ void main() {
     // Apply overall base brightness
     result = adjustBrightness(result, uBaseBrightness);
     result = adjustContrast(result, 0.7);
-    result = adjustSaturate(result, 1.0);
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
 }

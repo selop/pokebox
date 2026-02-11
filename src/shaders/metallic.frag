@@ -6,8 +6,6 @@ uniform sampler2D uMaskTex;
 uniform sampler2D uFoilTex;
 uniform float uHasFoil;
 uniform vec2 uPointer;
-uniform vec2 uBackground;
-uniform float uPointerFromCenter;
 uniform float uCardOpacity;
 uniform float uTime;
 uniform float uFade;
@@ -77,20 +75,6 @@ vec3 blendOverlay(vec3 base, vec3 blend, float opacity) {
     return blendOverlay(base, blend) * opacity + base * (1.0 - opacity);
 }
 
-float blendSoftLightF(float base, float blend) {
-    return (blend < 0.5) ?
-        (2.0 * base * blend + base * base * (1.0 - 2.0 * blend)) :
-        (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend));
-}
-
-vec3 blendSoftLight(vec3 base, vec3 blend) {
-    return vec3(
-        blendSoftLightF(base.r, blend.r),
-        blendSoftLightF(base.g, blend.g),
-        blendSoftLightF(base.b, blend.b)
-    );
-}
-
 void main() {
     vec2 uv = vUv;
 
@@ -112,7 +96,6 @@ void main() {
     }
 
     vec3 result = cardColor.rgb;
-
 
     // ── Foil effect with metallic treatment ───────────
     if (foil > 0.01) {

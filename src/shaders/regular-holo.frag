@@ -7,68 +7,15 @@ uniform sampler2D uFoilTex;
 uniform float uHasFoil;
 uniform vec2 uPointer;       // eye projected onto card UV (0-1)
 uniform vec2 uBackground;    // constrained 0.37-0.63
-uniform float uPointerFromCenter; // 0-1
 uniform float uCardOpacity;  // holo intensity 0-1
 uniform float uTime;
 uniform float uFade;         // overall card opacity 0-1 (for transitions)
 
 varying vec2 vUv;
 
-// ── Blend modes (matching CSS blend modes) ──────────
-vec3 blendColorDodge(vec3 base, vec3 blend) {
-    return min(base / max(1.0 - blend, 0.001), vec3(1.0));
-}
-vec3 blendOverlay(vec3 base, vec3 blend) {
-    return mix(
-        2.0 * base * blend,
-        1.0 - 2.0 * (1.0 - base) * (1.0 - blend),
-        step(0.5, base)
-    );
-}
-vec3 blendScreen(vec3 base, vec3 blend) {
-    return 1.0 - (1.0 - base) * (1.0 - blend);
-}
-vec3 blendMultiply(vec3 base, vec3 blend) {
-    return base * blend;
-}
-vec3 blendLuminosity(vec3 base, vec3 blend) {
-    // Simplified luminosity blend
-    float baseLum = dot(base, vec3(0.2126, 0.7152, 0.0722));
-    float blendLum = dot(blend, vec3(0.2126, 0.7152, 0.0722));
-    return base + (blendLum - baseLum);
-}
-
-// ── Filter helpers ───────────────────────────────────
-vec3 adjustBrightness(vec3 c, float b) {
-    return c * b;
-}
-vec3 adjustContrast(vec3 c, float k) {
-    return (c - 0.5) * k + 0.5;
-}
-vec3 adjustSaturate(vec3 c, float s) {
-    float grey = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    return mix(vec3(grey), c, s);
-}
-
-// ── Sunpillar rainbow colors ─────────────────────────
-vec3 getSunColor(int i) {
-    if (i == 0) return vec3(1.0, 0.46, 0.46);   // hsl(2, 100%, 73%)
-    if (i == 1) return vec3(1.0, 0.90, 0.38);   // hsl(53, 100%, 69%)
-    if (i == 2) return vec3(0.58, 1.0, 0.38);   // hsl(93, 100%, 69%)
-    if (i == 3) return vec3(0.52, 1.0, 0.92);   // hsl(176, 100%, 76%)
-    if (i == 4) return vec3(0.48, 0.53, 1.0);   // hsl(228, 100%, 74%)
-    return vec3(0.74, 0.46, 1.0);                // hsl(283, 100%, 73%)
-}
-
-// ── Rainbow gradient (vertical repeating) ────────────
-vec3 sunpillarGradient(float t) {
-    float f = fract(t) * 6.0;
-    int idx = int(floor(f));
-    float blend = fract(f);
-    vec3 c0 = getSunColor(idx);
-    vec3 c1 = getSunColor(int(mod(float(idx + 1), 6.0)));
-    return mix(c0, c1, blend);
-}
+#include "common/blend.glsl"
+#include "common/filters.glsl"
+#include "common/rainbow.glsl"
 
 void main() {
     vec2 uv = vUv;
@@ -113,11 +60,7 @@ void main() {
         + ((0.5 - bgY) * 0.5);
     vec3 rainbow = sunpillarGradient(rainbowT);
 
-    // CSS: background-position based on pointer
-    // CSS: background-size 400% 400%
-    // CSS: background-blend-mode: overlay
     // CSS: filter: brightness(1.25) contrast(3) saturate(0.75)
-    // CSS: mix-blend-mode: overlay
     vec3 shine = adjustBrightness(rainbow, 1.5);
     shine = adjustContrast(shine, 3.0);
     shine = adjustSaturate(shine, 0.75);
@@ -164,7 +107,6 @@ void main() {
     vec3 shineGlare = mix(glareWhite, glareMid, glareMix1);
     shineGlare = mix(shineGlare, glareDark, glareMix2);
 
-    shineGlare = adjustBrightness(shineGlare, 1.0);
     shineGlare = adjustContrast(shineGlare, 3.0);
     shineGlare = clamp(shineGlare, 0.0, 1.0);
 

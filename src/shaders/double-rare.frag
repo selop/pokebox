@@ -3,10 +3,8 @@ precision highp float;
 uniform sampler2D uCardTex;
 uniform sampler2D uCardBackTex;
 uniform sampler2D uMaskTex;
-uniform sampler2D uFoilTex;
 uniform sampler2D uBirthdayDankTex;      // Birthday holo dank texture
 uniform sampler2D uBirthdayDank2Tex;     // Birthday holo dank 2 texture
-uniform float uHasFoil;
 uniform vec2 uPointer;       // eye projected onto card UV (0-1)
 uniform vec2 uBackground;    // constrained 0.37-0.63
 uniform float uPointerFromCenter; // 0-1
@@ -16,68 +14,9 @@ uniform float uFade;         // overall card opacity 0-1 (for transitions)
 
 varying vec2 vUv;
 
-// ── Blend modes (matching CSS blend modes) ──────────
-vec3 blendColorDodge(vec3 base, vec3 blend) {
-    return min(base / max(1.0 - blend, 0.001), vec3(1.0));
-}
-vec3 blendOverlay(vec3 base, vec3 blend) {
-    return mix(
-        2.0 * base * blend,
-        1.0 - 2.0 * (1.0 - base) * (1.0 - blend),
-        step(0.5, base)
-    );
-}
-vec3 blendHardLight(vec3 base, vec3 blend) {
-    return blendOverlay(blend, base);
-}
-vec3 blendScreen(vec3 base, vec3 blend) {
-    return 1.0 - (1.0 - base) * (1.0 - blend);
-}
-vec3 blendDarken(vec3 base, vec3 blend) {
-    return min(base, blend);
-}
-vec3 blendLighten(vec3 base, vec3 blend) {
-    return max(base, blend);
-}
-vec3 blendHue(vec3 base, vec3 blend) {
-    // Simplified hue blend - mix with reduced saturation
-    return mix(base, blend, 0.5);
-}
-vec3 blendColorBurn(vec3 base, vec3 blend) {
-    return 1.0 - min((1.0 - base) / max(blend, 0.001), vec3(1.0));
-}
-
-// ── Filter helpers ───────────────────────────────────
-vec3 adjustBrightness(vec3 c, float b) {
-    return c * b;
-}
-vec3 adjustContrast(vec3 c, float k) {
-    return (c - 0.5) * k + 0.5;
-}
-vec3 adjustSaturate(vec3 c, float s) {
-    float grey = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    return mix(vec3(grey), c, s);
-}
-
-// ── Sunpillar rainbow colors ─────────────────────────
-vec3 getSunColor(int i) {
-    if (i == 0) return vec3(1.0, 0.46, 0.46);   // hsl(2, 100%, 73%)
-    if (i == 1) return vec3(1.0, 0.90, 0.38);   // hsl(53, 100%, 69%)
-    if (i == 2) return vec3(0.58, 1.0, 0.38);   // hsl(93, 100%, 69%)
-    if (i == 3) return vec3(0.52, 1.0, 0.92);   // hsl(176, 100%, 76%)
-    if (i == 4) return vec3(0.48, 0.53, 1.0);   // hsl(228, 100%, 74%)
-    return vec3(0.74, 0.46, 1.0);                // hsl(283, 100%, 73%)
-}
-
-// ── Rainbow gradient (vertical repeating) ────────────
-vec3 sunpillarGradient(float t) {
-    float f = fract(t) * 6.0;
-    int idx = int(floor(f));
-    float blend = fract(f);
-    vec3 c0 = getSunColor(idx);
-    vec3 c1 = getSunColor(int(mod(float(idx + 1), 6.0)));
-    return mix(c0, c1, blend);
-}
+#include "common/blend.glsl"
+#include "common/filters.glsl"
+#include "common/rainbow.glsl"
 
 // ── Noise/grain texture ──────────────────────────────
 float hash(vec2 p) {
@@ -161,9 +100,7 @@ void main() {
     vec3 birthdayDank2 = texture2D(uBirthdayDank2Tex, dankUV2).rgb;
 
     // Tilt-based visibility: only show birthday sparkles on strong top-to-bottom tilt
-    // bgY ranges from 0.37 to 0.63, center is 0.5
-    // Adjust visibility based on Y-axis tilt angle
-    float tiltReveal = smoothstep(0.0, 0.13, abs(bgY - 0.5)); // Fade in as you tilt away from center
+    float tiltReveal = smoothstep(0.0, 0.13, abs(bgY - 0.5));
     birthdayDank *= tiltReveal;
     birthdayDank2 *= tiltReveal;
 
@@ -212,7 +149,6 @@ void main() {
     shine = blendHardLight(shine, radialDark);
 
     // CSS: filter: brightness(1) contrast(1.5) saturate(2)
-    shine = adjustBrightness(shine, 1.0);
     shine = adjustContrast(shine, 1.5);
     shine = adjustSaturate(shine, 2.0);
     shine = clamp(shine, 0.0, 1.0);
@@ -243,8 +179,7 @@ void main() {
     );
     glare2 = mix(glare2, vec3(0.0), smoothstep(0.1, 0.6, spotDist));
 
-    // CSS: filter: brightness(1) contrast(1.4)
-    glare2 = adjustBrightness(glare2, 1.0);
+    // CSS: filter: contrast(1.4)
     glare2 = adjustContrast(glare2, 1.4);
     glare2 = clamp(glare2, 0.0, 1.0);
 

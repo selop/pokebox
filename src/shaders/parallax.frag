@@ -6,7 +6,6 @@ uniform sampler2D uMaskTex;
 uniform sampler2D uFoilTex;
 uniform float uHasFoil;
 uniform vec2 uPointer;
-uniform vec2 uBackground;
 uniform float uPointerFromCenter;
 uniform float uCardOpacity;
 uniform float uTime;

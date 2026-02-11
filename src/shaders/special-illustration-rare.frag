@@ -12,69 +12,13 @@ uniform vec2 uPointer;       // eye projected onto card UV (0-1)
 uniform vec2 uBackground;    // constrained 0.37-0.63
 uniform float uPointerFromCenter; // 0-1
 uniform float uCardOpacity;  // holo intensity 0-1
-uniform float uTime;
 uniform float uFade;         // overall card opacity 0-1 (for transitions)
 
 varying vec2 vUv;
 
-// ── Blend modes (matching CSS blend modes) ──────────
-vec3 blendColorDodge(vec3 base, vec3 blend) {
-    return min(base / max(1.0 - blend, 0.001), vec3(1.0));
-}
-vec3 blendOverlay(vec3 base, vec3 blend) {
-    return mix(
-        2.0 * base * blend,
-        1.0 - 2.0 * (1.0 - base) * (1.0 - blend),
-        step(0.5, base)
-    );
-}
-vec3 blendHardLight(vec3 base, vec3 blend) {
-    return blendOverlay(blend, base);
-}
-vec3 blendMultiply(vec3 base, vec3 blend) {
-    return base * blend;
-}
-vec3 blendExclusion(vec3 base, vec3 blend) {
-    return base + blend - 2.0 * base * blend;
-}
-vec3 blendPlusLighter(vec3 base, vec3 blend) {
-    return min(base + blend, vec3(1.0));
-}
-vec3 blendScreen(vec3 base, vec3 blend) {
-    return 1.0 - (1.0 - base) * (1.0 - blend);
-}
-
-// ── Filter helpers ───────────────────────────────────
-vec3 adjustBrightness(vec3 c, float b) {
-    return c * b;
-}
-vec3 adjustContrast(vec3 c, float k) {
-    return (c - 0.5) * k + 0.5;
-}
-vec3 adjustSaturate(vec3 c, float s) {
-    float grey = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    return mix(vec3(grey), c, s);
-}
-
-// ── Sunpillar rainbow colors ─────────────────────────
-vec3 getSunColor(int i) {
-    if (i == 0) return vec3(1.0, 0.46, 0.46);   // hsl(2, 100%, 73%)
-    if (i == 1) return vec3(1.0, 0.90, 0.38);   // hsl(53, 100%, 69%)
-    if (i == 2) return vec3(0.58, 1.0, 0.38);   // hsl(93, 100%, 69%)
-    if (i == 3) return vec3(0.52, 1.0, 0.92);   // hsl(176, 100%, 76%)
-    if (i == 4) return vec3(0.48, 0.53, 1.0);   // hsl(228, 100%, 74%)
-    return vec3(0.74, 0.46, 1.0);                // hsl(283, 100%, 73%)
-}
-
-// ── Rainbow gradient (repeating) ─────────────────────
-vec3 sunpillarGradient(float t) {
-    float f = fract(t) * 6.0;
-    int idx = int(floor(f));
-    float blend = fract(f);
-    vec3 c0 = getSunColor(idx);
-    vec3 c1 = getSunColor(int(mod(float(idx + 1), 6.0)));
-    return mix(c0, c1, blend);
-}
+#include "common/blend.glsl"
+#include "common/filters.glsl"
+#include "common/rainbow.glsl"
 
 // ── Iridescent texture sampling with tiling ──────────
 vec3 sampleIriTexture(sampler2D iriTex, vec2 uv, float tileSize) {
@@ -128,8 +72,6 @@ void main() {
     vec3 rainbow = sunpillarGradient(shineT);
 
     // Brighter and higher saturation for silvery shimmer
-    // CSS: filter: brightness(1) contrast(0.75) saturate(1)
-    // CSS: mix-blend-mode: overlay
     vec3 shineBefore = adjustBrightness(rainbow, 1.5);
     shineBefore = adjustContrast(shineBefore, 1.2);
     shineBefore = adjustSaturate(shineBefore, 1.5);
@@ -161,8 +103,6 @@ void main() {
     vec3 bars = blendExclusion(barColor1, barColor2);
 
     // Keep bright and low contrast for subtle texture
-    // CSS: filter: brightness(1) contrast(0.75) saturate(1)
-    // CSS: mix-blend-mode: hard-light
     vec3 shineAfter = adjustBrightness(bars, 1.2);
     shineAfter = adjustContrast(shineAfter, 0.6);
     shineAfter = adjustSaturate(shineAfter, 0.8);
@@ -198,7 +138,7 @@ void main() {
     float sunpillar2Mask = smoothstep(0.25, 0.35, sunpillar2Pattern) * (1.0 - smoothstep(0.45, 0.55, sunpillar2Pattern));
     sunpillar2Color *= sunpillar2Mask;
 
-    // Combine layers with screen blend (like illustration-rare bars)
+    // Combine layers with screen blend
     vec3 sunpillars = blendScreen(sunpillar1Color, sunpillar2Color);
 
     // Apply filters for holographic effect
@@ -208,54 +148,34 @@ void main() {
     sunpillars = clamp(sunpillars, 0.2, 1.0);
 
     // ── IRIDESCENT GLITTER LAYERS (using textures) ──────
-    // CSS var(--glitter-size): 150px 150px
-    float glitterTileSize = 300.0 / 1024.0; // Assuming card is ~1024px height
+    float glitterTileSize = 300.0 / 1024.0;
 
     // Main glitter layer - iri9 texture
-    // CSS: background-image: var(--iri9)
-    // CSS: filter: brightness(1) contrast(2) saturate(1.2)
-    // CSS: mix-blend-mode: plus-lighter
     vec3 glitter = sampleIriTexture(uIri9Tex, uv, 1.0 / glitterTileSize);
-    glitter = adjustBrightness(glitter, 1.0);
     glitter = adjustContrast(glitter, 1.0);
     glitter = adjustSaturate(glitter, 1.2);
     glitter = clamp(glitter, 0.0, 1.0);
 
-    // CSS: opacity: calc(var(--card-opacity) * (0.2 + var(--pointer-from-center) * 0.5))
     float glitterOpacity = uCardOpacity * (1.0 + uPointerFromCenter * 0.5);
 
     // Glitter :before layer - iri8 texture (shifted by pointer)
-    // CSS: background-image: var(--iri8)
-    // CSS: background-position: calc(50% + pointer-shift)
     float shift = 3.0 / 1024.0; // 3px in UV space
     vec2 shiftedUV1 = uv + vec2(ptrFromLeft * shift, ptrFromTop * shift);
     vec3 glitterBefore = sampleIriTexture(uIri8Tex, shiftedUV1, 1.0 / glitterTileSize);
 
-    // CSS: filter: brightness(2) contrast(1.2) saturate(2)
-    // CSS: mix-blend-mode: overlay
-    // CSS: opacity: var(--pointer-from-top)
-    glitterBefore = adjustBrightness(glitterBefore, 1.0);
     glitterBefore = adjustContrast(glitterBefore, 1.8);
     glitterBefore = adjustSaturate(glitterBefore, 2.0);
     glitterBefore = clamp(glitterBefore, 0.0, 1.0);
 
     // Glitter :after layer - iri7 texture (shifted opposite direction)
-    // CSS: background-image: var(--iri7)
-    // CSS: background-position: calc(50% + pointer-shift * -1)
     vec2 shiftedUV2 = uv - vec2(ptrFromLeft * shift, ptrFromTop * shift);
     vec3 glitterAfter = sampleIriTexture(uIri7Tex, shiftedUV2, 1.0 / glitterTileSize);
 
-    // CSS: opacity: calc(var(--pointer-from-top) * -1 + 1)
-    glitterAfter = adjustBrightness(glitterAfter, 1.0);
     glitterAfter = adjustContrast(glitterAfter, 1.2);
     glitterAfter = adjustSaturate(glitterAfter, 2.0);
     glitterAfter = clamp(glitterAfter, 0.0, 1.0);
 
     // ── GLARE ────────────────────────────────────────
-    // Much brighter, more silvery glare
-    // CSS: radial-gradient from pointer
-    // CSS: hsl(0, 0%, 80%) 10%, hsl(0, 0%, 50%) 70%
-    // CSS: mix-blend-mode: multiply, filter: contrast(1.5)
     vec3 glareLight = vec3(5.0);   // Bright white center
     vec3 glareDark = vec3(0.85);   // Light gray edge
 
@@ -264,12 +184,6 @@ void main() {
 
     glare = adjustContrast(glare, 1.1);
     glare = clamp(glare, 0.0, 1.0);
-
-    // GLARE2 (foil overlay) - bright silvery base
-    // CSS: white masked by foil with overlay blend
-    vec3 glare2 = vec3(1.0);
-    glare2 = adjustContrast(glare2, 1.0);
-    glare2 = clamp(glare2, 0.0, 1.0);
 
     // ── Compose layers ───────────────────────────────
     vec3 base = cardColor.rgb;
@@ -303,15 +217,13 @@ void main() {
 
         // Apply glare2 (foil overlay) if foil texture present
         if (foil > 0.01) {
-            result = mix(result, blendOverlay(result, glare2), foil * uCardOpacity * 0.4);
+            result = mix(result, blendOverlay(result, vec3(1.0)), foil * uCardOpacity * 0.4);
         }
     }
 
     // Overall brighter filter for silvery holographic effect
-    // CSS: .card__shine filter: brightness(0.6) contrast(1.5) saturate(1)
     result = adjustBrightness(result, 0.6 + uCardOpacity * 0.2);
     result = adjustContrast(result, 1.5);
-    result = adjustSaturate(result, 1.0);
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
 }
