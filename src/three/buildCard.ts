@@ -122,6 +122,26 @@ export function buildCardMesh(
       uniforms.uHasIri9 = { value: 0.0 }
     }
 
+    // Add special illustration rare shader-specific uniforms
+    if (shaderStyle === 'special-illustration-rare') {
+      uniforms.uSirShineAngle = { value: config.sirShineAngle }
+      uniforms.uSirShineFrequency = { value: config.sirShineFrequency }
+      uniforms.uSirShineBrightness = { value: config.sirShineBrightness }
+      uniforms.uSirShineContrast = { value: config.sirShineContrast }
+      uniforms.uSirShineSaturation = { value: config.sirShineSaturation }
+      uniforms.uSirBarFrequency = { value: config.sirBarFrequency }
+      uniforms.uSirBarBrightness = { value: config.sirBarBrightness }
+      uniforms.uSirBarContrast = { value: config.sirBarContrast }
+      uniforms.uSirBarSaturation = { value: config.sirBarSaturation }
+      uniforms.uSirSunpillarBrightness = { value: config.sirSunpillarBrightness }
+      uniforms.uSirSunpillarContrast = { value: config.sirSunpillarContrast }
+      uniforms.uSirSunpillarSaturation = { value: config.sirSunpillarSaturation }
+      uniforms.uSirGlitterContrast = { value: config.sirGlitterContrast }
+      uniforms.uSirGlitterSaturation = { value: config.sirGlitterSaturation }
+      uniforms.uSirBaseBrightness = { value: config.sirBaseBrightness }
+      uniforms.uSirBaseContrast = { value: config.sirBaseContrast }
+    }
+
     // Add birthday textures for double rare shader
     if (shaderStyle === 'double-rare' && birthdayTextures) {
       uniforms.uBirthdayDankTex = { value: birthdayTextures.dank }

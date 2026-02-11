@@ -1131,6 +1131,38 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     },
   )
 
+  // Watch special-illustration-rare shader parameters
+  const sirUniformMap: [() => number, string][] = [
+    [() => store.config.sirShineAngle, 'uSirShineAngle'],
+    [() => store.config.sirShineFrequency, 'uSirShineFrequency'],
+    [() => store.config.sirShineBrightness, 'uSirShineBrightness'],
+    [() => store.config.sirShineContrast, 'uSirShineContrast'],
+    [() => store.config.sirShineSaturation, 'uSirShineSaturation'],
+    [() => store.config.sirBarFrequency, 'uSirBarFrequency'],
+    [() => store.config.sirBarBrightness, 'uSirBarBrightness'],
+    [() => store.config.sirBarContrast, 'uSirBarContrast'],
+    [() => store.config.sirBarSaturation, 'uSirBarSaturation'],
+    [() => store.config.sirSunpillarBrightness, 'uSirSunpillarBrightness'],
+    [() => store.config.sirSunpillarContrast, 'uSirSunpillarContrast'],
+    [() => store.config.sirSunpillarSaturation, 'uSirSunpillarSaturation'],
+    [() => store.config.sirGlitterContrast, 'uSirGlitterContrast'],
+    [() => store.config.sirGlitterSaturation, 'uSirGlitterSaturation'],
+    [() => store.config.sirBaseBrightness, 'uSirBaseBrightness'],
+    [() => store.config.sirBaseContrast, 'uSirBaseContrast'],
+  ]
+  for (const [getter, uniformName] of sirUniformMap) {
+    watch(getter, (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms[uniformName]
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms[uniformName]!.value = val
+        }
+      }
+    })
+  }
+
   function dispose() {
     if (animationId !== null) cancelAnimationFrame(animationId)
     window.removeEventListener('resize', onResize)

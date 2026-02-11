@@ -100,6 +100,22 @@ describe('Shader Compilation', () => {
     'uHasIri7',
     'uHasIri8',
     'uHasIri9',
+    'uSirShineAngle',
+    'uSirShineFrequency',
+    'uSirShineBrightness',
+    'uSirShineContrast',
+    'uSirShineSaturation',
+    'uSirBarFrequency',
+    'uSirBarBrightness',
+    'uSirBarContrast',
+    'uSirBarSaturation',
+    'uSirSunpillarBrightness',
+    'uSirSunpillarContrast',
+    'uSirSunpillarSaturation',
+    'uSirGlitterContrast',
+    'uSirGlitterSaturation',
+    'uSirBaseBrightness',
+    'uSirBaseContrast',
   ])
 
   testShaderCompilation('double-rare', doubleRareFrag, [

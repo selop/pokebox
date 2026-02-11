@@ -13,6 +13,23 @@ uniform vec2 uBackground;    // constrained 0.37-0.63
 uniform float uPointerFromCenter; // 0-1
 uniform float uCardOpacity;  // holo intensity 0-1
 uniform float uFade;         // overall card opacity 0-1 (for transitions)
+// Special Illustration Rare tunable parameters
+uniform float uSirShineAngle;
+uniform float uSirShineFrequency;
+uniform float uSirShineBrightness;
+uniform float uSirShineContrast;
+uniform float uSirShineSaturation;
+uniform float uSirBarFrequency;
+uniform float uSirBarBrightness;
+uniform float uSirBarContrast;
+uniform float uSirBarSaturation;
+uniform float uSirSunpillarBrightness;
+uniform float uSirSunpillarContrast;
+uniform float uSirSunpillarSaturation;
+uniform float uSirGlitterContrast;
+uniform float uSirGlitterSaturation;
+uniform float uSirBaseBrightness;
+uniform float uSirBaseContrast;
 
 varying vec2 vUv;
 
@@ -66,15 +83,15 @@ void main() {
     // ── SHINE LAYER :before - Diagonal rainbow ───────
     // CSS: repeating-linear-gradient(15deg, holo colors)
     // Much finer diagonal lines for subtle shimmer
-    float shineAngle = 45.0 * 3.14159 / 180.0;
+    float shineAngle = uSirShineAngle * 3.14159 / 180.0;
     float shineCoord = dot(uv - 0.5, vec2(cos(shineAngle), sin(shineAngle)));
-    float shineT = shineCoord * 8.0; // Increased frequency for finer lines
+    float shineT = shineCoord * uSirShineFrequency;
     vec3 rainbow = sunpillarGradient(shineT);
 
     // Brighter and higher saturation for silvery shimmer
-    vec3 shineBefore = adjustBrightness(rainbow, 1.5);
-    shineBefore = adjustContrast(shineBefore, 1.2);
-    shineBefore = adjustSaturate(shineBefore, 1.5);
+    vec3 shineBefore = adjustBrightness(rainbow, uSirShineBrightness);
+    shineBefore = adjustContrast(shineBefore, uSirShineContrast);
+    shineBefore = adjustSaturate(shineBefore, uSirShineSaturation);
     shineBefore = clamp(shineBefore, 0.0, 1.0);
 
     // ── SHINE LAYER :after - Fine diagonal line texture ──────
@@ -85,7 +102,7 @@ void main() {
     // Bar layer 1 (positive rotation) - very fine lines
     float barAngle1 = ((rotateX - rotateDelta) * 0.25) * 3.14159 / 180.0;
     float barCoord1 = dot(uv, vec2(cos(barAngle1), sin(barAngle1)));
-    float barT1 = fract((barCoord1 + bgY * 1.7) * 40.0); // Much higher frequency
+    float barT1 = fract((barCoord1 + bgY * 1.7) * uSirBarFrequency);
 
     // Subtle, fine lines with lower contrast
     float bar1 = smoothstep(0.4, 0.5, barT1) * (1.0 - smoothstep(0.5, 0.6, barT1));
@@ -94,7 +111,7 @@ void main() {
     // Bar layer 2 (negative rotation) - very fine lines
     float barAngle2 = ((rotateX - rotateDelta) * -0.25) * 3.14159 / 180.0;
     float barCoord2 = dot(uv, vec2(cos(barAngle2), sin(barAngle2)));
-    float barT2 = fract((barCoord2 - bgY * 1.3) * 40.0);
+    float barT2 = fract((barCoord2 - bgY * 1.3) * uSirBarFrequency);
 
     float bar2 = smoothstep(0.4, 0.5, barT2) * (1.0 - smoothstep(0.5, 0.6, barT2));
     vec3 barColor2 = mix(vec3(0.7), vec3(0.95), bar2);
@@ -103,9 +120,9 @@ void main() {
     vec3 bars = blendExclusion(barColor1, barColor2);
 
     // Keep bright and low contrast for subtle texture
-    vec3 shineAfter = adjustBrightness(bars, 1.2);
-    shineAfter = adjustContrast(shineAfter, 0.6);
-    shineAfter = adjustSaturate(shineAfter, 0.8);
+    vec3 shineAfter = adjustBrightness(bars, uSirBarBrightness);
+    shineAfter = adjustContrast(shineAfter, uSirBarContrast);
+    shineAfter = adjustSaturate(shineAfter, uSirBarSaturation);
     shineAfter = clamp(shineAfter, 0.0, 1.0);
 
     // ── TILT-REVEALED VERTICAL SUNPILLAR EFFECT ─────────
@@ -142,9 +159,9 @@ void main() {
     vec3 sunpillars = blendScreen(sunpillar1Color, sunpillar2Color);
 
     // Apply filters for holographic effect
-    sunpillars = adjustBrightness(sunpillars, 1.8);
-    sunpillars = adjustContrast(sunpillars, 2.2);
-    sunpillars = adjustSaturate(sunpillars, 2.0);
+    sunpillars = adjustBrightness(sunpillars, uSirSunpillarBrightness);
+    sunpillars = adjustContrast(sunpillars, uSirSunpillarContrast);
+    sunpillars = adjustSaturate(sunpillars, uSirSunpillarSaturation);
     sunpillars = clamp(sunpillars, 0.2, 1.0);
 
     // ── IRIDESCENT GLITTER LAYERS (using textures) ──────
@@ -152,8 +169,8 @@ void main() {
 
     // Main glitter layer - iri9 texture
     vec3 glitter = sampleIriTexture(uIri9Tex, uv, 1.0 / glitterTileSize);
-    glitter = adjustContrast(glitter, 1.0);
-    glitter = adjustSaturate(glitter, 1.2);
+    glitter = adjustContrast(glitter, uSirGlitterContrast);
+    glitter = adjustSaturate(glitter, uSirGlitterSaturation);
     glitter = clamp(glitter, 0.0, 1.0);
 
     float glitterOpacity = uCardOpacity * (1.0 + uPointerFromCenter * 0.5);
@@ -222,8 +239,8 @@ void main() {
     }
 
     // Overall brighter filter for silvery holographic effect
-    result = adjustBrightness(result, 0.6 + uCardOpacity * 0.2);
-    result = adjustContrast(result, 1.5);
+    result = adjustBrightness(result, uSirBaseBrightness + uCardOpacity * 0.2);
+    result = adjustContrast(result, uSirBaseContrast);
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
 }
