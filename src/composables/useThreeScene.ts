@@ -432,7 +432,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       store.toggleShaderStyle()
       return
     }
-    if (!cardNavigator.handleKeydown(e)) {
+    if (cardNavigator.handleKeydown(e)) {
+      store.isSlideshowActive = false
+    } else {
       mergeAnimator.handleKeydown(e, cardMeshes.value.length)
     }
   }
@@ -1131,6 +1133,23 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     },
   )
 
+  // Slideshow: auto-advance cards every 3s
+  let slideshowInterval: ReturnType<typeof setInterval> | null = null
+  watch(
+    () => store.isSlideshowActive,
+    (active) => {
+      if (slideshowInterval) {
+        clearInterval(slideshowInterval)
+        slideshowInterval = null
+      }
+      if (active) {
+        slideshowInterval = setInterval(() => {
+          cardNavigator.navigate(1)
+        }, 3000)
+      }
+    },
+  )
+
   // Watch special-illustration-rare shader parameters
   const sirUniformMap: [() => number, string][] = [
     [() => store.config.sirShineAngle, 'uSirShineAngle'],
@@ -1163,6 +1182,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
   function dispose() {
     if (animationId !== null) cancelAnimationFrame(animationId)
+    if (slideshowInterval) clearInterval(slideshowInterval)
     window.removeEventListener('resize', onResize)
     window.removeEventListener('keydown', onKeydown)
     mouseTilt.detach()

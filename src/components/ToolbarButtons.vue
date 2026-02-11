@@ -54,6 +54,14 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
     &#x2699; Shader
   </button>
   <button
+    v-show="store.sceneMode === 'cards'"
+    class="toolbar-btn slideshow-btn"
+    :class="{ active: store.isSlideshowActive }"
+    @click="store.toggleSlideshow()"
+  >
+    {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
+  </button>
+  <button
     v-show="store.sceneMode === 'furniture'"
     class="toolbar-btn randomize-btn"
     @click="store.randomizeSeed()"
@@ -113,6 +121,13 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 }
 .shader-controls-btn {
   left: 570px;
+}
+.slideshow-btn {
+  left: 670px;
+}
+.slideshow-btn.active {
+  border-color: #f72585;
+  color: #f72585;
 }
 .randomize-btn {
   left: 350px;

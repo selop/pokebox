@@ -4,7 +4,7 @@ import type { ShallowRef } from 'vue'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 import type { useAppStore } from '@/stores/app'
 
-const TRANSITION_DURATION = 0.4
+const TRANSITION_DURATION = 1.0
 
 /** Set the fade/opacity on a card mesh (works with both ShaderMaterial and MeshBasicMaterial). */
 export function setCardFade(mesh: Mesh, fade: number): void {

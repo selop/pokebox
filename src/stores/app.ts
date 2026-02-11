@@ -36,6 +36,7 @@ export const useAppStore = defineStore('app', () => {
   const isPanelOpen = ref(false)
   const isShaderPanelOpen = ref(false)
   const isTrackingActive = ref(false)
+  const isSlideshowActive = ref(false)
   const statusText = ref('Waiting for camera')
   const showInstructions = ref(true)
 
@@ -125,6 +126,10 @@ export const useAppStore = defineStore('app', () => {
     isShaderPanelOpen.value = !isShaderPanelOpen.value
   }
 
+  function toggleSlideshow() {
+    isSlideshowActive.value = !isSlideshowActive.value
+  }
+
   function setSceneMode(mode: SceneMode) {
     sceneMode.value = mode
   }
@@ -143,6 +148,7 @@ export const useAppStore = defineStore('app', () => {
     isPanelOpen,
     isShaderPanelOpen,
     isTrackingActive,
+    isSlideshowActive,
     statusText,
     showInstructions,
     viewportWidth,
@@ -158,6 +164,7 @@ export const useAppStore = defineStore('app', () => {
     toggleShaderStyle,
     togglePanel,
     toggleShaderPanel,
+    toggleSlideshow,
     setSceneMode,
   }
 })
