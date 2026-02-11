@@ -1,521 +1,210 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAppStore } from '@/stores/app'
 import type { AppConfig } from '@/types'
 
 const store = useAppStore()
 const copied = ref(false)
 
-const ILLUST_RARE_KEYS: (keyof AppConfig)[] = [
-  'illustRareRainbowScale', 'illustRareBarAngle', 'illustRareBarDensity',
-  'illustRareBarWidth', 'illustRareBarIntensity', 'illustRareBarHue',
-  'illustRareBarMediumSaturation', 'illustRareBarMediumLightness',
-  'illustRareBarBrightSaturation', 'illustRareBarBrightLightness',
-  'illustRareShine1Contrast', 'illustRareShine1Saturation',
-  'illustRareShine2Opacity', 'illustRareGlareOpacity',
-]
-
-const ULTRA_RARE_KEYS: (keyof AppConfig)[] = [
-  'ultraRareBaseBrightness', 'ultraRareShineBrightness', 'ultraRareShineContrast',
-  'ultraRareShineSaturation', 'ultraRareShineAfterBrightness', 'ultraRareShineAfterContrast',
-  'ultraRareShineAfterSaturation', 'ultraRareShineBaseBrightness', 'ultraRareShineBaseContrast',
-  'ultraRareShineBaseSaturation', 'ultraRareGlareContrast', 'ultraRareGlare2Contrast',
-  'ultraRareRotateDelta', 'ultraRareAngle1Mult', 'ultraRareAngle2Mult',
-  'ultraRareBgYMult1', 'ultraRareBgYMult2', 'ultraRareBarAngle',
-  'ultraRareBarOffsetBgXMult', 'ultraRareBarOffsetBgYMult', 'ultraRareBarFrequency',
-  'ultraRareBarIntensityStart1', 'ultraRareBarIntensityEnd1',
-  'ultraRareBarIntensityStart2', 'ultraRareBarIntensityEnd2',
-  'ultraRareSparkleIntensity', 'ultraRareSparkleRadius',
-  'ultraRareSparkleContrast', 'ultraRareSparkleColorShift',
-]
-
-function onShaderSlider(key: keyof typeof store.config, value: string) {
-  ;(store.config as Record<string, number>)[key] = parseFloat(value)
+type SliderDef = {
+  label: string
+  key: keyof AppConfig
+  min: number
+  max: number
+  step: number
+  suffix?: '°' | '%'
 }
 
-function formatValue(v: number): string {
-  return v % 1 === 0 ? String(v) : v.toFixed(2)
+type SectionItem = SliderDef | { subsection: string }
+
+function isSubsection(item: SectionItem): item is { subsection: string } {
+  return 'subsection' in item
+}
+
+function displayValue(slider: SliderDef): string {
+  const v = store.config[slider.key] as number
+  if (slider.suffix === '%') return `${Math.round(v * 100)}%`
+  const formatted = v % 1 === 0 ? String(v) : v.toFixed(2)
+  return slider.suffix ? `${formatted}${slider.suffix}` : formatted
+}
+
+type ShaderSection = {
+  id: string
+  title: string
+  icon: string
+  items: SectionItem[]
+}
+
+const sections: ShaderSection[] = [
+  {
+    id: 'illustration-rare',
+    title: 'Illustration Rare',
+    icon: '✨',
+    items: [
+      { label: 'Rainbow scale', key: 'illustRareRainbowScale', min: 0.5, max: 5, step: 0.1 },
+      { label: 'Bar angle', key: 'illustRareBarAngle', min: 0, max: 360, step: 1, suffix: '°' },
+      { label: 'Bar density', key: 'illustRareBarDensity', min: 0.5, max: 10, step: 0.1 },
+      { label: 'Bar width', key: 'illustRareBarWidth', min: 0.1, max: 10, step: 0.05 },
+      { label: 'Bar intensity', key: 'illustRareBarIntensity', min: 0, max: 20, step: 0.05 },
+      { label: 'Bar hue', key: 'illustRareBarHue', min: 0, max: 360, step: 1, suffix: '°' },
+      {
+        label: 'Bar med sat',
+        key: 'illustRareBarMediumSaturation',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Bar med light',
+        key: 'illustRareBarMediumLightness',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Bar bright sat',
+        key: 'illustRareBarBrightSaturation',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Bar bright light',
+        key: 'illustRareBarBrightLightness',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      { label: 'Shine contrast', key: 'illustRareShine1Contrast', min: 1, max: 5, step: 0.05 },
+      { label: 'Shine saturate', key: 'illustRareShine1Saturation', min: 0, max: 2, step: 0.05 },
+      { label: 'Shine 2 opacity', key: 'illustRareShine2Opacity', min: 0, max: 1, step: 0.05 },
+      { label: 'Glare opacity', key: 'illustRareGlareOpacity', min: 0, max: 1, step: 0.05 },
+    ],
+  },
+  {
+    id: 'ultra-rare',
+    title: 'Ultra Rare',
+    icon: '💎',
+    items: [
+      { label: 'Base brightness', key: 'ultraRareBaseBrightness', min: 0, max: 3, step: 0.05 },
+      { subsection: 'Shine Before' },
+      { label: 'Brightness', key: 'ultraRareShineBrightness', min: 0, max: 1, step: 0.005 },
+      { label: 'Contrast', key: 'ultraRareShineContrast', min: 0, max: 1, step: 0.005 },
+      { label: 'Saturation', key: 'ultraRareShineSaturation', min: 0, max: 20, step: 0.1 },
+      { subsection: 'Shine After' },
+      { label: 'Brightness', key: 'ultraRareShineAfterBrightness', min: 0, max: 3, step: 0.05 },
+      { label: 'Contrast', key: 'ultraRareShineAfterContrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Saturation', key: 'ultraRareShineAfterSaturation', min: 0, max: 3, step: 0.05 },
+      { subsection: 'Shine Base' },
+      { label: 'Brightness', key: 'ultraRareShineBaseBrightness', min: 0, max: 5, step: 0.05 },
+      { label: 'Contrast', key: 'ultraRareShineBaseContrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Saturation', key: 'ultraRareShineBaseSaturation', min: 0, max: 5, step: 0.05 },
+      { subsection: 'Glare' },
+      { label: 'Glare contrast', key: 'ultraRareGlareContrast', min: 0, max: 5, step: 0.05 },
+      { label: 'Glare2 contrast', key: 'ultraRareGlare2Contrast', min: 0, max: 3, step: 0.05 },
+      { subsection: 'Gradients' },
+      {
+        label: 'Rotate delta',
+        key: 'ultraRareRotateDelta',
+        min: 0,
+        max: 360,
+        step: 0.5,
+        suffix: '°',
+      },
+      { label: 'Angle1 mult', key: 'ultraRareAngle1Mult', min: -5, max: 5, step: 0.05 },
+      { label: 'Angle2 mult', key: 'ultraRareAngle2Mult', min: -5, max: 5, step: 0.05 },
+      { label: 'BgY mult 1', key: 'ultraRareBgYMult1', min: -5, max: 5, step: 0.05 },
+      { label: 'BgY mult 2', key: 'ultraRareBgYMult2', min: -5, max: 5, step: 0.05 },
+      { subsection: 'Diagonal Bars' },
+      { label: 'Bar angle', key: 'ultraRareBarAngle', min: 0, max: 360, step: 0.5, suffix: '°' },
+      { label: 'Offset BgX mult', key: 'ultraRareBarOffsetBgXMult', min: -5, max: 5, step: 0.05 },
+      { label: 'Offset BgY mult', key: 'ultraRareBarOffsetBgYMult', min: -5, max: 5, step: 0.05 },
+      { label: 'Bar frequency', key: 'ultraRareBarFrequency', min: 0.5, max: 20, step: 0.1 },
+      {
+        label: 'Intensity start 1',
+        key: 'ultraRareBarIntensityStart1',
+        min: 0,
+        max: 1,
+        step: 0.01,
+      },
+      { label: 'Intensity end 1', key: 'ultraRareBarIntensityEnd1', min: 0, max: 1, step: 0.01 },
+      {
+        label: 'Intensity start 2',
+        key: 'ultraRareBarIntensityStart2',
+        min: 0,
+        max: 1,
+        step: 0.01,
+      },
+      { label: 'Intensity end 2', key: 'ultraRareBarIntensityEnd2', min: 0, max: 1, step: 0.01 },
+      { subsection: 'Metallic Sparkle' },
+      { label: 'Intensity', key: 'ultraRareSparkleIntensity', min: 0, max: 3, step: 0.05 },
+      { label: 'Radius', key: 'ultraRareSparkleRadius', min: 0.1, max: 1.5, step: 0.05 },
+      { label: 'Contrast', key: 'ultraRareSparkleContrast', min: 0.5, max: 10, step: 0.1 },
+      { label: 'Color shift', key: 'ultraRareSparkleColorShift', min: 0, max: 5, step: 0.1 },
+    ],
+  },
+]
+
+function sliderKeys(section: ShaderSection): (keyof AppConfig)[] {
+  return section.items.filter((item): item is SliderDef => !isSubsection(item)).map((s) => s.key)
+}
+
+function onShaderSlider(key: keyof AppConfig, value: string) {
+  ;(store.config as Record<string, number>)[key] = parseFloat(value)
 }
 
 function formatNum(v: number): string {
   return v % 1 === 0 ? v.toFixed(1) : parseFloat(v.toPrecision(6)).toString()
 }
 
-async function copyDefaults() {
-  const keys = store.shaderStyle === 'illustration-rare' ? ILLUST_RARE_KEYS : ULTRA_RARE_KEYS
+async function copyDefaults(section: ShaderSection) {
+  const keys = sliderKeys(section)
   const lines = keys.map((k) => `  ${k}: ${formatNum(store.config[k] as number)},`)
   await navigator.clipboard.writeText(lines.join('\n'))
   copied.value = true
   setTimeout(() => (copied.value = false), 2000)
 }
+
+const activeSection = computed(() => sections.find((s) => s.id === store.shaderStyle))
 </script>
 
 <template>
   <div class="shader-panel" :class="{ hidden: !store.isShaderPanelOpen }">
     <h3>Shader Controls</h3>
 
-    <!-- Illustration Rare Shader -->
-    <div v-show="store.shaderStyle === 'illustration-rare'" class="shader-section">
+    <div v-if="activeSection" class="shader-section">
       <div class="shader-section-header">
-        <div class="shader-section-title">✨ Illustration Rare</div>
-        <button class="shader-copy-btn" @click="copyDefaults">{{ copied ? 'Copied!' : 'Copy defaults' }}</button>
+        <div class="shader-section-title">{{ activeSection.icon }} {{ activeSection.title }}</div>
+        <button class="shader-copy-btn" @click="copyDefaults(activeSection)">
+          {{ copied ? 'Copied!' : 'Copy defaults' }}
+        </button>
       </div>
 
-      <div class="shader-row">
-        <span class="shader-label">Rainbow scale</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0.5" max="5" step="0.1"
-            :value="store.config.illustRareRainbowScale"
-            @input="onShaderSlider('illustRareRainbowScale', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.illustRareRainbowScale) }}</span>
+      <template v-for="(item, i) in activeSection.items" :key="i">
+        <div v-if="isSubsection(item)" class="shader-subsection">{{ item.subsection }}</div>
+        <div v-else class="shader-row">
+          <span class="shader-label">{{ item.label }}</span>
+          <div class="shader-slider-wrap">
+            <input
+              type="range"
+              class="shader-slider"
+              :min="item.min"
+              :max="item.max"
+              :step="item.step"
+              :value="store.config[item.key]"
+              @input="onShaderSlider(item.key, ($event.target as HTMLInputElement).value)"
+            />
+            <span class="shader-value">{{ displayValue(item) }}</span>
+          </div>
         </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar angle</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="360" step="1"
-            :value="store.config.illustRareBarAngle"
-            @input="onShaderSlider('illustRareBarAngle', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.illustRareBarAngle) }}°</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar density</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0.5" max="10" step="0.1"
-            :value="store.config.illustRareBarDensity"
-            @input="onShaderSlider('illustRareBarDensity', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.illustRareBarDensity) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar width</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0.1" max="10" step="0.05"
-            :value="store.config.illustRareBarWidth"
-            @input="onShaderSlider('illustRareBarWidth', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.illustRareBarWidth) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar intensity</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="20" step="0.05"
-            :value="store.config.illustRareBarIntensity"
-            @input="onShaderSlider('illustRareBarIntensity', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.illustRareBarIntensity) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar hue</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="360" step="1"
-            :value="store.config.illustRareBarHue"
-            @input="onShaderSlider('illustRareBarHue', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.illustRareBarHue) }}°</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar med sat</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
-            :value="store.config.illustRareBarMediumSaturation"
-            @input="onShaderSlider('illustRareBarMediumSaturation', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ Math.round(store.config.illustRareBarMediumSaturation * 100) }}%</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar med light</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
-            :value="store.config.illustRareBarMediumLightness"
-            @input="onShaderSlider('illustRareBarMediumLightness', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ Math.round(store.config.illustRareBarMediumLightness * 100) }}%</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar bright sat</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
-            :value="store.config.illustRareBarBrightSaturation"
-            @input="onShaderSlider('illustRareBarBrightSaturation', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ Math.round(store.config.illustRareBarBrightSaturation * 100) }}%</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar bright light</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
-            :value="store.config.illustRareBarBrightLightness"
-            @input="onShaderSlider('illustRareBarBrightLightness', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ Math.round(store.config.illustRareBarBrightLightness * 100) }}%</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Shine contrast</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="1" max="5" step="0.05"
-            :value="store.config.illustRareShine1Contrast"
-            @input="onShaderSlider('illustRareShine1Contrast', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.illustRareShine1Contrast) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Shine saturate</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="2" step="0.05"
-            :value="store.config.illustRareShine1Saturation"
-            @input="onShaderSlider('illustRareShine1Saturation', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.illustRareShine1Saturation) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Shine 2 opacity</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="1" step="0.05"
-            :value="store.config.illustRareShine2Opacity"
-            @input="onShaderSlider('illustRareShine2Opacity', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.illustRareShine2Opacity) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Glare opacity</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="1" step="0.05"
-            :value="store.config.illustRareGlareOpacity"
-            @input="onShaderSlider('illustRareGlareOpacity', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.illustRareGlareOpacity) }}</span>
-        </div>
-      </div>
+      </template>
     </div>
 
-    <!-- Ultra Rare Shader -->
-    <div v-show="store.shaderStyle === 'ultra-rare'" class="shader-section">
-      <div class="shader-section-header">
-        <div class="shader-section-title">💎 Ultra Rare</div>
-        <button class="shader-copy-btn" @click="copyDefaults">{{ copied ? 'Copied!' : 'Copy defaults' }}</button>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Base brightness</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="3" step="0.05"
-            :value="store.config.ultraRareBaseBrightness"
-            @input="onShaderSlider('ultraRareBaseBrightness', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBaseBrightness) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-subsection">Shine Before</div>
-
-      <div class="shader-row">
-        <span class="shader-label">Brightness</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="20" step="0.05"
-            :value="store.config.ultraRareShineBrightness"
-            @input="onShaderSlider('ultraRareShineBrightness', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareShineBrightness) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Contrast</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="10" step="0.05"
-            :value="store.config.ultraRareShineContrast"
-            @input="onShaderSlider('ultraRareShineContrast', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareShineContrast) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Saturation</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="20" step="0.1"
-            :value="store.config.ultraRareShineSaturation"
-            @input="onShaderSlider('ultraRareShineSaturation', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareShineSaturation) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-subsection">Shine After</div>
-
-      <div class="shader-row">
-        <span class="shader-label">Brightness</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="3" step="0.05"
-            :value="store.config.ultraRareShineAfterBrightness"
-            @input="onShaderSlider('ultraRareShineAfterBrightness', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareShineAfterBrightness) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Contrast</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="3" step="0.05"
-            :value="store.config.ultraRareShineAfterContrast"
-            @input="onShaderSlider('ultraRareShineAfterContrast', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareShineAfterContrast) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Saturation</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="3" step="0.05"
-            :value="store.config.ultraRareShineAfterSaturation"
-            @input="onShaderSlider('ultraRareShineAfterSaturation', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareShineAfterSaturation) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-subsection">Shine Base</div>
-
-      <div class="shader-row">
-        <span class="shader-label">Brightness</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="5" step="0.05"
-            :value="store.config.ultraRareShineBaseBrightness"
-            @input="onShaderSlider('ultraRareShineBaseBrightness', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareShineBaseBrightness) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Contrast</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="3" step="0.05"
-            :value="store.config.ultraRareShineBaseContrast"
-            @input="onShaderSlider('ultraRareShineBaseContrast', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareShineBaseContrast) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Saturation</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="5" step="0.05"
-            :value="store.config.ultraRareShineBaseSaturation"
-            @input="onShaderSlider('ultraRareShineBaseSaturation', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareShineBaseSaturation) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-subsection">Glare</div>
-
-      <div class="shader-row">
-        <span class="shader-label">Glare contrast</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="5" step="0.05"
-            :value="store.config.ultraRareGlareContrast"
-            @input="onShaderSlider('ultraRareGlareContrast', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareGlareContrast) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Glare2 contrast</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="3" step="0.05"
-            :value="store.config.ultraRareGlare2Contrast"
-            @input="onShaderSlider('ultraRareGlare2Contrast', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareGlare2Contrast) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-subsection">Gradients</div>
-
-      <div class="shader-row">
-        <span class="shader-label">Rotate delta</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="360" step="0.5"
-            :value="store.config.ultraRareRotateDelta"
-            @input="onShaderSlider('ultraRareRotateDelta', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareRotateDelta) }}°</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Angle1 mult</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="-5" max="5" step="0.05"
-            :value="store.config.ultraRareAngle1Mult"
-            @input="onShaderSlider('ultraRareAngle1Mult', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareAngle1Mult) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Angle2 mult</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="-5" max="5" step="0.05"
-            :value="store.config.ultraRareAngle2Mult"
-            @input="onShaderSlider('ultraRareAngle2Mult', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareAngle2Mult) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">BgY mult 1</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="-5" max="5" step="0.05"
-            :value="store.config.ultraRareBgYMult1"
-            @input="onShaderSlider('ultraRareBgYMult1', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBgYMult1) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">BgY mult 2</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="-5" max="5" step="0.05"
-            :value="store.config.ultraRareBgYMult2"
-            @input="onShaderSlider('ultraRareBgYMult2', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBgYMult2) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-subsection">Diagonal Bars</div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar angle</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="360" step="0.5"
-            :value="store.config.ultraRareBarAngle"
-            @input="onShaderSlider('ultraRareBarAngle', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBarAngle) }}°</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Offset BgX mult</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="-5" max="5" step="0.05"
-            :value="store.config.ultraRareBarOffsetBgXMult"
-            @input="onShaderSlider('ultraRareBarOffsetBgXMult', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBarOffsetBgXMult) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Offset BgY mult</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="-5" max="5" step="0.05"
-            :value="store.config.ultraRareBarOffsetBgYMult"
-            @input="onShaderSlider('ultraRareBarOffsetBgYMult', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBarOffsetBgYMult) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Bar frequency</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0.5" max="20" step="0.1"
-            :value="store.config.ultraRareBarFrequency"
-            @input="onShaderSlider('ultraRareBarFrequency', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBarFrequency) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Intensity start 1</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
-            :value="store.config.ultraRareBarIntensityStart1"
-            @input="onShaderSlider('ultraRareBarIntensityStart1', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBarIntensityStart1) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Intensity end 1</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
-            :value="store.config.ultraRareBarIntensityEnd1"
-            @input="onShaderSlider('ultraRareBarIntensityEnd1', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBarIntensityEnd1) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Intensity start 2</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
-            :value="store.config.ultraRareBarIntensityStart2"
-            @input="onShaderSlider('ultraRareBarIntensityStart2', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBarIntensityStart2) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Intensity end 2</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
-            :value="store.config.ultraRareBarIntensityEnd2"
-            @input="onShaderSlider('ultraRareBarIntensityEnd2', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareBarIntensityEnd2) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-subsection">Metallic Sparkle</div>
-
-      <div class="shader-row">
-        <span class="shader-label">Intensity</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="3" step="0.05"
-            :value="store.config.ultraRareSparkleIntensity"
-            @input="onShaderSlider('ultraRareSparkleIntensity', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareSparkleIntensity) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Radius</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0.1" max="1.5" step="0.05"
-            :value="store.config.ultraRareSparkleRadius"
-            @input="onShaderSlider('ultraRareSparkleRadius', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareSparkleRadius) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Contrast</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0.5" max="10" step="0.1"
-            :value="store.config.ultraRareSparkleContrast"
-            @input="onShaderSlider('ultraRareSparkleContrast', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareSparkleContrast) }}</span>
-        </div>
-      </div>
-
-      <div class="shader-row">
-        <span class="shader-label">Color shift</span>
-        <div class="shader-slider-wrap">
-          <input type="range" class="shader-slider" min="0" max="5" step="0.1"
-            :value="store.config.ultraRareSparkleColorShift"
-            @input="onShaderSlider('ultraRareSparkleColorShift', ($event.target as HTMLInputElement).value)" />
-          <span class="shader-value">{{ formatValue(store.config.ultraRareSparkleColorShift) }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Placeholder for other shader types -->
-    <div v-show="store.shaderStyle !== 'illustration-rare' && store.shaderStyle !== 'ultra-rare'" class="shader-section">
+    <div v-else class="shader-section">
       <div class="shader-section-title">{{ store.shaderStyle }}</div>
       <p class="shader-placeholder">No controls available for this shader yet.</p>
     </div>
