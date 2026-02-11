@@ -210,7 +210,8 @@ void main() {
 
     // Apply overall base brightness
     result = adjustBrightness(result, uBaseBrightness);
-    result = adjustContrast(result, 0.7);
+    result = adjustContrast(result, 0.8);
+    result = adjustSaturate(result, 0.8);
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
 }

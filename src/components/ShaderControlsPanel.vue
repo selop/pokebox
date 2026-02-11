@@ -1,7 +1,33 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useAppStore } from '@/stores/app'
+import type { AppConfig } from '@/types'
 
 const store = useAppStore()
+const copied = ref(false)
+
+const ILLUST_RARE_KEYS: (keyof AppConfig)[] = [
+  'illustRareRainbowScale', 'illustRareBarAngle', 'illustRareBarDensity',
+  'illustRareBarWidth', 'illustRareBarIntensity', 'illustRareBarHue',
+  'illustRareBarMediumSaturation', 'illustRareBarMediumLightness',
+  'illustRareBarBrightSaturation', 'illustRareBarBrightLightness',
+  'illustRareShine1Contrast', 'illustRareShine1Saturation',
+  'illustRareShine2Opacity', 'illustRareGlareOpacity',
+]
+
+const ULTRA_RARE_KEYS: (keyof AppConfig)[] = [
+  'ultraRareBaseBrightness', 'ultraRareShineBrightness', 'ultraRareShineContrast',
+  'ultraRareShineSaturation', 'ultraRareShineAfterBrightness', 'ultraRareShineAfterContrast',
+  'ultraRareShineAfterSaturation', 'ultraRareShineBaseBrightness', 'ultraRareShineBaseContrast',
+  'ultraRareShineBaseSaturation', 'ultraRareGlareContrast', 'ultraRareGlare2Contrast',
+  'ultraRareRotateDelta', 'ultraRareAngle1Mult', 'ultraRareAngle2Mult',
+  'ultraRareBgYMult1', 'ultraRareBgYMult2', 'ultraRareBarAngle',
+  'ultraRareBarOffsetBgXMult', 'ultraRareBarOffsetBgYMult', 'ultraRareBarFrequency',
+  'ultraRareBarIntensityStart1', 'ultraRareBarIntensityEnd1',
+  'ultraRareBarIntensityStart2', 'ultraRareBarIntensityEnd2',
+  'ultraRareSparkleIntensity', 'ultraRareSparkleRadius',
+  'ultraRareSparkleContrast', 'ultraRareSparkleColorShift',
+]
 
 function onShaderSlider(key: keyof typeof store.config, value: string) {
   ;(store.config as Record<string, number>)[key] = parseFloat(value)
@@ -9,6 +35,18 @@ function onShaderSlider(key: keyof typeof store.config, value: string) {
 
 function formatValue(v: number): string {
   return v % 1 === 0 ? String(v) : v.toFixed(2)
+}
+
+function formatNum(v: number): string {
+  return v % 1 === 0 ? v.toFixed(1) : parseFloat(v.toPrecision(6)).toString()
+}
+
+async function copyDefaults() {
+  const keys = store.shaderStyle === 'illustration-rare' ? ILLUST_RARE_KEYS : ULTRA_RARE_KEYS
+  const lines = keys.map((k) => `  ${k}: ${formatNum(store.config[k] as number)},`)
+  await navigator.clipboard.writeText(lines.join('\n'))
+  copied.value = true
+  setTimeout(() => (copied.value = false), 2000)
 }
 </script>
 
@@ -18,7 +56,10 @@ function formatValue(v: number): string {
 
     <!-- Illustration Rare Shader -->
     <div v-show="store.shaderStyle === 'illustration-rare'" class="shader-section">
-      <div class="shader-section-title">✨ Illustration Rare</div>
+      <div class="shader-section-header">
+        <div class="shader-section-title">✨ Illustration Rare</div>
+        <button class="shader-copy-btn" @click="copyDefaults">{{ copied ? 'Copied!' : 'Copy defaults' }}</button>
+      </div>
 
       <div class="shader-row">
         <span class="shader-label">Rainbow scale</span>
@@ -163,7 +204,10 @@ function formatValue(v: number): string {
 
     <!-- Ultra Rare Shader -->
     <div v-show="store.shaderStyle === 'ultra-rare'" class="shader-section">
-      <div class="shader-section-title">💎 Ultra Rare</div>
+      <div class="shader-section-header">
+        <div class="shader-section-title">💎 Ultra Rare</div>
+        <button class="shader-copy-btn" @click="copyDefaults">{{ copied ? 'Copied!' : 'Copy defaults' }}</button>
+      </div>
 
       <div class="shader-row">
         <span class="shader-label">Base brightness</span>
@@ -516,12 +560,35 @@ function formatValue(v: number): string {
   margin-bottom: 16px;
 }
 
+.shader-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
 .shader-section-title {
   font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: #f72585;
-  margin-bottom: 10px;
+}
+
+.shader-copy-btn {
+  font-size: 0.55rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 245, 212, 0.3);
+  background: rgba(0, 245, 212, 0.08);
+  color: #00f5d4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.shader-copy-btn:hover {
+  background: rgba(0, 245, 212, 0.18);
+  border-color: rgba(0, 245, 212, 0.5);
 }
 
 .shader-subsection {
