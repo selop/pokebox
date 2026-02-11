@@ -56,10 +56,10 @@ export const DEFAULT_CONFIG: AppConfig = {
   ultraRareBarIntensityStart2: 0.28,
   ultraRareBarIntensityEnd2: 0.55,
   // Ultra Rare metallic sparkle defaults
-  ultraRareSparkleIntensity: 1.0,
-  ultraRareSparkleRadius: 0.4,
+  ultraRareSparkleIntensity: 0.65,
+  ultraRareSparkleRadius: 0.65,
   ultraRareSparkleContrast: 3.0,
-  ultraRareSparkleColorShift: 2.0,
+  ultraRareSparkleColorShift: 0.0,
 }
 
 export const DEFAULT_CARD: CardTransform = {

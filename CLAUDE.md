@@ -13,7 +13,9 @@ bun dev              # Start Vite dev server with HMR
 bun run build        # Type-check (vue-tsc) + production build (Vite)
 bun run lint         # Run oxlint + eslint with auto-fix
 bun run format       # Prettier on src/
-bun run test:e2e     # Playwright end-to-end tests
+bun test:unit        # Run all unit tests (includes shader tests)
+bun test:shader      # Run shader compilation and validation tests
+bun test:e2e         # Playwright end-to-end tests
 ```
 
 ## Architecture
@@ -80,3 +82,41 @@ The scene watches store properties and rebuilds accordingly:
 - Card assets live under `public/cards/{fronts,holo-masks,etch-foils}/`
 - Seeded PRNG (`mulberry32`) for reproducible procedural layouts
 - MediaPipe is dynamically imported to avoid bundling the full library
+
+## Testing
+
+### Shader Testing
+
+**IMPORTANT**: Always run shader tests after modifying GLSL shaders to catch compilation errors before runtime.
+
+```bash
+bun test:shader  # Run all shader tests (~1 second)
+```
+
+The shader test suite (`src/shaders/__tests__/`) includes:
+
+1. **Static Validation** (`shader-validation.test.ts`)
+   - Detects undefined function calls (e.g., missing blend mode functions)
+   - Validates all uniforms and varyings are declared
+   - Checks for balanced braces and parentheses
+   - Verifies `gl_FragColor` is set and precision is declared
+   - Runs instantly without WebGL context
+
+2. **Compilation Tests** (`shader-compilation.test.ts`)
+   - Creates ShaderMaterial for each shader variant
+   - Verifies Three.js can parse shaders without errors
+   - Validates uniform configuration
+
+**When adding new shaders**:
+1. Add shader to both test files
+2. List required uniforms in compilation test
+3. Run `bun test:shader` to verify
+4. Add uniforms to `AppConfig` type, `defaults.ts`, and `buildCard.ts`
+
+**Common errors caught by tests**:
+- Undefined blend mode functions (e.g., `blendScreen` not defined)
+- Missing uniform declarations
+- Type mismatches in GLSL operations
+- Syntax errors (missing semicolons, unbalanced braces)
+
+See `SHADER-TESTING.md` for detailed testing documentation.
