@@ -32,15 +32,13 @@ export interface AppConfig {
   sirShineBrightness: number
   sirShineContrast: number
   sirShineSaturation: number
-  sirBarFrequency: number
-  sirBarBrightness: number
-  sirBarContrast: number
-  sirBarSaturation: number
-  sirSunpillarBrightness: number
-  sirSunpillarContrast: number
-  sirSunpillarSaturation: number
   sirGlitterContrast: number
   sirGlitterSaturation: number
+  sirWashScale: number
+  sirWashTiltSensitivity: number
+  sirWashSaturation: number
+  sirWashContrast: number
+  sirWashOpacity: number
   sirBaseBrightness: number
   sirBaseContrast: number
   // Ultra Rare shader parameters

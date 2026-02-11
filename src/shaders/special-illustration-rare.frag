@@ -19,15 +19,13 @@ uniform float uSirShineFrequency;
 uniform float uSirShineBrightness;
 uniform float uSirShineContrast;
 uniform float uSirShineSaturation;
-uniform float uSirBarFrequency;
-uniform float uSirBarBrightness;
-uniform float uSirBarContrast;
-uniform float uSirBarSaturation;
-uniform float uSirSunpillarBrightness;
-uniform float uSirSunpillarContrast;
-uniform float uSirSunpillarSaturation;
 uniform float uSirGlitterContrast;
 uniform float uSirGlitterSaturation;
+uniform float uSirWashScale;
+uniform float uSirWashTiltSensitivity;
+uniform float uSirWashSaturation;
+uniform float uSirWashContrast;
+uniform float uSirWashOpacity;
 uniform float uSirBaseBrightness;
 uniform float uSirBaseContrast;
 
@@ -94,75 +92,13 @@ void main() {
     shineBefore = adjustSaturate(shineBefore, uSirShineSaturation);
     shineBefore = clamp(shineBefore, 0.0, 1.0);
 
-    // ── SHINE LAYER :after - Fine diagonal line texture ──────
-    // Much higher frequency for fine etched line texture
-    float rotateX = (bgX - 0.5) * 180.0;
-    float rotateDelta = (bgY - 0.5) * 90.0;
-
-    // Bar layer 1 (positive rotation) - very fine lines
-    float barAngle1 = ((rotateX - rotateDelta) * 0.25) * 3.14159 / 180.0;
-    float barCoord1 = dot(uv, vec2(cos(barAngle1), sin(barAngle1)));
-    float barT1 = fract((barCoord1 + bgY * 1.7) * uSirBarFrequency);
-
-    // Subtle, fine lines with lower contrast
-    float bar1 = smoothstep(0.4, 0.5, barT1) * (1.0 - smoothstep(0.5, 0.6, barT1));
-    vec3 barColor1 = mix(vec3(0.7), vec3(0.95), bar1); // Light gray to near-white
-
-    // Bar layer 2 (negative rotation) - very fine lines
-    float barAngle2 = ((rotateX - rotateDelta) * -0.25) * 3.14159 / 180.0;
-    float barCoord2 = dot(uv, vec2(cos(barAngle2), sin(barAngle2)));
-    float barT2 = fract((barCoord2 - bgY * 1.3) * uSirBarFrequency);
-
-    float bar2 = smoothstep(0.4, 0.5, barT2) * (1.0 - smoothstep(0.5, 0.6, barT2));
-    vec3 barColor2 = mix(vec3(0.7), vec3(0.95), bar2);
-
-    // CSS: background-blend-mode: exclusion
-    vec3 bars = blendExclusion(barColor1, barColor2);
-
-    // Keep bright and low contrast for subtle texture
-    vec3 shineAfter = adjustBrightness(bars, uSirBarBrightness);
-    shineAfter = adjustContrast(shineAfter, uSirBarContrast);
-    shineAfter = adjustSaturate(shineAfter, uSirBarSaturation);
-    shineAfter = clamp(shineAfter, 0.0, 1.0);
-
-    // ── TILT-REVEALED VERTICAL SUNPILLAR EFFECT ─────────
-    // Vertical rainbow bars revealed by viewing angle (similar to illustration-rare 128.5° bars)
-    // Oriented vertically (90° angle) and controlled by bgY tilt
-
-    // Vertical bar angle (90 degrees = vertical bars)
-    float sunpillarAngle = 90.0 * 3.14159 / 180.0;
-    float sunpillarCoord = dot(uv, vec2(cos(sunpillarAngle), sin(sunpillarAngle)));
-
-    // Layer 1: Controlled by vertical tilt (bgY)
-    float sunpillarOffset1 = ((0.5 - bgY) * 2.5) + (bgX * 0.8);
-    float sunpillar1T = (sunpillarCoord + sunpillarOffset1) * 2.0;
-
-    // Generate rainbow gradient
-    vec3 sunpillar1Color = sunpillarGradient(sunpillar1T);
-
-    // Create bar pattern with gaps
-    float sunpillar1Pattern = fract(sunpillar1T);
-    float sunpillar1Mask = smoothstep(0.25, 0.35, sunpillar1Pattern) * (1.0 - smoothstep(0.45, 0.55, sunpillar1Pattern));
-    sunpillar1Color *= sunpillar1Mask;
-
-    // Layer 2: Inverted offset for dual-layer effect
-    float sunpillarOffset2 = ((0.5 - bgY) * -1.8) - (bgX * 0.6);
-    float sunpillar2T = (sunpillarCoord + sunpillarOffset2) * 1.0;
-
-    vec3 sunpillar2Color = sunpillarGradient(sunpillar2T);
-
-    float sunpillar2Pattern = fract(sunpillar2T);
-    float sunpillar2Mask = smoothstep(0.25, 0.35, sunpillar2Pattern) * (1.0 - smoothstep(0.45, 0.55, sunpillar2Pattern));
-    sunpillar2Color *= sunpillar2Mask;
-
-    // Combine layers with screen blend
-    vec3 sunpillars = blendScreen(sunpillar1Color, sunpillar2Color);
-
-    // Apply filters for holographic effect
-    sunpillars = adjustBrightness(sunpillars, uSirSunpillarBrightness);
-    sunpillars = adjustContrast(sunpillars, uSirSunpillarContrast);
-    sunpillars = adjustSaturate(sunpillars, uSirSunpillarSaturation);
-    sunpillars = clamp(sunpillars, 0.2, 1.0);
+    // ── TILT-RESPONSIVE RAINBOW COLOR WASH ──────────────
+    // Vertical (90°) rainbow pillar that slides top-to-bottom with tilt
+    float washT = uv.y * uSirWashScale + (bgY - 0.5) * uSirWashTiltSensitivity;
+    vec3 iridescence = sunpillarGradient(washT);
+    iridescence = adjustSaturate(iridescence, uSirWashSaturation);
+    iridescence = adjustContrast(iridescence, uSirWashContrast);
+    iridescence = clamp(iridescence, 0.0, 1.0);
 
     // ── IRIDESCENT GLITTER LAYERS (using textures) ──────
     float glitterTileSize = 300.0 / 1024.0;
@@ -211,14 +147,11 @@ void main() {
         vec3 silverBase = vec3(0.85);
         result = mix(result, blendOverlay(result, silverBase), mask * uCardOpacity * 0.3);
 
-        // Apply fine diagonal line texture with hard-light blend (subtle)
-        result = mix(result, blendHardLight(result, shineAfter), mask * uCardOpacity * 0.4);
-
         // Apply diagonal rainbow shine with overlay blend
         result = mix(result, blendOverlay(result, shineBefore), mask * uCardOpacity * 0.2);
 
-        // Apply animated vertical sunpillars with plus-lighter blend
-        result = mix(result, blendPlusLighter(result, sunpillars), mask * uCardOpacity * 0.1);
+        // Apply tilt-responsive rainbow color wash with soft-light blend
+        result = mix(result, blendSoftLight(result, iridescence), mask * uCardOpacity * uSirWashOpacity);
 
         // Apply main glitter with plus-lighter blend
         result = mix(result, blendPlusLighter(result, glitter), mask * glitterOpacity * 0.8);

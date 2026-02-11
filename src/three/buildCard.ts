@@ -129,15 +129,13 @@ export function buildCardMesh(
       uniforms.uSirShineBrightness = { value: config.sirShineBrightness }
       uniforms.uSirShineContrast = { value: config.sirShineContrast }
       uniforms.uSirShineSaturation = { value: config.sirShineSaturation }
-      uniforms.uSirBarFrequency = { value: config.sirBarFrequency }
-      uniforms.uSirBarBrightness = { value: config.sirBarBrightness }
-      uniforms.uSirBarContrast = { value: config.sirBarContrast }
-      uniforms.uSirBarSaturation = { value: config.sirBarSaturation }
-      uniforms.uSirSunpillarBrightness = { value: config.sirSunpillarBrightness }
-      uniforms.uSirSunpillarContrast = { value: config.sirSunpillarContrast }
-      uniforms.uSirSunpillarSaturation = { value: config.sirSunpillarSaturation }
       uniforms.uSirGlitterContrast = { value: config.sirGlitterContrast }
       uniforms.uSirGlitterSaturation = { value: config.sirGlitterSaturation }
+      uniforms.uSirWashScale = { value: config.sirWashScale }
+      uniforms.uSirWashTiltSensitivity = { value: config.sirWashTiltSensitivity }
+      uniforms.uSirWashSaturation = { value: config.sirWashSaturation }
+      uniforms.uSirWashContrast = { value: config.sirWashContrast }
+      uniforms.uSirWashOpacity = { value: config.sirWashOpacity }
       uniforms.uSirBaseBrightness = { value: config.sirBaseBrightness }
       uniforms.uSirBaseContrast = { value: config.sirBaseContrast }
     }
