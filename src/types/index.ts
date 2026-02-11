@@ -44,6 +44,20 @@ export interface AppConfig {
   ultraRareAngle2Mult: number
   ultraRareBgYMult1: number
   ultraRareBgYMult2: number
+  // Ultra Rare diagonal bar parameters
+  ultraRareBarAngle: number
+  ultraRareBarOffsetBgXMult: number
+  ultraRareBarOffsetBgYMult: number
+  ultraRareBarFrequency: number
+  ultraRareBarIntensityStart1: number
+  ultraRareBarIntensityEnd1: number
+  ultraRareBarIntensityStart2: number
+  ultraRareBarIntensityEnd2: number
+  // Ultra Rare metallic sparkle parameters
+  ultraRareSparkleIntensity: number
+  ultraRareSparkleRadius: number
+  ultraRareSparkleContrast: number
+  ultraRareSparkleColorShift: number
 }
 
 export interface CardTransform {

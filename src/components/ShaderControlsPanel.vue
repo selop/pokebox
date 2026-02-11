@@ -344,6 +344,130 @@ function formatValue(v: number): string {
           <span class="shader-value">{{ formatValue(store.config.ultraRareBgYMult2) }}</span>
         </div>
       </div>
+
+      <div class="shader-subsection">Diagonal Bars</div>
+
+      <div class="shader-row">
+        <span class="shader-label">Bar angle</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="0" max="360" step="0.5"
+            :value="store.config.ultraRareBarAngle"
+            @input="onShaderSlider('ultraRareBarAngle', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareBarAngle) }}°</span>
+        </div>
+      </div>
+
+      <div class="shader-row">
+        <span class="shader-label">Offset BgX mult</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="-5" max="5" step="0.05"
+            :value="store.config.ultraRareBarOffsetBgXMult"
+            @input="onShaderSlider('ultraRareBarOffsetBgXMult', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareBarOffsetBgXMult) }}</span>
+        </div>
+      </div>
+
+      <div class="shader-row">
+        <span class="shader-label">Offset BgY mult</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="-5" max="5" step="0.05"
+            :value="store.config.ultraRareBarOffsetBgYMult"
+            @input="onShaderSlider('ultraRareBarOffsetBgYMult', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareBarOffsetBgYMult) }}</span>
+        </div>
+      </div>
+
+      <div class="shader-row">
+        <span class="shader-label">Bar frequency</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="0.5" max="20" step="0.1"
+            :value="store.config.ultraRareBarFrequency"
+            @input="onShaderSlider('ultraRareBarFrequency', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareBarFrequency) }}</span>
+        </div>
+      </div>
+
+      <div class="shader-row">
+        <span class="shader-label">Intensity start 1</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
+            :value="store.config.ultraRareBarIntensityStart1"
+            @input="onShaderSlider('ultraRareBarIntensityStart1', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareBarIntensityStart1) }}</span>
+        </div>
+      </div>
+
+      <div class="shader-row">
+        <span class="shader-label">Intensity end 1</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
+            :value="store.config.ultraRareBarIntensityEnd1"
+            @input="onShaderSlider('ultraRareBarIntensityEnd1', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareBarIntensityEnd1) }}</span>
+        </div>
+      </div>
+
+      <div class="shader-row">
+        <span class="shader-label">Intensity start 2</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
+            :value="store.config.ultraRareBarIntensityStart2"
+            @input="onShaderSlider('ultraRareBarIntensityStart2', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareBarIntensityStart2) }}</span>
+        </div>
+      </div>
+
+      <div class="shader-row">
+        <span class="shader-label">Intensity end 2</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="0" max="1" step="0.01"
+            :value="store.config.ultraRareBarIntensityEnd2"
+            @input="onShaderSlider('ultraRareBarIntensityEnd2', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareBarIntensityEnd2) }}</span>
+        </div>
+      </div>
+
+      <div class="shader-subsection">Metallic Sparkle</div>
+
+      <div class="shader-row">
+        <span class="shader-label">Intensity</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="0" max="3" step="0.05"
+            :value="store.config.ultraRareSparkleIntensity"
+            @input="onShaderSlider('ultraRareSparkleIntensity', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareSparkleIntensity) }}</span>
+        </div>
+      </div>
+
+      <div class="shader-row">
+        <span class="shader-label">Radius</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="0.1" max="1.5" step="0.05"
+            :value="store.config.ultraRareSparkleRadius"
+            @input="onShaderSlider('ultraRareSparkleRadius', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareSparkleRadius) }}</span>
+        </div>
+      </div>
+
+      <div class="shader-row">
+        <span class="shader-label">Contrast</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="0.5" max="10" step="0.1"
+            :value="store.config.ultraRareSparkleContrast"
+            @input="onShaderSlider('ultraRareSparkleContrast', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareSparkleContrast) }}</span>
+        </div>
+      </div>
+
+      <div class="shader-row">
+        <span class="shader-label">Color shift</span>
+        <div class="shader-slider-wrap">
+          <input type="range" class="shader-slider" min="0" max="5" step="0.1"
+            :value="store.config.ultraRareSparkleColorShift"
+            @input="onShaderSlider('ultraRareSparkleColorShift', ($event.target as HTMLInputElement).value)" />
+          <span class="shader-value">{{ formatValue(store.config.ultraRareSparkleColorShift) }}</span>
+        </div>
+      </div>
     </div>
 
     <!-- Placeholder for other shader types -->

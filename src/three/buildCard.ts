@@ -151,6 +151,18 @@ export function buildCardMesh(
       uniforms.uAngle2Mult = { value: config.ultraRareAngle2Mult }
       uniforms.uBgYMult1 = { value: config.ultraRareBgYMult1 }
       uniforms.uBgYMult2 = { value: config.ultraRareBgYMult2 }
+      uniforms.uBarAngle = { value: config.ultraRareBarAngle }
+      uniforms.uBarOffsetBgXMult = { value: config.ultraRareBarOffsetBgXMult }
+      uniforms.uBarOffsetBgYMult = { value: config.ultraRareBarOffsetBgYMult }
+      uniforms.uBarFrequency = { value: config.ultraRareBarFrequency }
+      uniforms.uBarIntensityStart1 = { value: config.ultraRareBarIntensityStart1 }
+      uniforms.uBarIntensityEnd1 = { value: config.ultraRareBarIntensityEnd1 }
+      uniforms.uBarIntensityStart2 = { value: config.ultraRareBarIntensityStart2 }
+      uniforms.uBarIntensityEnd2 = { value: config.ultraRareBarIntensityEnd2 }
+      uniforms.uSparkleIntensity = { value: config.ultraRareSparkleIntensity }
+      uniforms.uSparkleRadius = { value: config.ultraRareSparkleRadius }
+      uniforms.uSparkleContrast = { value: config.ultraRareSparkleContrast }
+      uniforms.uSparkleColorShift = { value: config.ultraRareSparkleColorShift }
     }
 
     cardMat = new ShaderMaterial({

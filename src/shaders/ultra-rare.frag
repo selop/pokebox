@@ -27,6 +27,20 @@ uniform float uAngle1Mult;
 uniform float uAngle2Mult;
 uniform float uBgYMult1;
 uniform float uBgYMult2;
+// Diagonal bar parameters
+uniform float uBarAngle;
+uniform float uBarOffsetBgXMult;
+uniform float uBarOffsetBgYMult;
+uniform float uBarFrequency;
+uniform float uBarIntensityStart1;
+uniform float uBarIntensityEnd1;
+uniform float uBarIntensityStart2;
+uniform float uBarIntensityEnd2;
+// Metallic sparkle spotlight parameters
+uniform float uSparkleIntensity;
+uniform float uSparkleRadius;
+uniform float uSparkleContrast;
+uniform float uSparkleColorShift;
 
 varying vec2 vUv;
 
@@ -53,6 +67,9 @@ vec3 blendMultiply(vec3 base, vec3 blend) {
 }
 vec3 blendPlusLighter(vec3 base, vec3 blend) {
     return min(base + blend, vec3(1.0));
+}
+vec3 blendScreen(vec3 base, vec3 blend) {
+    return 1.0 - (1.0 - base) * (1.0 - blend);
 }
 
 // ── Filter helpers ───────────────────────────────────
@@ -111,12 +128,53 @@ void main() {
     }
 
     // ── Pointer-driven values ────────────────────────
+    float bgX = uBackground.x;
     float bgY = uBackground.y;
     float ptrX = uPointer.x;
     float ptrY = uPointer.y;
 
     // Radial spotlight from pointer
     float spotDist = length(uv - vec2(ptrX, ptrY));
+
+    // ── DIAGONAL BARS ─────────────────────────────────
+    // Diagonal bars with configurable parameters
+    float barAngle = uBarAngle * 3.14159 / 180.0;
+    float barCoord = dot(uv, vec2(cos(barAngle), sin(barAngle)));
+    float barOffset = ((0.5 - bgX) * uBarOffsetBgXMult) + (bgY * uBarOffsetBgYMult);
+    float barT = fract((barCoord + barOffset) * uBarFrequency);
+    float barIntensity = smoothstep(uBarIntensityStart1, uBarIntensityEnd1, barT) *
+                         (1.0 - smoothstep(uBarIntensityStart2, uBarIntensityEnd2, barT));
+    vec3 barDark = vec3(0.055, 0.082, 0.18);    // #0e152e
+    vec3 barBright = vec3(0.45, 0.76, 0.76);    // hsl(180, 29%, 66%)
+    vec3 diagonalBars = mix(barDark, barBright, barIntensity);
+
+    // ── METALLIC SPARKLE SPOTLIGHT ──────────────────────
+    // Radial spotlight falloff from pointer
+    float sparkleSpotlight = 1.0 - smoothstep(0.0, uSparkleRadius, spotDist);
+    sparkleSpotlight = pow(sparkleSpotlight, 2.0); // Sharper falloff
+
+    // Use foil texture for metallic pattern
+    vec3 sparkleFoil = foilTex;
+
+    // Enhance contrast for sparkle effect
+    sparkleFoil = adjustContrast(sparkleFoil, uSparkleContrast);
+
+    // Add color shift based on pointer position for iridescent effect
+    vec3 sparkleColor = sparkleFoil;
+    float colorPhase = atan(ptrY - uv.y, ptrX - uv.x) / 3.14159; // -1 to 1
+    vec3 rainbow = vec3(
+        0.5 + 0.5 * sin(colorPhase * 3.14159 * uSparkleColorShift),
+        0.5 + 0.5 * sin(colorPhase * 3.14159 * uSparkleColorShift + 2.094),
+        0.5 + 0.5 * sin(colorPhase * 3.14159 * uSparkleColorShift + 4.189)
+    );
+    sparkleColor = blendScreen(sparkleFoil, rainbow * 0.3);
+
+    // Boost brightness for sparkle
+    sparkleColor = adjustBrightness(sparkleColor, 3.0);
+    sparkleColor = clamp(sparkleColor, 0.0, 1.0);
+
+    // Combine with spotlight falloff
+    vec3 metallic = sparkleColor * sparkleSpotlight * uSparkleIntensity;
 
     // ── SHINE LAYER (before): Simple gradient overlay ─
     // CSS: repeating-linear-gradient(15deg, var(--holo))
@@ -145,6 +203,8 @@ void main() {
     shineAfter = adjustContrast(shineAfter, uShineAfterContrast);
     shineAfter = adjustSaturate(shineAfter, uShineAfterSaturation);
     shineAfter = clamp(shineAfter, 0.0, 1.0);
+    // Apply mask to diagonal shine so it only appears in holo area
+    shineAfter = shineAfter * mask;
 
     // ── GLARE: Radial gradient (multiply) ────────────
     vec3 glareCenter = vec3(0.8); // hsl(0, 0%, 80%)
@@ -174,7 +234,13 @@ void main() {
 
         // Apply shine after (hard-light)
         result = mix(result, blendHardLight(shineBase, shineAfter), effectStrength * uCardOpacity);
-        
+
+        // Apply diagonal bars (hard-light)
+        result = mix(result, blendHardLight(result, diagonalBars), effectStrength * uCardOpacity);
+
+        // Apply metallic sparkle spotlight (plus-lighter for bright sparkles)
+        result = mix(result, blendPlusLighter(result, metallic), foil * effectStrength);
+
         // Apply glare (multiply)
         result = mix(result, blendMultiply(result, glare), effectStrength);
 
@@ -184,6 +250,8 @@ void main() {
 
     // Apply overall base brightness
     result = adjustBrightness(result, uBaseBrightness);
+    result = adjustContrast(result, 0.7);
+    result = adjustSaturate(result, 1.0);
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
 }

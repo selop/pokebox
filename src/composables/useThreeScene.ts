@@ -963,6 +963,174 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     },
   )
 
+  watch(
+    () => store.config.ultraRareBarAngle,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarAngle']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarAngle']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareBarOffsetBgXMult,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarOffsetBgXMult']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarOffsetBgXMult']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareBarOffsetBgYMult,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarOffsetBgYMult']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarOffsetBgYMult']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareBarFrequency,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarFrequency']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarFrequency']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareBarIntensityStart1,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarIntensityStart1']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensityStart1']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareBarIntensityEnd1,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarIntensityEnd1']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensityEnd1']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareBarIntensityStart2,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarIntensityStart2']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensityStart2']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareBarIntensityEnd2,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarIntensityEnd2']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensityEnd2']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareSparkleIntensity,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uSparkleIntensity']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uSparkleIntensity']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareSparkleRadius,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uSparkleRadius']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uSparkleRadius']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareSparkleContrast,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uSparkleContrast']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uSparkleContrast']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.ultraRareSparkleColorShift,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uSparkleColorShift']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uSparkleColorShift']!.value = val
+        }
+      }
+    },
+  )
+
   function dispose() {
     if (animationId !== null) cancelAnimationFrame(animationId)
     window.removeEventListener('resize', onResize)
