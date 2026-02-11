@@ -132,6 +132,13 @@ export function buildCardMesh(
       uniforms.uBirthdayDank2Tex = { value: blackPixel }
     }
 
+    // Add iridescent texture for ultra-rare shader
+    if (shaderStyle === 'ultra-rare' && iriTextures) {
+      uniforms.uIri7Tex = { value: iriTextures.iri7 }
+    } else if (shaderStyle === 'ultra-rare') {
+      uniforms.uIri7Tex = { value: blackPixel }
+    }
+
     // Add ultra-rare shader-specific uniforms
     if (shaderStyle === 'ultra-rare') {
       uniforms.uBaseBrightness = { value: config.ultraRareBaseBrightness }

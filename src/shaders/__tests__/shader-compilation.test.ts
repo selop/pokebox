@@ -139,6 +139,7 @@ describe('Shader Compilation', () => {
     'uSparkleRadius',
     'uSparkleContrast',
     'uSparkleColorShift',
+    'uIri7Tex',
   ])
 
   testShaderCompilation('parallax', parallaxFrag)

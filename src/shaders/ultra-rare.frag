@@ -4,6 +4,7 @@ uniform sampler2D uCardTex;
 uniform sampler2D uCardBackTex;
 uniform sampler2D uMaskTex;
 uniform sampler2D uFoilTex;
+uniform sampler2D uIri7Tex;  // Iridescent glitter texture
 uniform vec2 uPointer;       // eye projected onto card UV (0-1)
 uniform vec2 uBackground;    // constrained 0.37-0.63
 uniform float uCardOpacity;  // holo intensity 0-1
@@ -200,6 +201,15 @@ void main() {
 
         // Apply metallic sparkle spotlight (plus-lighter for bright sparkles)
         result = mix(result, blendPlusLighter(result, metallic), foil * effectStrength);
+
+        // ── Iridescent glitter from iri-7 texture ──────────
+        float glitterTileSize = 300.0 / 1024.0;
+        vec2 tiledUV = fract(uv * (1.0 / glitterTileSize));
+        vec3 glitter = texture2D(uIri7Tex, tiledUV).rgb;
+        glitter = adjustContrast(glitter, 1.8);
+        glitter = adjustSaturate(glitter, 2.5);
+        glitter = clamp(glitter, 0.0, 1.0);
+        result = mix(result, blendScreen(result, glitter), effectStrength * 0.33);
 
         // Apply glare (multiply)
         result = mix(result, blendMultiply(result, glare), effectStrength);
