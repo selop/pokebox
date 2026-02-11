@@ -180,6 +180,8 @@ const SPECIAL_ILLUSTRATION_RARE = new Set([198, 199, 200, 201, 202, 203, 204, 20
 // Double rare: ex cards with birthday holo textures
 const DOUBLE_RARE = new Set([3, 6, 9, 24, 38, 40, 65, 76, 115, 124, 145, 151])
 
+const REVERSE_HOLO = new Set([1, 2, 4, 5])
+
 type MaskType =
   | 'foil_holo_sun_pillar'
   | 'foil_holo_sv_holo'
@@ -200,15 +202,52 @@ function getHoloType(num: number): HoloType {
   if (SPECIAL_ILLUSTRATION_RARE.has(num)) return 'special-illustration-rare'
   if (DOUBLE_RARE.has(num)) return 'double-rare'
   if (HOLO_SV_HOLO.has(num)) return 'regular-holo'
-  return 'illustration-rare'
+  if (num >= 166 && num <= 181) return 'illustration-rare'
+  if (REVERSE_HOLO.has(num)) return 'reverse-holo'
+  return 'reverse-holo'
 }
 
 // Helper to determine mask suffix for new file format
 function getMaskSuffix(num: number): 'ph' | 'std' {
   // Cards with _std suffix in new format (based on file listing)
   const stdCards = new Set([
-    3, 6, 9, 15, 24, 26, 34, 38, 40, 45, 65, 68, 76, 85, 94, 101, 105, 110, 113, 115, 121, 122, 124,
-    130, 132, 134, 135, 136, 139, 141, 142, 144, 145, 146, 149, 150, 151,
+    3,
+    6,
+    9,
+    15,
+    24,
+    26,
+    34,
+    38,
+    40,
+    45,
+    65,
+    68,
+    76,
+    85,
+    94,
+    101,
+    105,
+    110,
+    113,
+    115,
+    121,
+    122,
+    124,
+    130,
+    132,
+    134,
+    135,
+    136,
+    139,
+    141,
+    142,
+    144,
+    145,
+    146,
+    149,
+    150,
+    151,
     ...Array.from({ length: 42 }, (_, i) => 166 + i), // 166-207 all use std
   ])
   return stdCards.has(num) ? 'std' : 'ph'

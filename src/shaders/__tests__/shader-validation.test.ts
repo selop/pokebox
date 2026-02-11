@@ -4,8 +4,7 @@ import regularHoloFrag from '../regular-holo.frag'
 import specialIllustrationRareFrag from '../special-illustration-rare.frag'
 import doubleRareFrag from '../double-rare.frag'
 import ultraRareFrag from '../ultra-rare.frag'
-import parallaxFrag from '../parallax.frag'
-import metallicFrag from '../metallic.frag'
+import reverseHoloFrag from '../reverse-holo.frag'
 
 /**
  * Static analysis tests for shader code
@@ -18,8 +17,7 @@ describe('Shader Static Validation', () => {
     'special-illustration-rare': specialIllustrationRareFrag,
     'double-rare': doubleRareFrag,
     'ultra-rare': ultraRareFrag,
-    parallax: parallaxFrag,
-    metallic: metallicFrag,
+    'reverse-holo': reverseHoloFrag,
   }
 
   Object.entries(shaders).forEach(([name, shaderCode]) => {

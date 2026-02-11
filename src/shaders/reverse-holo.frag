@@ -97,23 +97,24 @@ void main() {
 
     vec3 result = cardColor.rgb;
 
-    // ── Foil effect with metallic treatment ───────────
-    if (foil > 0.01) {
-        vec3 foilMetallic = metallicReflection(uv, uPointer, uTime * 0.5);
+    // Compute metallic reflection once for both mask and foil
+    float effectStrength = max(mask, foil);
+    if (effectStrength > 0.01) {
+        vec3 metallic = metallicReflection(uv, uPointer, uTime * 0.5);
 
-        // Add fine grain to foil
+        // Add fine grain
         vec2 grainUV = floor(uv * 200.0) / 200.0;
         float grain = hash21(grainUV);
-        foilMetallic *= 0.85 + grain * 0.15;
+        metallic *= 0.85 + grain * 0.15;
 
-        // Directional highlight on foil
+        // Directional highlight
         vec2 toPointer = uPointer - uv;
         float spotDist = length(toPointer);
         float spotlight = 1.0 - smoothstep(0.0, 0.6, spotDist);
-        foilMetallic *= 0.6 + spotlight * 0.4;
+        metallic *= 0.6 + spotlight * 0.4;
 
-        vec3 foilBlend = blendOverlay(result, foilMetallic, foil * uCardOpacity * 0.7);
-        result = mix(result, foilBlend, foil * uCardOpacity);
+        vec3 blended = blendOverlay(result, metallic, effectStrength * uCardOpacity * 0.7);
+        result = mix(result, blended, effectStrength * uCardOpacity);
     }
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);

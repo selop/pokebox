@@ -55,12 +55,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     () => mergeAnimator.reset(),
   )
 
-  // Helper to get the effective shader for a card
+  // Helper to get the effective shader for a card (always uses card's assigned holoType)
   function getEffectiveShader(cardId: string): ShaderStyle {
-    // Parallax mode overrides per-card shader
-    if (store.shaderStyle === 'parallax') return 'parallax'
-
-    // Otherwise use the card's holoType
     const card = CARD_CATALOG.find((c) => c.id === cardId)
     return card?.holoType || 'illustration-rare'
   }
@@ -428,10 +424,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   function onKeydown(e: KeyboardEvent) {
     if ((e.target as HTMLElement).tagName === 'INPUT') return
     if (store.sceneMode !== 'cards') return
-    if (e.key === 'h' || e.key === 'H') {
-      store.toggleShaderStyle()
-      return
-    }
     if (cardNavigator.handleKeydown(e)) {
       store.isSlideshowActive = false
     } else {
@@ -451,7 +443,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     () => [
       store.sceneMode,
       store.renderMode,
-      store.shaderStyle,
       store.sceneSeed,
       store.rebuildCounter,
       store.config.screenWidthCm,

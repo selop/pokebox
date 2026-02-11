@@ -17,8 +17,7 @@ import regularHoloFrag from '@/shaders/regular-holo.frag'
 import specialIllustrationRareFrag from '@/shaders/special-illustration-rare.frag'
 import doubleRareFrag from '@/shaders/double-rare.frag'
 import ultraRareFrag from '@/shaders/ultra-rare.frag'
-import parallaxFrag from '@/shaders/parallax.frag'
-import metallicFrag from '@/shaders/metallic.frag'
+import reverseHoloFrag from '@/shaders/reverse-holo.frag'
 
 export const CARD_ASPECT = 733 / 1024 // width / height
 
@@ -51,10 +50,8 @@ export function buildCardMesh(
   if (maskTexture || foilTexture) {
     // Select fragment shader based on style
     let fragmentShader = illustrationRareFrag
-    if (shaderStyle === 'parallax') {
-      fragmentShader = parallaxFrag
-    } else if (shaderStyle === 'metallic') {
-      fragmentShader = metallicFrag
+    if (shaderStyle === 'reverse-holo') {
+      fragmentShader = reverseHoloFrag
     } else if (shaderStyle === 'regular-holo') {
       fragmentShader = regularHoloFrag
     } else if (shaderStyle === 'special-illustration-rare') {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { CARD_CATALOG } from '@/data/cardCatalog'
 import type { AppConfig } from '@/types'
 
 const store = useAppStore()
@@ -194,7 +195,17 @@ async function copyDefaults(section: ShaderSection) {
   setTimeout(() => (copied.value = false), 2000)
 }
 
-const activeSection = computed(() => sections.find((s) => s.id === store.shaderStyle))
+const currentCardHoloType = computed(() => {
+  const card = CARD_CATALOG.find((c) => c.id === store.currentCardId)
+  return card?.holoType || 'illustration-rare'
+})
+
+const activeSection = computed(() => sections.find((s) => s.id === currentCardHoloType.value))
+
+// Close panel when switching to triple mode
+watch(() => store.cardDisplayMode, (mode) => {
+  if (mode === 'triple') store.isShaderPanelOpen = false
+})
 </script>
 
 <template>
@@ -230,7 +241,7 @@ const activeSection = computed(() => sections.find((s) => s.id === store.shaderS
     </div>
 
     <div v-else class="shader-section">
-      <div class="shader-section-title">{{ store.shaderStyle }}</div>
+      <div class="shader-section-title">{{ currentCardHoloType }}</div>
       <p class="shader-placeholder">No controls available for this shader yet.</p>
     </div>
   </div>

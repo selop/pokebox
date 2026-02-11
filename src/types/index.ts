@@ -109,14 +109,14 @@ export type ShaderStyle =
   | 'special-illustration-rare'
   | 'double-rare'
   | 'ultra-rare'
-  | 'parallax'
-  | 'metallic'
+  | 'reverse-holo'
 export type HoloType =
   | 'illustration-rare'
   | 'regular-holo'
   | 'special-illustration-rare'
   | 'double-rare'
   | 'ultra-rare'
+  | 'reverse-holo'
 
 export interface DerivedDimensions {
   screenW: number

@@ -26,28 +26,7 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
     {{ store.cardDisplayMode === 'single' ? '&#x2630; Triple' : '&#x25A3; Single' }}
   </button>
   <button
-    v-show="store.sceneMode === 'cards'"
-    class="toolbar-btn shader-btn"
-    @click="store.toggleShaderStyle()"
-  >
-    {{
-      store.shaderStyle === 'illustration-rare'
-        ? '&#x2728; Illus. Rare'
-        : store.shaderStyle === 'regular-holo'
-          ? '&#x2606; Regular Holo'
-          : store.shaderStyle === 'special-illustration-rare'
-            ? '&#x2747; Special IR'
-            : store.shaderStyle === 'double-rare'
-              ? '&#x2605; Double Rare'
-              : store.shaderStyle === 'ultra-rare'
-                ? '&#x2605; Ultra Rare'
-                : store.shaderStyle === 'parallax'
-                  ? '&#x2734; Parallax'
-                  : '&#x2694; Metallic'
-    }}
-  </button>
-  <button
-    v-show="store.sceneMode === 'cards'"
+    v-show="store.sceneMode === 'cards' && store.cardDisplayMode === 'single'"
     class="toolbar-btn shader-controls-btn"
     @click="store.toggleShaderPanel()"
   >
@@ -72,7 +51,6 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
   <div v-show="store.sceneMode === 'cards'" class="nav-hint">
     <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
     <span v-show="store.cardDisplayMode === 'single'">&middot; <kbd>M</kbd> merge</span>
-    &middot; <kbd>H</kbd> shader
   </div>
 </template>
 
@@ -116,14 +94,11 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 .display-btn {
   left: 350px;
 }
-.shader-btn {
+.shader-controls-btn {
   left: 440px;
 }
-.shader-controls-btn {
-  left: 570px;
-}
 .slideshow-btn {
-  left: 670px;
+  left: 540px;
 }
 .slideshow-btn.active {
   border-color: #f72585;

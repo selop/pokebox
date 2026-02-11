@@ -8,7 +8,6 @@ import type {
   EyePosition,
   RenderMode,
   SceneMode,
-  ShaderStyle,
 } from '@/types'
 import { CARD_DEFAULTS, DEFAULT_CARD, DEFAULT_CONFIG } from '@/data/defaults'
 import { CARD_CATALOG } from '@/data/cardCatalog'
@@ -29,7 +28,6 @@ export const useAppStore = defineStore('app', () => {
   const renderMode = ref<RenderMode>('solid')
   const currentCardId = ref('170')
   const cardDisplayMode = ref<CardDisplayMode>('single')
-  const shaderStyle = ref<ShaderStyle>('illustration-rare')
   const sceneSeed = ref(Date.now())
 
   // --- UI state ---
@@ -99,25 +97,6 @@ export const useAppStore = defineStore('app', () => {
     renderMode.value = renderMode.value === 'xray' ? 'solid' : 'xray'
   }
 
-  function toggleShaderStyle() {
-    // Cycle through: illustration-rare -> regular-holo -> special-illustration-rare -> double-rare -> ultra-rare -> parallax -> metallic -> illustration-rare
-    if (shaderStyle.value === 'illustration-rare') {
-      shaderStyle.value = 'regular-holo'
-    } else if (shaderStyle.value === 'regular-holo') {
-      shaderStyle.value = 'special-illustration-rare'
-    } else if (shaderStyle.value === 'special-illustration-rare') {
-      shaderStyle.value = 'double-rare'
-    } else if (shaderStyle.value === 'double-rare') {
-      shaderStyle.value = 'ultra-rare'
-    } else if (shaderStyle.value === 'ultra-rare') {
-      shaderStyle.value = 'parallax'
-    } else if (shaderStyle.value === 'parallax') {
-      shaderStyle.value = 'metallic'
-    } else {
-      shaderStyle.value = 'illustration-rare'
-    }
-  }
-
   function togglePanel() {
     isPanelOpen.value = !isPanelOpen.value
   }
@@ -143,7 +122,6 @@ export const useAppStore = defineStore('app', () => {
     renderMode,
     currentCardId,
     cardDisplayMode,
-    shaderStyle,
     sceneSeed,
     isPanelOpen,
     isShaderPanelOpen,
@@ -161,7 +139,6 @@ export const useAppStore = defineStore('app', () => {
     resetDefaults,
     randomizeSeed,
     toggleRenderMode,
-    toggleShaderStyle,
     togglePanel,
     toggleShaderPanel,
     toggleSlideshow,
