@@ -42,8 +42,8 @@ export class MergeAnimator {
     const dims = this.store.dimensions
     const cardH = dims.screenH * SINGLE_CARD_SIZE
     const cardW = cardH * CARD_ASPECT
-    const zGap = dims.boxD * 0.16
-    const xGap = cardW * 0.5
+    const zGap = dims.boxD * 0.15
+    const xGap = cardW * (meshes.length >= 4 ? 0.25 : 0.5)
     const spread = 1 - this.mergeProgress // 1 = exploded, 0 = merged
     const cx = (this.store.cardTransform.x / 100) * dims.screenW
     const cy = (this.store.cardTransform.y / 100) * dims.screenH
@@ -52,9 +52,12 @@ export class MergeAnimator {
     // Rotation offset when exploded: -42 degrees
     const explodeRotation = ((-42 * Math.PI) / 180) * spread
 
+    // Shift entire exploded composition left by 5% of screen width
+    const explodeShiftX = -(5 / 100) * dims.screenW * spread
+
     meshes.forEach((mesh, i) => {
       const xOff = (i - 1) * xGap * spread
-      mesh.position.set(cx + xOff, cy, cz - i * zGap * spread)
+      mesh.position.set(cx + xOff + explodeShiftX, cy, cz - i * zGap * spread)
 
       // Store the explode rotation offset for the animation loop to use
       mesh.userData.explodeRotationY = explodeRotation
