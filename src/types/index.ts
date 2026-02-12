@@ -15,6 +15,7 @@ export interface AppConfig {
   illustRareRainbowScale: number
   illustRareBarAngle: number
   illustRareBarDensity: number
+  illustRareBarDensity2: number
   illustRareBarOffsetBgYMult: number
   illustRareBar2OffsetBgYMult: number
   illustRareBarWidth: number

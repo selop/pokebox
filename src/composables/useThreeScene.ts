@@ -604,6 +604,20 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   )
 
   watch(
+    () => store.config.illustRareBarDensity2,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarDensity2']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarDensity2']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
     () => store.config.illustRareBarOffsetBgYMult,
     (val) => {
       for (const mesh of cardMeshes.value) {

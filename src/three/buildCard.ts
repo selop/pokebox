@@ -46,6 +46,7 @@ const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
     ['uRainbowScale', 'illustRareRainbowScale'],
     ['uBarAngle', 'illustRareBarAngle'],
     ['uBarDensity', 'illustRareBarDensity'],
+    ['uBarDensity2', 'illustRareBarDensity2'],
     ['uBarOffsetBgYMult', 'illustRareBarOffsetBgYMult'],
     ['uBar2OffsetBgYMult', 'illustRareBar2OffsetBgYMult'],
     ['uBarWidth', 'illustRareBarWidth'],

@@ -77,6 +77,7 @@ describe('Shader Compilation', () => {
     'uRainbowScale',
     'uBarAngle',
     'uBarDensity',
+    'uBarDensity2',
     'uBarWidth',
     'uBarWidth2',
     'uBarIntensity',

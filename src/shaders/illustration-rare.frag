@@ -18,6 +18,7 @@ uniform float uFade;         // overall card opacity 0-1 (for transitions)
 uniform float uRainbowScale;
 uniform float uBarAngle;
 uniform float uBarDensity;
+uniform float uBarDensity2;
 uniform float uBarOffsetBgYMult;
 uniform float uBar2OffsetBgYMult;
 uniform float uBarWidth;
@@ -69,6 +70,35 @@ vec3 hslToRgb(float h, float s, float l) {
     return rgb + m;
 }
 
+// ── Shared shine layer computation ─────────────────
+// Applies bar pattern over rainbow, then glitter, spotlight, and color grading.
+vec3 computeShine(
+    vec3 rainbow, float barCoord, float barOffset, float density,
+    float width, float intensity,
+    float hue, float medSat, float medLight, float brightSat, float brightLight,
+    float glitter, float spotlight, float ptrBrightness,
+    float contrast, float saturation
+) {
+    float barT = fract((barCoord + barOffset) * density);
+    float e1 = 0.028 * width;
+    float e2 = 0.035 * width;
+    float e3 = 0.042 * width;
+    float barInt = smoothstep(0.0, e1, barT) * (1.0 - smoothstep(e2, e3, barT));
+
+    vec3 barMed = hslToRgb(hue, medSat, medLight);
+    vec3 barBri = hslToRgb(hue, brightSat, brightLight);
+    vec3 barCol = mix(barMed, barBri, barInt * intensity);
+
+    vec3 result = blendHardLight(rainbow, barCol);
+    result *= 0.5 + glitter * 0.3;
+    result *= 0.5 + spotlight * 0.5;
+
+    result = adjustBrightness(result, ptrBrightness);
+    result = adjustContrast(result, contrast);
+    result = adjustSaturate(result, saturation);
+    return clamp(result, 0.0, 1.0);
+}
+
 void main() {
     vec2 uv = vUv;
 
@@ -94,91 +124,44 @@ void main() {
     }
 
     // ── Pointer-driven offsets ───────────────────────
-    float bgX = uBackground.x;
     float bgY = uBackground.y;
-    float ptrX = uPointer.x;
-    float ptrY = uPointer.y;
-
-    // CSS: brightness(calc(pointer-from-center * 0.4 + 0.5))
     float ptrBrightness = uPointerFromCenter * 0.4 + 0.5;
+    float spotDist = length(uv - uPointer);
+    float spotlight = 0.75 - smoothstep(0.1, 0.7, spotDist);
 
-    // Radial spotlight from pointer (shared by holo & foil)
-    float spotDist = length(uv - vec2(ptrX, ptrY));
-    float spotlight = 0.75 - smoothstep(0.1, 0.9, spotDist);
+    // Shared bar coordinate
+    float barAngle = uBarAngle * 3.14159 / 180.0;
+    float barCoord = dot(uv, vec2(cos(barAngle), sin(barAngle)));
 
-    // ── SHINE LAYER 1: Rainbow + bars (color-dodge) ──
-    // CSS: repeating sunpillar gradient (0deg, 200% 700% ≈ 3.5 vertical repeats)
+    // ── SHINE LAYER 1 ──────────────────────────────
     float rainbowT = uv.y * uRainbowScale
         + ((0.5 - bgY) * 3.5)
         + sin(uTime * 0.3) * 0.05
-        + (4.0 / 6.0); // CSS :before palette rotation (colors 5,6,1,2,3,4)
-    vec3 rainbow = sunpillarGradient(rainbowT);
+        + (4.0 / 6.0);
+    vec3 shine1 = computeShine(
+        sunpillarGradient(rainbowT), barCoord,
+        bgY * uBarOffsetBgYMult, uBarDensity,
+        uBarWidth, uBarIntensity,
+        uBarHue, uBarMediumSaturation, uBarMediumLightness,
+        uBarBrightSaturation, uBarBrightLightness,
+        glitter, spotlight, ptrBrightness,
+        uShine1Contrast, uShine1Saturation
+    );
 
-    // CSS: repeating-linear-gradient(133deg, bright saturated diagonal bars)
-    // Pattern matching double-rare spacing with illustration-rare colors
-    float barAngle = uBarAngle * 3.14159 / 180.0;
-    float barCoord = dot(uv, vec2(cos(barAngle), sin(barAngle)));
-    float barOffset = bgY * uBarOffsetBgYMult;
-    float barT = fract((barCoord + barOffset) * uBarDensity);
-
-    // Bar pattern: controllable HSL colors
-    vec3 barMedium = hslToRgb(uBarHue, uBarMediumSaturation, uBarMediumLightness);
-    vec3 barBright = hslToRgb(uBarHue, uBarBrightSaturation, uBarBrightLightness);
-
-    // Bar width control via adjustable smoothstep ranges
-    float barEdge1 = 0.028 * uBarWidth;
-    float barEdge2 = 0.035 * uBarWidth;
-    float barEdge3 = 0.042 * uBarWidth;
-    float barIntensity = smoothstep(0.0, barEdge1, barT) * (1.0 - smoothstep(barEdge2, barEdge3, barT));
-
-    // Mix bar colors with intensity control
-    vec3 barColor = mix(barMedium, barBright, barIntensity * uBarIntensity);
-
-    // CSS: background-blend-mode hard-light for bar layer
-    rainbow = blendHardLight(rainbow, barColor);
-
-    // Apply glitter texture under the rainbow (creates sparkle base)
-    rainbow *= 0.7 + glitter * 0.3;
-
-    // Apply spotlight
-    rainbow *= 0.5 + spotlight * 0.5;
-
-    // CSS filter: brightness(.8) contrast(2.95) saturate(.65)
-    vec3 shine1 = adjustBrightness(rainbow, ptrBrightness * 1.0);
-    shine1 = adjustContrast(shine1, uShine1Contrast);
-    shine1 = adjustSaturate(shine1, uShine1Saturation);
-    shine1 = clamp(shine1, 0.0, 1.0);
-
-    // ── SHINE LAYER 2: Shifted copy (exclusion blend) ─
-    // CSS :after: inverted positions, mix-blend-mode: exclusion
-    float rainbow2T = uv.y * (uRainbowScale * 1.75)
+    // ── SHINE LAYER 2 ──────────────────────────────
+    float rainbow2T = uv.y * uRainbowScale
         + ((0.5 - bgY) * 3.5)
-        + cos(uTime * 0.3) * 0.05
-        + (5.0 / 6.0); // CSS :after palette rotation (colors 6,1,2,3,4,5)
-    vec3 rainbow2 = sunpillarGradient(rainbow2T);
-
-    // Layer 2 bar offset — Y-only (no X-plane movement)
-    float barOffset2 = bgY * uBar2OffsetBgYMult;
-    float barT2 = fract((barCoord + barOffset2) * 2.5);
-    float bar2Edge1 = 0.028 * uBarWidth2;
-    float bar2Edge2 = 0.035 * uBarWidth2;
-    float bar2Edge3 = 0.042 * uBarWidth2;
-    float barIntensity2 = smoothstep(0.0, bar2Edge1, barT2) * (1.0 - smoothstep(bar2Edge2, bar2Edge3, barT2));
-    vec3 barMedium2 = hslToRgb(uBarHue2, uBarMediumSaturation2, uBarMediumLightness2);
-    vec3 barBright2 = hslToRgb(uBarHue2, uBarBrightSaturation2, uBarBrightLightness2);
-    vec3 barColor2 = mix(barMedium2, barBright2, barIntensity2 * uBarIntensity2);
-    rainbow2 = blendHardLight(rainbow2, barColor2);
-
-    // Apply glitter texture (same sparkle treatment as layer 1)
-    rainbow2 *= 0.7 + glitter * 0.3;
-
-    rainbow2 *= 0.5 + spotlight * 0.5;
-
-    // CSS :after filter: brightness(1) contrast(2.5) saturate(1.75)
-    vec3 shine2 = adjustBrightness(rainbow2, ptrBrightness * 1.0);
-    shine2 = adjustContrast(shine2, uShine1Contrast);
-    shine2 = adjustSaturate(shine2, uShine1Saturation);
-    shine2 = clamp(shine2, 0.0, 1.0);
+        + sin(uTime * 0.3) * 0.05
+        + (4.0 / 6.0);
+    vec3 shine2 = computeShine(
+        sunpillarGradient(rainbow2T), barCoord,
+        bgY * uBar2OffsetBgYMult, uBarDensity2,
+        uBarWidth2, uBarIntensity2,
+        uBarHue2, uBarMediumSaturation2, uBarMediumLightness2,
+        uBarBrightSaturation2, uBarBrightLightness2,
+        glitter, spotlight, ptrBrightness,
+        uShine1Contrast, uShine1Saturation
+    );
 
     // ── GLARE: White-to-black radial (overlay) ──────
     // CSS: radial-gradient(farthest-corner circle at pointer,

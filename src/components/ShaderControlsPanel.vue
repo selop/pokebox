@@ -55,6 +55,7 @@ const sections: ShaderSection[] = [
       { label: 'Bright sat', key: 'illustRareBarBrightSaturation', min: 0, max: 1, step: 0.01, suffix: '%' },
       { label: 'Bright light', key: 'illustRareBarBrightLightness', min: 0, max: 1, step: 0.01, suffix: '%' },
       { subsection: 'Layer 2 Bars' },
+      { label: 'Density', key: 'illustRareBarDensity2', min: 0.5, max: 10, step: 0.1 },
       { label: 'Offset Y', key: 'illustRareBar2OffsetBgYMult', min: -5, max: 5, step: 0.05 },
       { label: 'Width', key: 'illustRareBarWidth2', min: 0.1, max: 10, step: 0.05 },
       { label: 'Intensity', key: 'illustRareBarIntensity2', min: 0, max: 20, step: 0.05 },
