@@ -215,6 +215,25 @@ const sections: ShaderSection[] = [
     ],
   },
   {
+    id: 'master-ball',
+    title: 'Master Ball',
+    icon: '🔮',
+    items: [
+      { subsection: 'Rainbow' },
+      { label: 'Scale', key: 'masterBallRainbowScale', min: 0.1, max: 5, step: 0.1 },
+      { label: 'Tilt shift', key: 'masterBallRainbowShift', min: 0, max: 10, step: 0.1 },
+      { subsection: 'Sparkle' },
+      { label: 'Scale', key: 'masterBallSparkleScale', min: 0.5, max: 10, step: 0.1 },
+      { label: 'Intensity', key: 'masterBallSparkleIntensity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Tilt sensitivity', key: 'masterBallSparkleTiltSensitivity', min: 0, max: 0.5, step: 0.01 },
+      { subsection: 'Glare' },
+      { label: 'Opacity', key: 'masterBallGlareOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { subsection: 'Overall' },
+      { label: 'Brightness', key: 'masterBallBaseBrightness', min: 0.5, max: 2, step: 0.05 },
+      { label: 'Contrast', key: 'masterBallBaseContrast', min: 0.5, max: 3, step: 0.05 },
+    ],
+  },
+  {
     id: 'reverse-holo',
     title: 'Reverse Holo',
     icon: '🪞',
@@ -264,7 +283,7 @@ async function copyDefaults(section: ShaderSection) {
 }
 
 const currentCardHoloType = computed(() => {
-  const card = CARD_CATALOG.find((c) => c.id === store.currentCardId)
+  const card = CARD_CATALOG.value.find((c) => c.id === store.currentCardId)
   return card?.holoType || 'illustration-rare'
 })
 

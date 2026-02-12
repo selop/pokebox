@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
-import { CARD_CATALOG } from '@/data/cardCatalog'
 
 const store = useAppStore()
 
@@ -23,10 +22,6 @@ function onSpinSpeed(value: string) {
 
 function onSceneMode(value: string) {
   store.setSceneMode(value as 'furniture' | 'cards')
-}
-
-function onCardSelect(value: string) {
-  store.currentCardId = value
 }
 
 function formatValue(v: number): string {
@@ -122,12 +117,6 @@ function formatValue(v: number): string {
     <!-- Card -->
     <div v-show="store.sceneMode === 'cards'" class="cal-section">
       <div class="cal-section-title">Card</div>
-      <div class="cal-row">
-        <span class="cal-label">Card</span>
-        <select class="cal-select" :value="store.currentCardId" @change="onCardSelect(($event.target as HTMLSelectElement).value)">
-          <option v-for="card in CARD_CATALOG" :key="card.id" :value="card.id">{{ card.label }}</option>
-        </select>
-      </div>
       <div class="cal-row">
         <span class="cal-label">Size</span>
         <div class="cal-slider-wrap">

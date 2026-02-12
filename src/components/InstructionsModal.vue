@@ -1,7 +1,17 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 
 const store = useAppStore()
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && store.showInstructions) {
+    onClose()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 const emit = defineEmits<{
   enableCamera: []

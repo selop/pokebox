@@ -28,6 +28,15 @@ export function useCardLoader(renderer: WebGLRenderer) {
   let glitterTexture: Texture | null = null
   let cardBackTexture: Texture | null = null
 
+  function clearCache(): void {
+    for (const textures of loaded.values()) {
+      textures.card.dispose()
+      textures.mask?.dispose()
+      textures.foil?.dispose()
+    }
+    loaded.clear()
+  }
+
   function applyFilters(tex: Texture, aniso = false): void {
     tex.minFilter = LinearMipmapLinearFilter
     tex.magFilter = LinearFilter
@@ -37,11 +46,12 @@ export function useCardLoader(renderer: WebGLRenderer) {
   function loadCard(id: string): Promise<void> {
     if (loaded.has(id)) return Promise.resolve()
 
-    const entry = CARD_CATALOG.find((c) => c.id === id)
+    const entry = CARD_CATALOG.value.find((c) => c.id === id)
     if (!entry) return Promise.resolve()
 
+    const hasMask = !!entry.mask
     const hasFoil = !!entry.foil
-    const totalToLoad = hasFoil ? 3 : 2
+    const totalToLoad = 1 + (hasMask ? 1 : 0) + (hasFoil ? 1 : 0)
 
     return new Promise<void>((resolve) => {
       let count = 0
@@ -62,18 +72,30 @@ export function useCardLoader(renderer: WebGLRenderer) {
         onReady()
       })
 
-      loader.load(entry.mask, (tex) => {
-        applyFilters(tex)
-        maskTex = tex
-        onReady()
-      })
+      if (hasMask) {
+        loader.load(
+          entry.mask,
+          (tex) => {
+            applyFilters(tex)
+            maskTex = tex
+            onReady()
+          },
+          undefined,
+          () => onReady(), // mask file missing — continue without it
+        )
+      }
 
       if (hasFoil) {
-        loader.load(entry.foil, (tex) => {
-          applyFilters(tex, true)
-          foilTex = tex
-          onReady()
-        })
+        loader.load(
+          entry.foil,
+          (tex) => {
+            applyFilters(tex, true)
+            foilTex = tex
+            onReady()
+          },
+          undefined,
+          () => onReady(), // etch file missing — continue without it
+        )
       }
     })
   }
@@ -199,6 +221,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
     loadCard,
     loadCards,
     get,
+    clearCache,
     loadIriTextures,
     getIriTextures,
     loadBirthdayTextures,

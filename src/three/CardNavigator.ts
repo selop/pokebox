@@ -36,7 +36,7 @@ export class CardNavigator {
   ) {}
 
   navigate(dir: number): void {
-    const idx = CARD_CATALOG.findIndex((c) => c.id === this.store.currentCardId)
+    const idx = CARD_CATALOG.value.findIndex((c) => c.id === this.store.currentCardId)
     if (idx < 0) return
 
     perfTracker.markNavigationStart()
@@ -57,8 +57,8 @@ export class CardNavigator {
     this.fadeInMeshes = true
 
     // Advance selection — triggers displayCardIds watcher
-    const newIdx = (idx + dir + CARD_CATALOG.length) % CARD_CATALOG.length
-    this.store.currentCardId = CARD_CATALOG[newIdx]!.id
+    const newIdx = (idx + dir + CARD_CATALOG.value.length) % CARD_CATALOG.value.length
+    this.store.currentCardId = CARD_CATALOG.value[newIdx]!.id
   }
 
   /** Re-add departing meshes after a scene rebuild so they can fade out visually. */

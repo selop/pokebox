@@ -33,6 +33,7 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
    - **Special Illustration Rare** (`special-illustration-rare.frag`): Diagonal rainbow + fine line texture + three iridescent texture layers (iri-7, iri-8, iri-9) with pointer-responsive shifts, matching special illustration rare cards with silvery holographic finish
    - **Double Rare** (`double-rare.frag`): Birthday holo with grain texture, dual dank textures, and tilt-revealed sparkles
    - **Ultra Rare** (`ultra-rare.frag`): Metallic sparkle with fully parameterized brightness/contrast/bar controls
+   - **Master Ball** (`master-ball.frag`): Etch foil composite on card base for RAINBOW+ETCHED masterball holo cards
    - **Parallax** (`parallax.frag`): Alternative shader with parallax offset effect (global toggle)
    - **Metallic** (`metallic.frag`): Brushed metal with anisotropic reflection (global toggle)
    - Shared GLSL functions live in `src/shaders/common/` and are included via `#include` (resolved by `vite-plugin-glsl`):
@@ -44,32 +45,49 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 
 ### Shader selection logic
 
-- Cards are assigned a `holoType` in `cardCatalog.ts` based on their card number:
-  - Cards #198–204 → `'special-illustration-rare'`
-  - Cards in `HOLO_SV_HOLO` set (#15, 26, 34, 45, etc.) → `'regular-holo'`
-  - All other cards → `'illustration-rare'`
+Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog.ts` based on the JSON metadata's `rarity.designation` and `foil.type`/`foil.mask` fields:
+
+| Rarity | Foil Type | Shader |
+|--------|-----------|--------|
+| any | `RAINBOW` + `ETCHED` mask | `master-ball` |
+| `SPECIAL_ILLUSTRATION_RARE` / `HYPER_RARE` | any | `special-illustration-rare` |
+| `ULTRA_RARE` / `ACE_SPEC_RARE` | any | `ultra-rare` |
+| `DOUBLE_RARE` | `SUN_PILLAR` | `double-rare` |
+| `DOUBLE_RARE` | other | `illustration-rare` |
+| `ILLUSTRATION_RARE` | any | `illustration-rare` |
+| `RARE` | `SV_HOLO` | `regular-holo` |
+| `COMMON` / `UNCOMMON` / `RARE` (other) | any | `reverse-holo` |
 
 ### Key modules
 
 | Directory           | Role                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode)                                                                     |
+| `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode, set switching)                                                       |
 | `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`     |
 | `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `geometryHelpers`, `utils` |
 | `src/shaders/`      | GLSL fragment shaders; shared functions in `common/` subdir, included via `#include` (resolved by `vite-plugin-glsl`)                                        |
-| `src/data/`         | `cardCatalog.ts` (card entries with front/mask/foil texture paths), `defaults.ts` (initial config values)                                                    |
-| `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `CardTransform`, `EyePosition`, `DerivedDimensions`                                                  |
+| `src/data/`         | `cardCatalog.ts` (JSON-driven card catalog with `SET_REGISTRY` and `loadSetCatalog()`), `defaults.ts` (initial config values)                                |
+| `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `SetDefinition`, `SetCardJson`, `CardTransform`, `EyePosition`, `DerivedDimensions`                  |
+| `docs/`             | `CARD-SETS.md` (card set system documentation, adding new sets), `SHADER-TESTING.md`                                                                         |
 
 ### Card catalog & texture system
 
+The card catalog is **JSON-driven and supports multiple sets**. Card sets are defined in `SET_REGISTRY` (`src/data/cardCatalog.ts`) and their metadata is fetched at runtime from JSON files under `public/<setId>/`.
+
+- `CARD_CATALOG` is a `shallowRef<CardCatalogEntry[]>` that updates reactively when switching sets
+- `loadSetCatalog(setId)` fetches the set's JSON, filters to foil-only entries, picks the best foil variant per card number (priority: RAINBOW > non-FLAT_SILVER > FLAT_SILVER), and builds texture paths
+- File variant prefixes (e.g., `ph`, `std`, `mph`) are extracted from the JSON `longFormID` field
+
 Each `CardCatalogEntry` defines texture paths and shader type (relative to `public/`):
 
-- `fronts` — base card image
-- `holo-masks` — grayscale holo area mask (white = holographic effect area; stored in `cards/holo-masks/`)
-- `etch-foils` — grayscale etched foil texture (empty string = no etch; stored in `cards/etch-foils/`)
-- `holoType` — which holo shader to use: `'illustration-rare'`, `'regular-holo'`, or `'special-illustration-rare'`
+- `front` — base card image (`<setId>/fronts/{NNN}_front_2x.webp`)
+- `mask` — grayscale holo area mask (`<setId>/holo-masks/<setId>_{NNN}_{prefix}.foil_up.webp`)
+- `foil` — grayscale etched foil texture (empty string = no etch; `<setId>/etch-foils/<setId>_{NNN}_{prefix}.etch_up.webp`)
+- `holoType` — which holo shader to use (see shader selection logic above)
 
-`useCardLoader` loads all non-empty textures in parallel and resolves when all are ready. `buildCardMesh` uses `ShaderMaterial` when any effect texture is present (selecting the appropriate fragment shader based on `holoType`), otherwise falls back to `MeshBasicMaterial`.
+`useCardLoader` loads all non-empty textures in parallel with error callbacks for graceful fallback on missing files. `buildCardMesh` uses `ShaderMaterial` when any effect texture is present (selecting the appropriate fragment shader based on `holoType`), otherwise falls back to `MeshBasicMaterial`. The texture cache is cleared when switching sets to free GPU memory.
+
+See `docs/CARD-SETS.md` for detailed documentation on the set system, JSON format, and how to add new sets.
 
 ### State-driven rebuilds
 
@@ -84,7 +102,7 @@ The scene watches store properties and rebuilds accordingly:
 - Path alias `@/` → `src/`
 - Shader uniforms prefixed `u` (e.g. `uCardTex`), varyings prefixed `v` (e.g. `vUv`)
 - Use `shallowRef` for Three.js objects to avoid deep reactivity overhead
-- Card assets live under `public/cards/{fronts,holo-masks,etch-foils}/`
+- Card assets live under `public/<setId>/{fronts,holo-masks,etch-foils}/` (one directory per set)
 - Seeded PRNG (`mulberry32`) for reproducible procedural layouts
 - MediaPipe is dynamically imported to avoid bundling the full library
 

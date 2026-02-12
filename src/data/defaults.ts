@@ -94,6 +94,15 @@ export const DEFAULT_CONFIG: AppConfig = {
   reverseHoloBaseBrightness: 0.8,
   reverseHoloBaseContrast: 1.7,
   reverseHoloBaseSaturation: 1.3,
+  // Master Ball shader defaults
+  masterBallRainbowScale: 1.5,
+  masterBallRainbowShift: 3.5,
+  masterBallSparkleScale: 3.0,
+  masterBallSparkleIntensity: 0.6,
+  masterBallSparkleTiltSensitivity: 0.15,
+  masterBallGlareOpacity: 0.5,
+  masterBallBaseBrightness: 1.0,
+  masterBallBaseContrast: 1.2,
 }
 
 export const DEFAULT_CARD: CardTransform = {

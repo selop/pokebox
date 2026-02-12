@@ -7,6 +7,7 @@ import specialIllustrationRareFrag from '../special-illustration-rare.frag'
 import doubleRareFrag from '../double-rare.frag'
 import ultraRareFrag from '../ultra-rare.frag'
 import reverseHoloFrag from '../reverse-holo.frag'
+import masterBallFrag from '../master-ball.frag'
 
 describe('Shader Compilation', () => {
   /**
@@ -164,4 +165,19 @@ describe('Shader Compilation', () => {
   ])
 
   testShaderCompilation('reverse-holo', reverseHoloFrag)
+
+  testShaderCompilation('master-ball', masterBallFrag, [
+    'uHasFoil',
+    'uHasGlitter',
+    'uGlitterTex',
+    'uPointerFromCenter',
+    'uRainbowScale',
+    'uRainbowShift',
+    'uSparkleScale',
+    'uSparkleIntensity',
+    'uSparkleTiltSensitivity',
+    'uGlareOpacity',
+    'uBaseBrightness',
+    'uBaseContrast',
+  ])
 })

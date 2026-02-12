@@ -1,13 +1,36 @@
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
 import { useFullscreen } from '@/composables/useFullscreen'
+import { CARD_CATALOG, SET_REGISTRY } from '@/data/cardCatalog'
 
 const store = useAppStore()
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
+
+function onSetChange(e: Event) {
+  const value = (e.target as HTMLSelectElement).value
+  store.switchSet(value)
+}
+
+function onCardChange(e: Event) {
+  store.currentCardId = (e.target as HTMLSelectElement).value
+}
 </script>
 
 <template>
   <div class="toolbar">
+    <!-- Set & card selector -->
+    <div class="toolbar-group">
+      <select class="toolbar-select" :disabled="store.setLoading" :value="store.currentSetId" @change="onSetChange">
+        <option v-for="set in SET_REGISTRY" :key="set.id" :value="set.id">{{ set.label }}</option>
+      </select>
+      <select class="toolbar-select" :disabled="store.setLoading" :value="store.currentCardId" @change="onCardChange">
+        <option v-for="card in CARD_CATALOG" :key="card.id" :value="card.id">{{ card.label }}</option>
+      </select>
+      <span v-if="store.setLoading" class="toolbar-loading">Loading...</span>
+    </div>
+
+    <span class="toolbar-sep" />
+
     <!-- Global controls — always visible -->
     <div class="toolbar-group">
       <button class="toolbar-btn" @click="store.togglePanel()">&#x2699; Settings</button>
@@ -129,6 +152,51 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
   letter-spacing: 0.1em;
   white-space: nowrap;
   transition: border-color 0.2s, color 0.2s;
+}
+
+.toolbar-select {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  color: #aaa;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  outline: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.toolbar-select:hover:not(:disabled) {
+  border-color: #00f5d4;
+  color: #00f5d4;
+}
+
+.toolbar-select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toolbar-loading {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  color: #00f5d4;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.toolbar-select option {
+  background: #111;
+  color: #fff;
 }
 
 .toolbar-btn:hover {

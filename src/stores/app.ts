@@ -10,7 +10,7 @@ import type {
   SceneMode,
 } from '@/types'
 import { CARD_DEFAULTS, DEFAULT_CARD, DEFAULT_CONFIG } from '@/data/defaults'
-import { CARD_CATALOG } from '@/data/cardCatalog'
+import { CARD_CATALOG, loadSetCatalog, SET_REGISTRY } from '@/data/cardCatalog'
 
 export const useAppStore = defineStore('app', () => {
   // --- Config (reactive, slider-bound) ---
@@ -26,9 +26,13 @@ export const useAppStore = defineStore('app', () => {
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
-  const currentCardId = ref('170')
+  const currentCardId = ref('001')
   const cardDisplayMode = ref<CardDisplayMode>('single')
   const sceneSeed = ref(Date.now())
+
+  // --- Set state ---
+  const currentSetId = ref(SET_REGISTRY[0]!.id)
+  const setLoading = ref(false)
 
   // --- UI state ---
   const isPanelOpen = ref(false)
@@ -57,14 +61,18 @@ export const useAppStore = defineStore('app', () => {
 
   // --- Display card IDs (single = just center, triple = center + neighbors) ---
   const displayCardIds = computed(() => {
-    const idx = CARD_CATALOG.findIndex((c) => c.id === currentCardId.value)
+    const catalog = CARD_CATALOG.value
+    if (catalog.length === 0) return []
+    // Resolve current card — must exist in catalog
+    const idx = catalog.findIndex((c) => c.id === currentCardId.value)
+    const validIdx = idx >= 0 ? idx : 0
+    const centerId = catalog[validIdx]!.id
     if (cardDisplayMode.value === 'single') {
-      return [currentCardId.value]
+      return [centerId]
     }
-    if (idx < 0) return CARD_CATALOG.slice(0, 3).map((c) => c.id)
-    const prev = CARD_CATALOG[(idx - 1 + CARD_CATALOG.length) % CARD_CATALOG.length]!
-    const next = CARD_CATALOG[(idx + 1) % CARD_CATALOG.length]!
-    return [prev.id, currentCardId.value, next.id]
+    const prev = catalog[(validIdx - 1 + catalog.length) % catalog.length]!
+    const next = catalog[(validIdx + 1) % catalog.length]!
+    return [prev.id, centerId, next.id]
   })
 
   // --- Rebuild trigger (incremented to signal watchers) ---
@@ -89,7 +97,31 @@ export const useAppStore = defineStore('app', () => {
     })
     config.holoIntensity = CARD_DEFAULTS.holoIntensity / 100
     config.cardSpinSpeed = CARD_DEFAULTS.cardSpinSpeed
-    currentCardId.value = '170'
+    const catalog = CARD_CATALOG.value
+    currentCardId.value = catalog.length > 0 ? catalog[0]!.id : '001'
+  }
+
+  /** Callback for clearing card texture cache — set by useCardLoader. */
+  let clearCacheFn: (() => void) | null = null
+  function registerCacheClear(fn: () => void) {
+    clearCacheFn = fn
+  }
+
+  async function switchSet(setId: string) {
+    if (setId === currentSetId.value && CARD_CATALOG.value.length > 0) return
+    setLoading.value = true
+    try {
+      // Clear texture cache before loading new set
+      clearCacheFn?.()
+      currentSetId.value = setId
+      const catalog = await loadSetCatalog(setId)
+      // Set card ID BEFORE catalog so the displayCardIds watcher
+      // fires only once with a valid ID in the new catalog.
+      currentCardId.value = catalog.length > 0 ? catalog[0]!.id : '001'
+      CARD_CATALOG.value = catalog
+    } finally {
+      setLoading.value = false
+    }
   }
 
   function randomizeSeed() {
@@ -138,6 +170,8 @@ export const useAppStore = defineStore('app', () => {
     currentCardId,
     cardDisplayMode,
     sceneSeed,
+    currentSetId,
+    setLoading,
     isPanelOpen,
     isShaderPanelOpen,
     isTrackingActive,
@@ -155,6 +189,8 @@ export const useAppStore = defineStore('app', () => {
     triggerRebuild,
     updateViewport,
     resetDefaults,
+    registerCacheClear,
+    switchSet,
     randomizeSeed,
     toggleRenderMode,
     togglePanel,

@@ -10,9 +10,10 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const rootRef = ref<HTMLElement | null>(null)
 
 const filtered = computed(() => {
+  const catalog = CARD_CATALOG.value
   const q = query.value.toLowerCase().trim()
-  if (!q) return CARD_CATALOG.slice(0, 20)
-  return CARD_CATALOG.filter((c) => c.label.toLowerCase().includes(q)).slice(0, 20)
+  if (!q) return catalog.slice(0, 20)
+  return catalog.filter((c) => c.label.toLowerCase().includes(q)).slice(0, 20)
 })
 
 function selectCard(id: string) {

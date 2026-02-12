@@ -18,6 +18,7 @@ import specialIllustrationRareFrag from '@/shaders/special-illustration-rare.fra
 import doubleRareFrag from '@/shaders/double-rare.frag'
 import ultraRareFrag from '@/shaders/ultra-rare.frag'
 import reverseHoloFrag from '@/shaders/reverse-holo.frag'
+import masterBallFrag from '@/shaders/master-ball.frag'
 
 export const CARD_ASPECT = 733 / 1024 // width / height
 
@@ -37,6 +38,7 @@ const FRAGMENT_SHADERS: Record<ShaderStyle, string> = {
   'double-rare': doubleRareFrag,
   'ultra-rare': ultraRareFrag,
   'reverse-holo': reverseHoloFrag,
+  'master-ball': masterBallFrag,
 }
 
 type UniformMapping = [uniformName: string, configKey: keyof AppConfig]
@@ -126,6 +128,16 @@ const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
     ['uBaseBrightness', 'reverseHoloBaseBrightness'],
     ['uBaseContrast', 'reverseHoloBaseContrast'],
     ['uBaseSaturation', 'reverseHoloBaseSaturation'],
+  ],
+  'master-ball': [
+    ['uRainbowScale', 'masterBallRainbowScale'],
+    ['uRainbowShift', 'masterBallRainbowShift'],
+    ['uSparkleScale', 'masterBallSparkleScale'],
+    ['uSparkleIntensity', 'masterBallSparkleIntensity'],
+    ['uSparkleTiltSensitivity', 'masterBallSparkleTiltSensitivity'],
+    ['uGlareOpacity', 'masterBallGlareOpacity'],
+    ['uBaseBrightness', 'masterBallBaseBrightness'],
+    ['uBaseContrast', 'masterBallBaseContrast'],
   ],
 }
 

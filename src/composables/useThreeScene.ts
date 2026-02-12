@@ -70,7 +70,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
   // Helper to get the effective shader for a card (always uses card's assigned holoType)
   function getEffectiveShader(cardId: string): ShaderStyle {
-    const card = CARD_CATALOG.find((c) => c.id === cardId)
+    const card = CARD_CATALOG.value.find((c) => c.id === cardId)
     return card?.holoType || 'illustration-rare'
   }
 
@@ -111,6 +111,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Init card loader
     cardLoader = useCardLoader(renderer)
 
+    // Register cache clear callback with the store
+    store.registerCacheClear(() => cardLoader?.clearCache())
+
     // Load iridescent textures for special illustration rare cards
     cardLoader.loadIriTextures()
 
@@ -139,10 +142,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     store.targetEye.y = 0
     store.targetEye.z = dims.eyeDefaultZ
 
-    // Load all display cards then build
-    cardLoader.loadCards(store.displayCardIds).then(() => {
-      rebuildScene()
-    })
+    // Load initial set catalog — switchSet updates CARD_CATALOG + currentCardId,
+    // which triggers the displayCardIds watcher to load textures and rebuild.
+    store.switchSet(store.currentSetId)
 
     // Also build immediately (without card textures if not ready yet)
     rebuildScene()
@@ -545,7 +547,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   watch(
     () => store.displayCardIds,
     (ids) => {
-      if (!cardLoader) return
+      if (!cardLoader || ids.length === 0) return
       cardLoader.loadCards(ids).then(() => {
         rebuildScene()
         cardNavigator.onSceneRebuilt()
@@ -1381,6 +1383,30 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.reverseHoloBaseSaturation, 'uBaseSaturation'],
   ]
   for (const [getter, uniformName] of reverseHoloUniformMap) {
+    watch(getter, (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms[uniformName]
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms[uniformName]!.value = val
+        }
+      }
+    })
+  }
+
+  // Watch master-ball shader parameters
+  const masterBallUniformMap: [() => number, string][] = [
+    [() => store.config.masterBallRainbowScale, 'uRainbowScale'],
+    [() => store.config.masterBallRainbowShift, 'uRainbowShift'],
+    [() => store.config.masterBallSparkleScale, 'uSparkleScale'],
+    [() => store.config.masterBallSparkleIntensity, 'uSparkleIntensity'],
+    [() => store.config.masterBallSparkleTiltSensitivity, 'uSparkleTiltSensitivity'],
+    [() => store.config.masterBallGlareOpacity, 'uGlareOpacity'],
+    [() => store.config.masterBallBaseBrightness, 'uBaseBrightness'],
+    [() => store.config.masterBallBaseContrast, 'uBaseContrast'],
+  ]
+  for (const [getter, uniformName] of masterBallUniformMap) {
     watch(getter, (val) => {
       for (const mesh of cardMeshes.value) {
         if (

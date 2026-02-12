@@ -94,6 +94,15 @@ export interface AppConfig {
   reverseHoloBaseBrightness: number
   reverseHoloBaseContrast: number
   reverseHoloBaseSaturation: number
+  // Master Ball shader parameters
+  masterBallRainbowScale: number
+  masterBallRainbowShift: number
+  masterBallSparkleScale: number
+  masterBallSparkleIntensity: number
+  masterBallSparkleTiltSensitivity: number
+  masterBallGlareOpacity: number
+  masterBallBaseBrightness: number
+  masterBallBaseContrast: number
 }
 
 export interface CardTransform {
@@ -131,6 +140,7 @@ export type ShaderStyle =
   | 'double-rare'
   | 'ultra-rare'
   | 'reverse-holo'
+  | 'master-ball'
 export type HoloType =
   | 'illustration-rare'
   | 'regular-holo'
@@ -138,10 +148,25 @@ export type HoloType =
   | 'double-rare'
   | 'ultra-rare'
   | 'reverse-holo'
+  | 'master-ball'
 
 export interface DerivedDimensions {
   screenW: number
   screenH: number
   boxD: number
   eyeDefaultZ: number
+}
+
+export interface SetDefinition {
+  id: string
+  label: string
+  jsonFile: string
+}
+
+export interface SetCardJson {
+  name: string
+  collector_number: { numerator: string; numeric: number }
+  rarity: { designation: string }
+  foil?: { type: string; mask: string }
+  ext: { tcgl: { longFormID: string } }
 }
