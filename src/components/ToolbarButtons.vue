@@ -86,6 +86,7 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
     <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
     <span v-show="store.cardDisplayMode === 'single'">&middot; <kbd>M</kbd> merge</span>
     &middot; <kbd>F</kbd> flip
+    &middot; <kbd>P</kbd> perf
   </div>
 </template>
 

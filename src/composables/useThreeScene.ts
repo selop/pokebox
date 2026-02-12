@@ -29,6 +29,7 @@ import { useCardLoader } from './useCardLoader'
 import { useMouseTilt } from './useMouseTilt'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 import type { ShaderStyle } from '@/types'
+import { perfTracker } from '@/utils/perfTracker'
 // Per-card offsets for staggering (x = fraction of spacing, z = fraction of boxD)
 const CARD_X_OFFSETS = [0.3, 0, -0.3]
 const CARD_Z_OFFSETS = [0.2, 0, -0.2]
@@ -157,6 +158,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
   function rebuildScene() {
     if (!scene) return
+    perfTracker.markRebuildStart()
 
     // Clear scene
     while (scene.children.length) scene.remove(scene.children[0]!)
@@ -313,6 +315,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
       cardMeshes.value = meshes
     }
+
+    perfTracker.markRebuildEnd()
   }
 
   function updateOffAxisCamera(ex: number, ey: number, ez: number) {
@@ -453,6 +457,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
 
     renderer.render(scene, camera)
+
+    perfTracker.sampleFrame()
+    perfTracker.sampleRendererInfo(renderer.info)
   }
 
   function onKeydown(e: KeyboardEvent) {

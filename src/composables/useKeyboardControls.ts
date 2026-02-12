@@ -29,6 +29,9 @@ export function useKeyboardControls() {
       case 'S':
         store.targetEye.z += step
         break
+      case 'p':
+        store.togglePerfOverlay()
+        break
       default:
         return
     }

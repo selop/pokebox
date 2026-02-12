@@ -3,6 +3,7 @@ import { MeshBasicMaterial, ShaderMaterial } from 'three'
 import type { ShallowRef } from 'vue'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 import type { useAppStore } from '@/stores/app'
+import { perfTracker } from '@/utils/perfTracker'
 
 const TRANSITION_DURATION = 1.5
 
@@ -38,6 +39,8 @@ export class CardNavigator {
     const idx = CARD_CATALOG.findIndex((c) => c.id === this.store.currentCardId)
     if (idx < 0) return
 
+    perfTracker.markNavigationStart()
+
     // Notify dependents (e.g. reset merge state)
     this.onNavigate?.()
 
@@ -60,6 +63,7 @@ export class CardNavigator {
 
   /** Re-add departing meshes after a scene rebuild so they can fade out visually. */
   onSceneRebuilt(): void {
+    perfTracker.markNavigationEnd()
     const scene = this.getScene()
     for (const { mesh } of this.departingMeshes) scene?.add(mesh)
     if (this.fadeInMeshes) {

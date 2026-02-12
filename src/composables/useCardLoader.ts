@@ -1,6 +1,7 @@
 import { LinearFilter, LinearMipmapLinearFilter, TextureLoader } from 'three'
 import type { Texture, WebGLRenderer } from 'three'
 import { CARD_CATALOG } from '@/data/cardCatalog'
+import { perfTracker } from '@/utils/perfTracker'
 
 export interface CardTextures {
   card: Texture
@@ -78,7 +79,10 @@ export function useCardLoader(renderer: WebGLRenderer) {
   }
 
   function loadCards(ids: string[]): Promise<void> {
-    return Promise.all(ids.map(loadCard)).then(() => {})
+    perfTracker.markAssetLoadStart()
+    return Promise.all(ids.map(loadCard)).then(() => {
+      perfTracker.markAssetLoadEnd()
+    })
   }
 
   function get(id: string): CardTextures | undefined {

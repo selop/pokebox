@@ -9,6 +9,7 @@ import CalibrationPanel from './components/CalibrationPanel.vue'
 import ShaderControlsPanel from './components/ShaderControlsPanel.vue'
 import InstructionsModal from './components/InstructionsModal.vue'
 import CardSearch from './components/CardSearch.vue'
+import PerfOverlay from './components/PerfOverlay.vue'
 import { useFaceTracking } from './composables/useFaceTracking'
 
 const videoFeedRef = ref<InstanceType<typeof VideoFeed> | null>(null)
@@ -38,5 +39,6 @@ function onEnableCamera() {
   <CalibrationPanel />
   <ShaderControlsPanel />
   <CardSearch />
+  <PerfOverlay />
   <InstructionsModal @enable-camera="onEnableCamera" />
 </template>

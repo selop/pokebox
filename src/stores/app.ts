@@ -37,6 +37,7 @@ export const useAppStore = defineStore('app', () => {
   const isSlideshowActive = ref(false)
   const isFlipRequested = ref(false)
   const isDimmed = ref(false)
+  const isPerfOverlayOpen = ref(false)
   const statusText = ref('Waiting for camera')
   const showInstructions = ref(true)
 
@@ -119,6 +120,10 @@ export const useAppStore = defineStore('app', () => {
     isDimmed.value = !isDimmed.value
   }
 
+  function togglePerfOverlay() {
+    isPerfOverlayOpen.value = !isPerfOverlayOpen.value
+  }
+
   function setSceneMode(mode: SceneMode) {
     sceneMode.value = mode
   }
@@ -139,6 +144,7 @@ export const useAppStore = defineStore('app', () => {
     isSlideshowActive,
     isFlipRequested,
     isDimmed,
+    isPerfOverlayOpen,
     statusText,
     showInstructions,
     viewportWidth,
@@ -156,6 +162,7 @@ export const useAppStore = defineStore('app', () => {
     toggleSlideshow,
     requestFlip,
     toggleDimLights,
+    togglePerfOverlay,
     setSceneMode,
   }
 })
