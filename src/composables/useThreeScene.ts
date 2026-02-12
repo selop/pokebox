@@ -1,12 +1,15 @@
 import { onBeforeUnmount, shallowRef, watch, type Ref } from 'vue'
 import {
+  AmbientLight,
   Color,
+  DirectionalLight,
   DoubleSide,
   Mesh,
   MeshBasicMaterial,
   PCFSoftShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
+  PointLight,
   Scene,
   ShaderMaterial,
   TextureLoader,
@@ -163,7 +166,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     const renderMode = store.renderMode
 
     // Build box shell
-    buildBoxShell(scene, dims, renderMode, wallTexture)
+    buildBoxShell(scene, dims, renderMode, wallTexture, store.isDimmed)
 
     // Furniture mode
     if (store.sceneMode === 'furniture') {
@@ -435,6 +438,20 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       if (obj.userData.animate) obj.userData.animate(time)
     })
 
+    // Smooth dim/brighten lights in solid mode
+    const dimRate = 0.03
+    const ambient = scene.getObjectByName('solidAmbient') as AmbientLight | undefined
+    const dir = scene.getObjectByName('solidDir') as DirectionalLight | undefined
+    const back = scene.getObjectByName('solidBack') as PointLight | undefined
+    if (ambient && dir && back) {
+      const targetA = store.isDimmed ? 0.03 : 0.3
+      const targetD = store.isDimmed ? 0.05 : 0.5
+      const targetB = store.isDimmed ? 0.05 : 0.16
+      ambient.intensity += (targetA - ambient.intensity) * dimRate
+      dir.intensity += (targetD - dir.intensity) * dimRate
+      back.intensity += (targetB - back.intensity) * dimRate
+    }
+
     renderer.render(scene, camera)
   }
 
@@ -529,6 +546,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     },
   )
 
+  // TODO: this is a lot repeating code which can be simplified and put into a dedicated class
+
   // Watch holo intensity (update uniform directly on all cards)
   watch(
     () => store.config.holoIntensity,
@@ -585,20 +604,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   )
 
   watch(
-    () => store.config.illustRareBarOffsetBgXMult,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarOffsetBgXMult']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarOffsetBgXMult']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
     () => store.config.illustRareBarOffsetBgYMult,
     (val) => {
       for (const mesh of cardMeshes.value) {
@@ -607,20 +612,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           (mesh.material as ShaderMaterial).uniforms['uBarOffsetBgYMult']
         ) {
           ;(mesh.material as ShaderMaterial).uniforms['uBarOffsetBgYMult']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBar2OffsetBgXMult,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBar2OffsetBgXMult']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBar2OffsetBgXMult']!.value = val
         }
       }
     },
@@ -649,6 +640,20 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           (mesh.material as ShaderMaterial).uniforms['uBarWidth']
         ) {
           ;(mesh.material as ShaderMaterial).uniforms['uBarWidth']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarWidth2,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarWidth2']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarWidth2']!.value = val
         }
       }
     },
@@ -733,6 +738,90 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           (mesh.material as ShaderMaterial).uniforms['uBarBrightLightness']
         ) {
           ;(mesh.material as ShaderMaterial).uniforms['uBarBrightLightness']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarIntensity2,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarIntensity2']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensity2']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarHue2,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarHue2']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarHue2']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarMediumSaturation2,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarMediumSaturation2']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarMediumSaturation2']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarMediumLightness2,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarMediumLightness2']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarMediumLightness2']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarBrightSaturation2,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarBrightSaturation2']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarBrightSaturation2']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarBrightLightness2,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarBrightLightness2']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarBrightLightness2']!.value = val
         }
       }
     },
@@ -1210,7 +1299,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       }
     },
   )
-
 
   let slideshowInterval: ReturnType<typeof setInterval> | null = null
   watch(

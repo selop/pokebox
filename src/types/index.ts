@@ -15,17 +15,22 @@ export interface AppConfig {
   illustRareRainbowScale: number
   illustRareBarAngle: number
   illustRareBarDensity: number
-  illustRareBarOffsetBgXMult: number
   illustRareBarOffsetBgYMult: number
-  illustRareBar2OffsetBgXMult: number
   illustRareBar2OffsetBgYMult: number
   illustRareBarWidth: number
+  illustRareBarWidth2: number
   illustRareBarIntensity: number
   illustRareBarHue: number
   illustRareBarMediumSaturation: number
   illustRareBarMediumLightness: number
   illustRareBarBrightSaturation: number
   illustRareBarBrightLightness: number
+  illustRareBarIntensity2: number
+  illustRareBarHue2: number
+  illustRareBarMediumSaturation2: number
+  illustRareBarMediumLightness2: number
+  illustRareBarBrightSaturation2: number
+  illustRareBarBrightLightness2: number
   illustRareShine1Contrast: number
   illustRareShine1Saturation: number
   illustRareShine2Opacity: number

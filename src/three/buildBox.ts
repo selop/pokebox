@@ -23,6 +23,7 @@ export function buildBoxShell(
   dims: DerivedDimensions,
   renderMode: RenderMode,
   wallTexture?: Texture | null,
+  isDimmed = false,
 ): void {
   const { screenW, screenH, boxD } = dims
   const hw = screenW / 2
@@ -293,21 +294,21 @@ export function buildBoxShell(
     scene.add(mesh)
   })
 
-  // ── Lighting ──
   if (isSolid) {
-    // Bright ambient for diffuse base
-    scene.add(new AmbientLight(0xffffff, 0.3))
+    const ambient = new AmbientLight(0xffffff, isDimmed ? 0.005 : 0.3)
+    ambient.name = 'solidAmbient'
+    scene.add(ambient)
 
-    // Soft directional from above-front for natural illumination
-    const dirLight = new DirectionalLight(0xffffff, 0.5)
+    const dirLight = new DirectionalLight(0xffffff, isDimmed ? 0.0 : 0.125)
+    dirLight.name = 'solidDir'
     dirLight.position.set(0, hh * 0.8, boxD * 0.5)
     scene.add(dirLight)
 
-    // Backlight to make the back wall glow
-    const backLight = new PointLight(0xdde8ff, 0.16, boxD * 2)
+    const backLight = new PointLight(0xdde8ff, isDimmed ? 0.025 : 0.08, boxD * 2)
+    backLight.name = 'solidBack'
     backLight.position.set(0, 0, -boxD * 0.7)
     scene.add(backLight)
   } else {
-    scene.add(new AmbientLight(0xffffff, 0.25))
+    scene.add(new AmbientLight(0xffffff, 0.05))
   }
 }

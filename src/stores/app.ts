@@ -36,6 +36,7 @@ export const useAppStore = defineStore('app', () => {
   const isTrackingActive = ref(false)
   const isSlideshowActive = ref(false)
   const isFlipRequested = ref(false)
+  const isDimmed = ref(false)
   const statusText = ref('Waiting for camera')
   const showInstructions = ref(true)
 
@@ -114,6 +115,10 @@ export const useAppStore = defineStore('app', () => {
     isFlipRequested.value = true
   }
 
+  function toggleDimLights() {
+    isDimmed.value = !isDimmed.value
+  }
+
   function setSceneMode(mode: SceneMode) {
     sceneMode.value = mode
   }
@@ -133,6 +138,7 @@ export const useAppStore = defineStore('app', () => {
     isTrackingActive,
     isSlideshowActive,
     isFlipRequested,
+    isDimmed,
     statusText,
     showInstructions,
     viewportWidth,
@@ -149,6 +155,7 @@ export const useAppStore = defineStore('app', () => {
     toggleShaderPanel,
     toggleSlideshow,
     requestFlip,
+    toggleDimLights,
     setSceneMode,
   }
 })

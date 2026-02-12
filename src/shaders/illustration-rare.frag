@@ -18,17 +18,22 @@ uniform float uFade;         // overall card opacity 0-1 (for transitions)
 uniform float uRainbowScale;
 uniform float uBarAngle;
 uniform float uBarDensity;
-uniform float uBarOffsetBgXMult;
 uniform float uBarOffsetBgYMult;
-uniform float uBar2OffsetBgXMult;
 uniform float uBar2OffsetBgYMult;
 uniform float uBarWidth;
+uniform float uBarWidth2;
 uniform float uBarIntensity;
+uniform float uBarIntensity2;
 uniform float uBarHue;
 uniform float uBarMediumSaturation;
 uniform float uBarMediumLightness;
 uniform float uBarBrightSaturation;
 uniform float uBarBrightLightness;
+uniform float uBarHue2;
+uniform float uBarMediumSaturation2;
+uniform float uBarMediumLightness2;
+uniform float uBarBrightSaturation2;
+uniform float uBarBrightLightness2;
 uniform float uShine1Contrast;
 uniform float uShine1Saturation;
 uniform float uShine2Opacity;
@@ -113,7 +118,7 @@ void main() {
     // Pattern matching double-rare spacing with illustration-rare colors
     float barAngle = uBarAngle * 3.14159 / 180.0;
     float barCoord = dot(uv, vec2(cos(barAngle), sin(barAngle)));
-    float barOffset = ((0.5 - bgX) * uBarOffsetBgXMult) + (bgY * uBarOffsetBgYMult);
+    float barOffset = bgY * uBarOffsetBgYMult;
     float barT = fract((barCoord + barOffset) * uBarDensity);
 
     // Bar pattern: controllable HSL colors
@@ -147,27 +152,32 @@ void main() {
     // ── SHINE LAYER 2: Shifted copy (exclusion blend) ─
     // CSS :after: inverted positions, mix-blend-mode: exclusion
     float rainbow2T = uv.y * (uRainbowScale * 1.75)
-        + ((0.5 - bgY) * -2.5)
-        + cos(uTime * 0.25) * 0.04
+        + ((0.5 - bgY) * 3.5)
+        + cos(uTime * 0.3) * 0.05
         + (5.0 / 6.0); // CSS :after palette rotation (colors 6,1,2,3,4,5)
     vec3 rainbow2 = sunpillarGradient(rainbow2T);
 
-    // Inverted bar offset for second layer (matching double-rare pattern)
-    float barOffset2 = ((0.5 - bgX) * uBar2OffsetBgXMult) + (bgY * uBar2OffsetBgYMult);
-    float barT2 = fract((barCoord + barOffset2) * 15.0);
-    float bar2Edge1 = barEdge1 * 5.3;
-    float bar2Edge2 = barEdge2 * 5.3;
-    float bar2Edge3 = barEdge3 * 5.3;
+    // Layer 2 bar offset — Y-only (no X-plane movement)
+    float barOffset2 = bgY * uBar2OffsetBgYMult;
+    float barT2 = fract((barCoord + barOffset2) * 2.5);
+    float bar2Edge1 = 0.028 * uBarWidth2;
+    float bar2Edge2 = 0.035 * uBarWidth2;
+    float bar2Edge3 = 0.042 * uBarWidth2;
     float barIntensity2 = smoothstep(0.0, bar2Edge1, barT2) * (1.0 - smoothstep(bar2Edge2, bar2Edge3, barT2));
-    vec3 barColor2 = mix(barMedium, barBright, barIntensity2 * uBarIntensity);
+    vec3 barMedium2 = hslToRgb(uBarHue2, uBarMediumSaturation2, uBarMediumLightness2);
+    vec3 barBright2 = hslToRgb(uBarHue2, uBarBrightSaturation2, uBarBrightLightness2);
+    vec3 barColor2 = mix(barMedium2, barBright2, barIntensity2 * uBarIntensity2);
     rainbow2 = blendHardLight(rainbow2, barColor2);
+
+    // Apply glitter texture (same sparkle treatment as layer 1)
+    rainbow2 *= 0.7 + glitter * 0.3;
 
     rainbow2 *= 0.5 + spotlight * 0.5;
 
     // CSS :after filter: brightness(1) contrast(2.5) saturate(1.75)
-    vec3 shine2 = adjustBrightness(rainbow2, ptrBrightness);
-    //shine2 = adjustContrast(shine2, 0.5);
-    //shine2 = adjustSaturate(shine2, 0.75);
+    vec3 shine2 = adjustBrightness(rainbow2, ptrBrightness * 1.0);
+    shine2 = adjustContrast(shine2, uShine1Contrast);
+    shine2 = adjustSaturate(shine2, uShine1Saturation);
     shine2 = clamp(shine2, 0.0, 1.0);
 
     // ── GLARE: White-to-black radial (overlay) ──────
@@ -176,8 +186,8 @@ void main() {
     vec3 glare = mix(vec3(1.0), vec3(0.0), smoothstep(0.0, 0.85, spotDist));
 
     // CSS filter: brightness(.9) contrast(1.2)
-    glare = adjustBrightness(glare, 0.7);
-    glare = adjustContrast(glare, 1.2);
+    glare = adjustBrightness(glare, 0.9);
+    glare = adjustContrast(glare, 1.0);
     glare = clamp(glare, 0.0, 1.0);
 
     // ── Compose layers ───────────────────────────────
@@ -190,7 +200,7 @@ void main() {
         result = mix(result, blendColorDodge(result, shine1), mask * uCardOpacity);
 
         // Shine 2: soft-light (CSS :after mix-blend-mode: soft-light)
-        result = mix(result, blendSoftLight(result, shine2), mask * uCardOpacity * uShine2Opacity);
+        result = mix(result, blendSoftLight(result, shine2), mask * uCardOpacity);
 
         // Glare: overlay (CSS .card__glare mix-blend-mode: overlay)
         result = mix(result, blendOverlay(result, glare), mask * uCardOpacity * uGlareOpacity * 0.8);
@@ -199,7 +209,7 @@ void main() {
         // CSS: radial-gradient(farthest-corner circle at pointer, hsl(0,0%,100%) 5%, hsl(0,0%,0%) 120%)
         vec3 glare2 = mix(vec3(1.0), vec3(0.0), smoothstep(0.05, 0.85, spotDist));
         glare2 = adjustBrightness(glare2, 0.475);
-        glare2 = adjustContrast(glare2, 1.5);
+        glare2 = adjustContrast(glare2, 1.2);
         glare2 = clamp(glare2, 0.0, 1.0);
         float glare2Opacity = uCardOpacity * uPointerFromCenter;
         result = mix(result, blendScreen(result, glare2), mask * glare2Opacity);

@@ -7,53 +7,80 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 </script>
 
 <template>
-  <button class="toolbar-btn settings-btn" @click="store.togglePanel()">&#x2699; Settings</button>
-  <button class="toolbar-btn fullscreen-btn" @click="toggleFullscreen">
-    &#x26F6; {{ isFullscreen ? 'Exit FS' : 'Fullscreen' }}
-  </button>
-  <button
-    class="toolbar-btn mode-btn"
-    :class="{ solid: store.renderMode === 'solid' }"
-    @click="store.toggleRenderMode()"
-  >
-    {{ store.renderMode === 'xray' ? '◈ X-Ray' : '◆ Solid' }}
-  </button>
-  <button
-    v-show="store.sceneMode === 'cards'"
-    class="toolbar-btn display-btn"
-    @click="store.cardDisplayMode = store.cardDisplayMode === 'single' ? 'triple' : 'single'"
-  >
-    {{ store.cardDisplayMode === 'single' ? '&#x2630; Triple' : '&#x25A3; Single' }}
-  </button>
-  <button
-    v-show="store.sceneMode === 'cards' && store.cardDisplayMode === 'single'"
-    class="toolbar-btn shader-controls-btn"
-    @click="store.toggleShaderPanel()"
-  >
-    &#x2699; Shader
-  </button>
-  <button
-    v-show="store.sceneMode === 'cards'"
-    class="toolbar-btn slideshow-btn"
-    :class="{ active: store.isSlideshowActive }"
-    @click="store.toggleSlideshow()"
-  >
-    {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
-  </button>
-  <button
-    v-show="store.sceneMode === 'cards'"
-    class="toolbar-btn flip-btn"
-    @click="store.requestFlip()"
-  >
-    &#x21BB; Flip
-  </button>
-  <button
-    v-show="store.sceneMode === 'furniture'"
-    class="toolbar-btn randomize-btn"
-    @click="store.randomizeSeed()"
-  >
-    &#x26A1; Randomize Interior
-  </button>
+  <div class="toolbar">
+    <!-- Global controls — always visible -->
+    <div class="toolbar-group">
+      <button class="toolbar-btn" @click="store.togglePanel()">&#x2699; Settings</button>
+      <button class="toolbar-btn" @click="toggleFullscreen">
+        &#x26F6; {{ isFullscreen ? 'Exit FS' : 'Fullscreen' }}
+      </button>
+    </div>
+
+    <span class="toolbar-sep" />
+
+    <!-- Render controls -->
+    <div class="toolbar-group">
+      <button
+        class="toolbar-btn"
+        :class="{ accent: store.renderMode === 'solid' }"
+        @click="store.toggleRenderMode()"
+      >
+        {{ store.renderMode === 'xray' ? '◈ X-Ray' : '◆ Solid' }}
+      </button>
+      <Transition name="btn-fade">
+        <button
+          v-if="store.renderMode === 'solid'"
+          class="toolbar-btn"
+          :class="{ active: store.isDimmed }"
+          @click="store.toggleDimLights()"
+        >
+          {{ store.isDimmed ? '&#x2600; Brighten' : '&#x263E; Dim' }}
+        </button>
+      </Transition>
+    </div>
+
+    <!-- Card-mode controls -->
+    <template v-if="store.sceneMode === 'cards'">
+      <span class="toolbar-sep" />
+
+      <div class="toolbar-group">
+        <button
+          class="toolbar-btn"
+          @click="store.cardDisplayMode = store.cardDisplayMode === 'single' ? 'triple' : 'single'"
+        >
+          {{ store.cardDisplayMode === 'single' ? '&#x2630; Triple' : '&#x25A3; Single' }}
+        </button>
+        <Transition name="btn-fade">
+          <button
+            v-if="store.cardDisplayMode === 'single'"
+            class="toolbar-btn"
+            @click="store.toggleShaderPanel()"
+          >
+            &#x2699; Shader
+          </button>
+        </Transition>
+        <button
+          class="toolbar-btn"
+          :class="{ accent: store.isSlideshowActive }"
+          @click="store.toggleSlideshow()"
+        >
+          {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
+        </button>
+        <button class="toolbar-btn" @click="store.requestFlip()">&#x21BB; Flip</button>
+      </div>
+    </template>
+
+    <!-- Furniture-mode controls -->
+    <template v-if="store.sceneMode === 'furniture'">
+      <span class="toolbar-sep" />
+
+      <div class="toolbar-group">
+        <button class="toolbar-btn" @click="store.randomizeSeed()">
+          &#x26A1; Randomize Interior
+        </button>
+      </div>
+    </template>
+  </div>
 
   <div v-show="store.sceneMode === 'cards'" class="nav-hint">
     <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
@@ -63,22 +90,44 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 </template>
 
 <style scoped>
-.toolbar-btn {
+.toolbar {
   position: fixed;
-  top: 20px;
+  top: 16px;
+  left: 16px;
   z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+.toolbar-btn {
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
   border-radius: 8px;
-  padding: 8px 14px;
+  padding: 7px 12px;
   font-family: 'Space Mono', monospace;
   font-size: 0.65rem;
   color: #aaa;
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  transition: all 0.2s;
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s;
 }
 
 .toolbar-btn:hover {
@@ -86,37 +135,25 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
   color: #00f5d4;
 }
 
-.settings-btn {
-  left: 20px;
-}
-.fullscreen-btn {
-  left: 130px;
-}
-.mode-btn {
-  left: 260px;
-}
-.mode-btn.solid {
+.toolbar-btn.accent {
   border-color: #f72585;
   color: #f72585;
 }
-.display-btn {
-  left: 350px;
+
+.toolbar-btn.active {
+  border-color: #7b61ff;
+  color: #7b61ff;
 }
-.shader-controls-btn {
-  left: 440px;
+
+/* fade transition for conditional buttons */
+.btn-fade-enter-active,
+.btn-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
-.slideshow-btn {
-  left: 540px;
-}
-.flip-btn {
-  left: 650px;
-}
-.slideshow-btn.active {
-  border-color: #f72585;
-  color: #f72585;
-}
-.randomize-btn {
-  left: 350px;
+.btn-fade-enter-from,
+.btn-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.92);
 }
 
 .nav-hint {
