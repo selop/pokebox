@@ -1367,6 +1367,32 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     })
   }
 
+  // Watch reverse-holo shader parameters
+  const reverseHoloUniformMap: [() => number, string][] = [
+    [() => store.config.reverseHoloShineIntensity, 'uShineIntensity'],
+    [() => store.config.reverseHoloShineOpacity, 'uShineOpacity'],
+    [() => store.config.reverseHoloShineColorR, 'uShineColorR'],
+    [() => store.config.reverseHoloShineColorG, 'uShineColorG'],
+    [() => store.config.reverseHoloShineColorB, 'uShineColorB'],
+    [() => store.config.reverseHoloSpecularRadius, 'uSpecularRadius'],
+    [() => store.config.reverseHoloSpecularPower, 'uSpecularPower'],
+    [() => store.config.reverseHoloBaseBrightness, 'uBaseBrightness'],
+    [() => store.config.reverseHoloBaseContrast, 'uBaseContrast'],
+    [() => store.config.reverseHoloBaseSaturation, 'uBaseSaturation'],
+  ]
+  for (const [getter, uniformName] of reverseHoloUniformMap) {
+    watch(getter, (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms[uniformName]
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms[uniformName]!.value = val
+        }
+      }
+    })
+  }
+
   function dispose() {
     if (animationId !== null) cancelAnimationFrame(animationId)
     if (slideshowInterval) clearInterval(slideshowInterval)

@@ -50,20 +50,76 @@ const sections: ShaderSection[] = [
       { label: 'Width', key: 'illustRareBarWidth', min: 0.1, max: 10, step: 0.05 },
       { label: 'Intensity', key: 'illustRareBarIntensity', min: 0, max: 20, step: 0.05 },
       { label: 'Hue', key: 'illustRareBarHue', min: 0, max: 360, step: 1, suffix: '°' },
-      { label: 'Med sat', key: 'illustRareBarMediumSaturation', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Med light', key: 'illustRareBarMediumLightness', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Bright sat', key: 'illustRareBarBrightSaturation', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Bright light', key: 'illustRareBarBrightLightness', min: 0, max: 1, step: 0.01, suffix: '%' },
+      {
+        label: 'Med sat',
+        key: 'illustRareBarMediumSaturation',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Med light',
+        key: 'illustRareBarMediumLightness',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Bright sat',
+        key: 'illustRareBarBrightSaturation',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Bright light',
+        key: 'illustRareBarBrightLightness',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
       { subsection: 'Layer 2 Bars' },
       { label: 'Density', key: 'illustRareBarDensity2', min: 0.5, max: 10, step: 0.1 },
       { label: 'Offset Y', key: 'illustRareBar2OffsetBgYMult', min: -5, max: 5, step: 0.05 },
       { label: 'Width', key: 'illustRareBarWidth2', min: 0.1, max: 10, step: 0.05 },
       { label: 'Intensity', key: 'illustRareBarIntensity2', min: 0, max: 20, step: 0.05 },
       { label: 'Hue', key: 'illustRareBarHue2', min: 0, max: 360, step: 1, suffix: '°' },
-      { label: 'Med sat', key: 'illustRareBarMediumSaturation2', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Med light', key: 'illustRareBarMediumLightness2', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Bright sat', key: 'illustRareBarBrightSaturation2', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Bright light', key: 'illustRareBarBrightLightness2', min: 0, max: 1, step: 0.01, suffix: '%' },
+      {
+        label: 'Med sat',
+        key: 'illustRareBarMediumSaturation2',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Med light',
+        key: 'illustRareBarMediumLightness2',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Bright sat',
+        key: 'illustRareBarBrightSaturation2',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Bright light',
+        key: 'illustRareBarBrightLightness2',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
       { subsection: 'Shine & Glare' },
       { label: 'Shine contrast', key: 'illustRareShine1Contrast', min: 1, max: 5, step: 0.05 },
       { label: 'Shine saturate', key: 'illustRareShine1Saturation', min: 0, max: 2, step: 0.05 },
@@ -158,6 +214,33 @@ const sections: ShaderSection[] = [
       { label: 'Color shift', key: 'ultraRareSparkleColorShift', min: 0, max: 5, step: 0.1 },
     ],
   },
+  {
+    id: 'reverse-holo',
+    title: 'Reverse Holo',
+    icon: '🪞',
+    items: [
+      { subsection: 'Shine' },
+      { label: 'Intensity', key: 'reverseHoloShineIntensity', min: 0, max: 5, step: 0.05 },
+      { label: 'Opacity', key: 'reverseHoloShineOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { subsection: 'Shine Color' },
+      { label: 'Red', key: 'reverseHoloShineColorR', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Green', key: 'reverseHoloShineColorG', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Blue', key: 'reverseHoloShineColorB', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { subsection: 'Specular' },
+      { label: 'Radius', key: 'reverseHoloSpecularRadius', min: 0.1, max: 1.5, step: 0.05 },
+      { label: 'Power', key: 'reverseHoloSpecularPower', min: 0.5, max: 8, step: 0.1 },
+      { subsection: 'Overall' },
+      {
+        label: 'Base brightness',
+        key: 'reverseHoloBaseBrightness',
+        min: 0.4,
+        max: 1.0,
+        step: 0.05,
+      },
+      { label: 'Base contrast', key: 'reverseHoloBaseContrast', min: 0, max: 5, step: 0.05 },
+      { label: 'Base saturation', key: 'reverseHoloBaseSaturation', min: 0, max: 3, step: 0.05 },
+    ],
+  },
 ]
 
 function sliderKeys(section: ShaderSection): (keyof AppConfig)[] {
@@ -188,9 +271,12 @@ const currentCardHoloType = computed(() => {
 const activeSection = computed(() => sections.find((s) => s.id === currentCardHoloType.value))
 
 // Close panel when switching to triple mode
-watch(() => store.cardDisplayMode, (mode) => {
-  if (mode === 'triple') store.isShaderPanelOpen = false
-})
+watch(
+  () => store.cardDisplayMode,
+  (mode) => {
+    if (mode === 'triple') store.isShaderPanelOpen = false
+  },
+)
 </script>
 
 <template>

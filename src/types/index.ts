@@ -83,6 +83,17 @@ export interface AppConfig {
   ultraRareSparkleRadius: number
   ultraRareSparkleContrast: number
   ultraRareSparkleColorShift: number
+  // Reverse Holo shader parameters
+  reverseHoloShineIntensity: number
+  reverseHoloShineOpacity: number
+  reverseHoloShineColorR: number
+  reverseHoloShineColorG: number
+  reverseHoloShineColorB: number
+  reverseHoloSpecularRadius: number
+  reverseHoloSpecularPower: number
+  reverseHoloBaseBrightness: number
+  reverseHoloBaseContrast: number
+  reverseHoloBaseSaturation: number
 }
 
 export interface CardTransform {

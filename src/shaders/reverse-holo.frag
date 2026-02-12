@@ -10,112 +10,90 @@ uniform float uCardOpacity;
 uniform float uTime;
 uniform float uFade;
 
+// Reverse-holo specific uniforms
+uniform float uShineIntensity;
+uniform float uShineOpacity;
+uniform float uShineColorR;
+uniform float uShineColorG;
+uniform float uShineColorB;
+uniform float uSpecularRadius;
+uniform float uSpecularPower;
+uniform float uBaseBrightness;
+uniform float uBaseContrast;
+uniform float uBaseSaturation;
+
 varying vec2 vUv;
 
-const float PI = 3.14159265359;
-
-// ── Hash function for noise ───────────────────────────
-float hash21(vec2 p) {
-    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-// ── Metallic reflection color ─────────────────────────
-vec3 metallicReflection(vec2 uv, vec2 pointer, float timeOffset) {
-    // Calculate angle from pointer to current pixel
-    vec2 toPixel = uv - pointer;
-    float angle = atan(toPixel.y, toPixel.x);
-    float dist = length(toPixel);
-
-    // Anisotropic brushed metal effect
-    float brushPattern = sin(angle * 8.0 + uv.x * 20.0) * 0.5 + 0.5;
-    brushPattern = pow(brushPattern, 3.0);
-
-    // Specular highlight
-    float specular = 1.0 - smoothstep(0.0, 0.4, dist);
-    specular = pow(specular, 2.0);
-
-    // Fresnel-like edge brightening
-    vec2 fromCenter = uv - vec2(0.5);
-    float edgeDist = length(fromCenter);
-    float fresnel = smoothstep(0.2, 0.7, edgeDist) * 0.3;
-
-    // Metallic base color - cool silver with slight warmth
-    vec3 metalBase = vec3(0.8, 0.82, 0.85);
-
-    // Add specular highlights
-    vec3 highlight = vec3(1.0) * specular;
-
-    // Combine with brush pattern
-    vec3 metal = metalBase * (0.6 + brushPattern * 0.4);
-    metal += highlight * 0.8;
-    metal += fresnel;
-
-    // Subtle animated shimmer
-    float shimmer = sin(uv.x * 30.0 + uv.y * 30.0 + timeOffset * 2.0) * 0.5 + 0.5;
-    shimmer = pow(shimmer, 10.0) * 0.2;
-    metal += shimmer;
-
-    return metal;
-}
-
-// ── Blend modes ───────────────────────────────────────
-float blendOverlayF(float base, float blend) {
-    return base < 0.5 ? (2.0 * base * blend) : (1.0 - 2.0 * (1.0 - base) * (1.0 - blend));
-}
-
-vec3 blendOverlay(vec3 base, vec3 blend) {
-    return vec3(
-        blendOverlayF(base.r, blend.r),
-        blendOverlayF(base.g, blend.g),
-        blendOverlayF(base.b, blend.b)
-    );
-}
-
-vec3 blendOverlay(vec3 base, vec3 blend, float opacity) {
-    return blendOverlay(base, blend) * opacity + base * (1.0 - opacity);
-}
+#include "common/blend.glsl"
+#include "common/filters.glsl"
 
 void main() {
     vec2 uv = vUv;
 
+    // ── Base card ────────────────────────────────────
     vec4 cardColor = texture2D(uCardTex, uv);
 
+    // Back face: show card-back texture
     if (!gl_FrontFacing) {
         vec4 backColor = texture2D(uCardBackTex, uv);
         gl_FragColor = vec4(backColor.rgb, backColor.a * uFade);
         return;
     }
 
+    // ── Mask & foil textures ─────────────────────────
     float mask = texture2D(uMaskTex, uv).r;
     float foil = uHasFoil > 0.5 ? texture2D(uFoilTex, uv).r : 0.0;
 
-    if (uCardOpacity < 0.01 || (mask < 0.01 && foil < 0.01)) {
-        vec4 backColor = texture2D(uCardBackTex, uv);
-        gl_FragColor = vec4(backColor.rgb, backColor.a * uFade);
+    // Skip compositing if no effect present
+    float effectArea = max(mask, foil);
+    if (uCardOpacity < 0.01 || effectArea < 0.01) {
+        gl_FragColor = vec4(cardColor.rgb, cardColor.a * uFade);
         return;
     }
 
+    // ── Pointer-driven specular highlight ────────────
+    vec2 toPointer = uPointer - uv;
+    float spotDist = length(toPointer);
+
+    // Primary specular: configurable radius and power
+    float specular = 1.0 - smoothstep(0.0, uSpecularRadius, spotDist);
+    specular = pow(specular, uSpecularPower);
+
+    // Broader secondary glow
+    float glow = 1.0 - smoothstep(0.0, uSpecularRadius * 2.0, spotDist);
+    glow = pow(glow, max(uSpecularPower * 0.5, 0.5)) * 0.5;
+
+    float totalHighlight = specular + glow;
+
+    // ── Build metallic shine layer ───────────────────
+    vec3 shineColor = vec3(uShineColorR, uShineColorG, uShineColorB);
+
+    // Modulate metallic layer by pointer proximity
+    vec3 metallic = shineColor * (0.1 + totalHighlight * uShineIntensity * 100.0);
+    metallic = clamp(metallic, 0.0, 1.0);
+
+    // ── Compose onto card ────────────────────────────
     vec3 result = cardColor.rgb;
+    float effectStrength = effectArea * uCardOpacity;
 
-    // Compute metallic reflection once for both mask and foil
-    float effectStrength = max(mask, foil);
-    if (effectStrength > 0.01) {
-        vec3 metallic = metallicReflection(uv, uPointer, uTime * 0.5);
+    // Spotlight drives how much of the metallic overlay is visible:
+    // base opacity away from cursor, ramping up under the pointer
+    float spotlightReveal = uShineOpacity * (0.4 + 0.6 * totalHighlight);
 
-        // Add fine grain
-        vec2 grainUV = floor(uv * 200.0) / 200.0;
-        float grain = hash21(grainUV);
-        metallic *= 0.85 + grain * 0.15;
+    // Overlay blend the metallic layer onto card — stronger under cursor
+    vec3 overlaid = blendOverlay(result, metallic);
+    result = mix(result, overlaid, effectStrength * spotlightReveal);
 
-        // Directional highlight
-        vec2 toPointer = uPointer - uv;
-        float spotDist = length(toPointer);
-        float spotlight = 1.0 - smoothstep(0.0, 0.6, spotDist);
-        metallic *= 0.6 + spotlight * 0.4;
-
-        vec3 blended = blendOverlay(result, metallic, effectStrength * uCardOpacity * 0.7);
-        result = mix(result, blended, effectStrength * uCardOpacity);
+    // Foil areas get extra metallic reveal under the spotlight
+    if (mask > 0.01 && foil > 0.01) {
+        vec3 foilOverlay = blendOverlay(result, metallic);
+        result = mix(result, foilOverlay, mask * uCardOpacity * totalHighlight * uShineIntensity);
     }
+
+    // Final brightness and saturation — fully configurable
+    result = adjustBrightness(result, uBaseBrightness);
+    result = adjustContrast(result, uBaseContrast);
+    result = adjustSaturate(result, uBaseSaturation);
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
 }

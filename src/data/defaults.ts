@@ -83,6 +83,17 @@ export const DEFAULT_CONFIG: AppConfig = {
   ultraRareSparkleRadius: 1.0,
   ultraRareSparkleContrast: 2.4,
   ultraRareSparkleColorShift: 5.0,
+  // Reverse Holo shader defaults
+  reverseHoloShineIntensity: 5.0,
+  reverseHoloShineOpacity: 1.0,
+  reverseHoloShineColorR: 0.76,
+  reverseHoloShineColorG: 0.54,
+  reverseHoloShineColorB: 0.59,
+  reverseHoloSpecularRadius: 0.45,
+  reverseHoloSpecularPower: 2.5,
+  reverseHoloBaseBrightness: 0.8,
+  reverseHoloBaseContrast: 1.7,
+  reverseHoloBaseSaturation: 1.3,
 }
 
 export const DEFAULT_CARD: CardTransform = {

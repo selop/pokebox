@@ -115,6 +115,18 @@ const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
     ['uSparkleContrast', 'ultraRareSparkleContrast'],
     ['uSparkleColorShift', 'ultraRareSparkleColorShift'],
   ],
+  'reverse-holo': [
+    ['uShineIntensity', 'reverseHoloShineIntensity'],
+    ['uShineOpacity', 'reverseHoloShineOpacity'],
+    ['uShineColorR', 'reverseHoloShineColorR'],
+    ['uShineColorG', 'reverseHoloShineColorG'],
+    ['uShineColorB', 'reverseHoloShineColorB'],
+    ['uSpecularRadius', 'reverseHoloSpecularRadius'],
+    ['uSpecularPower', 'reverseHoloSpecularPower'],
+    ['uBaseBrightness', 'reverseHoloBaseBrightness'],
+    ['uBaseContrast', 'reverseHoloBaseContrast'],
+    ['uBaseSaturation', 'reverseHoloBaseSaturation'],
+  ],
 }
 
 function addIriUniforms(
