@@ -564,6 +564,62 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   )
 
   watch(
+    () => store.config.illustRareBarOffsetBgXMult,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarOffsetBgXMult']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarOffsetBgXMult']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBarOffsetBgYMult,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBarOffsetBgYMult']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBarOffsetBgYMult']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBar2OffsetBgXMult,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBar2OffsetBgXMult']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBar2OffsetBgXMult']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
+    () => store.config.illustRareBar2OffsetBgYMult,
+    (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms['uBar2OffsetBgYMult']
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms['uBar2OffsetBgYMult']!.value = val
+        }
+      }
+    },
+  )
+
+  watch(
     () => store.config.illustRareBarWidth,
     (val) => {
       for (const mesh of cardMeshes.value) {

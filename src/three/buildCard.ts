@@ -88,6 +88,10 @@ export function buildCardMesh(
       uniforms.uRainbowScale = { value: config.illustRareRainbowScale }
       uniforms.uBarAngle = { value: config.illustRareBarAngle }
       uniforms.uBarDensity = { value: config.illustRareBarDensity }
+      uniforms.uBarOffsetBgXMult = { value: config.illustRareBarOffsetBgXMult }
+      uniforms.uBarOffsetBgYMult = { value: config.illustRareBarOffsetBgYMult }
+      uniforms.uBar2OffsetBgXMult = { value: config.illustRareBar2OffsetBgXMult }
+      uniforms.uBar2OffsetBgYMult = { value: config.illustRareBar2OffsetBgYMult }
       uniforms.uBarWidth = { value: config.illustRareBarWidth }
       uniforms.uBarIntensity = { value: config.illustRareBarIntensity }
       uniforms.uBarHue = { value: config.illustRareBarHue }

@@ -18,6 +18,10 @@ uniform float uFade;         // overall card opacity 0-1 (for transitions)
 uniform float uRainbowScale;
 uniform float uBarAngle;
 uniform float uBarDensity;
+uniform float uBarOffsetBgXMult;
+uniform float uBarOffsetBgYMult;
+uniform float uBar2OffsetBgXMult;
+uniform float uBar2OffsetBgYMult;
 uniform float uBarWidth;
 uniform float uBarIntensity;
 uniform float uBarHue;
@@ -101,14 +105,16 @@ void main() {
     // CSS: repeating sunpillar gradient (0deg, 200% 700% ≈ 3.5 vertical repeats)
     float rainbowT = uv.y * uRainbowScale
         + ((0.5 - bgY) * 3.5)
-        + sin(uTime * 0.3) * 0.05;
+        + sin(uTime * 0.3) * 0.05
+        + (4.0 / 6.0); // CSS :before palette rotation (colors 5,6,1,2,3,4)
     vec3 rainbow = sunpillarGradient(rainbowT);
 
     // CSS: repeating-linear-gradient(133deg, bright saturated diagonal bars)
     // Pattern matching double-rare spacing with illustration-rare colors
     float barAngle = uBarAngle * 3.14159 / 180.0;
     float barCoord = dot(uv, vec2(cos(barAngle), sin(barAngle)));
-    float barT = fract((barCoord + bgX + bgY) * uBarDensity); // 300% x 100%
+    float barOffset = ((0.5 - bgX) * uBarOffsetBgXMult) + (bgY * uBarOffsetBgYMult);
+    float barT = fract((barCoord + barOffset) * uBarDensity);
 
     // Bar pattern: controllable HSL colors
     vec3 barMedium = hslToRgb(uBarHue, uBarMediumSaturation, uBarMediumLightness);
@@ -140,38 +146,38 @@ void main() {
 
     // ── SHINE LAYER 2: Shifted copy (exclusion blend) ─
     // CSS :after: inverted positions, mix-blend-mode: exclusion
-    float rainbow2T = uv.y * (uRainbowScale * 2.5)
+    float rainbow2T = uv.y * (uRainbowScale * 1.75)
         + ((0.5 - bgY) * -2.5)
-        + cos(uTime * 0.25) * 0.04;
+        + cos(uTime * 0.25) * 0.04
+        + (5.0 / 6.0); // CSS :after palette rotation (colors 6,1,2,3,4,5)
     vec3 rainbow2 = sunpillarGradient(rainbow2T);
 
     // Inverted bar offset for second layer (matching double-rare pattern)
-    float barT2 = fract((barCoord - bgX - bgY) * uBarDensity);
-    float barIntensity2 = smoothstep(0.0, 0.028, barT2) * (1.0 - smoothstep(0.035, 0.042, barT2));
-    vec3 barColor2 = mix(barMedium, barBright, barIntensity2);
+    float barOffset2 = ((0.5 - bgX) * uBar2OffsetBgXMult) + (bgY * uBar2OffsetBgYMult);
+    float barT2 = fract((barCoord + barOffset2) * 15.0);
+    float bar2Edge1 = barEdge1 * 5.3;
+    float bar2Edge2 = barEdge2 * 5.3;
+    float bar2Edge3 = barEdge3 * 5.3;
+    float barIntensity2 = smoothstep(0.0, bar2Edge1, barT2) * (1.0 - smoothstep(bar2Edge2, bar2Edge3, barT2));
+    vec3 barColor2 = mix(barMedium, barBright, barIntensity2 * uBarIntensity);
     rainbow2 = blendHardLight(rainbow2, barColor2);
 
     rainbow2 *= 0.5 + spotlight * 0.5;
 
     // CSS :after filter: brightness(1) contrast(2.5) saturate(1.75)
     vec3 shine2 = adjustBrightness(rainbow2, ptrBrightness);
-    shine2 = adjustContrast(shine2, 1.5);
-    shine2 = adjustSaturate(shine2, 1.75);
+    //shine2 = adjustContrast(shine2, 0.5);
+    //shine2 = adjustSaturate(shine2, 0.75);
     shine2 = clamp(shine2, 0.0, 1.0);
 
-    // ── GLARE: Warm-to-cool radial (hard-light) ─────
-    // CSS: radial-gradient(farthest-corner at pointer,
-    //   hsl(0,0%,75%) 5%, hsl(200,5%,35%) 70%, hsl(320,40%,10%) 150%)
-    vec3 glareWhite = vec3(1.0);
-    vec3 glareCool = vec3(0.32, 0.35, 0.37);
-    vec3 glareWarm = vec3(0.14, 0.06, 0.10);
-    float glareMix1 = smoothstep(0.0, 0.12, spotDist);
-    float glareMix2 = smoothstep(0.12, 0.6, spotDist);
-    vec3 glare = mix(glareWhite, glareCool, glareMix1);
-    glare = mix(glare, glareWarm, glareMix2);
+    // ── GLARE: White-to-black radial (overlay) ──────
+    // CSS: radial-gradient(farthest-corner circle at pointer,
+    //   hsl(0,0%,100%) 0%, hsl(0,0%,0%) 100%)
+    vec3 glare = mix(vec3(1.0), vec3(0.0), smoothstep(0.0, 0.85, spotDist));
 
-    // CSS filter: brightness(0.8)
-    glare = adjustBrightness(glare, 0.8);
+    // CSS filter: brightness(.9) contrast(1.2)
+    glare = adjustBrightness(glare, 0.7);
+    glare = adjustContrast(glare, 1.2);
     glare = clamp(glare, 0.0, 1.0);
 
     // ── Compose layers ───────────────────────────────
@@ -186,40 +192,17 @@ void main() {
         // Shine 2: soft-light (CSS :after mix-blend-mode: soft-light)
         result = mix(result, blendSoftLight(result, shine2), mask * uCardOpacity * uShine2Opacity);
 
-        // Glare: hard-light (CSS .card__glare mix-blend-mode)
-        result = mix(result, blendHardLight(result, glare), mask * uCardOpacity * uGlareOpacity);
-    }
+        // Glare: overlay (CSS .card__glare mix-blend-mode: overlay)
+        result = mix(result, blendOverlay(result, glare), mask * uCardOpacity * uGlareOpacity * 0.8);
 
-    // TODO: remove this part once Full Art Rare and Full ARt Trainer are implemented
-    // ── FOIL: Etched foil shimmer ────────────────────
-    if (foil > 0.01) {
-        // Diagonal rainbow driven by UV and viewing angle
-        float foilT = uv.y * 4.0 + uv.x * 3.0
-            + ((0.5 - bgY) * 2.0)
-            + ((0.5 - bgX) * 1.5)
-            + sin(uTime * 0.15) * 0.03;
-        vec3 foilColor = sunpillarGradient(foilT);
-
-        // Spotlight modulation
-        foilColor *= 0.1 + spotlight * 0.6;
-
-        // High-frequency grain for etched texture
-        vec2 grainUV = floor(uv * 250.0) / 250.0;
-        float grain = fract(sin(dot(grainUV, vec2(12.9898, 78.233))) * 43758.5453);
-        foilColor *= 0.8 + grain * 0.2;
-
-        // Filter: subtler than main holo
-        foilColor = adjustBrightness(foilColor, 0.75);
-        foilColor = adjustContrast(foilColor, 2.0);
-        foilColor = adjustSaturate(foilColor, 0.7);
-        foilColor = clamp(foilColor, 0.0, 1.0);
-
-        // Color-dodge blend for foil shimmer
-        result = blendColorDodge(result, foilColor * foil * uCardOpacity * 0.5);
-
-        // Subtle specular on foil areas
-        vec3 foilGlare = mix(vec3(0.5), vec3(glare.r * 0.5 + 0.5), foil * uCardOpacity * 0.4);
-        result = blendOverlay(result, foilGlare);
+        // Glare2: screen (CSS .card__glare2 mix-blend-mode: screen)
+        // CSS: radial-gradient(farthest-corner circle at pointer, hsl(0,0%,100%) 5%, hsl(0,0%,0%) 120%)
+        vec3 glare2 = mix(vec3(1.0), vec3(0.0), smoothstep(0.05, 0.85, spotDist));
+        glare2 = adjustBrightness(glare2, 0.475);
+        glare2 = adjustContrast(glare2, 1.5);
+        glare2 = clamp(glare2, 0.0, 1.0);
+        float glare2Opacity = uCardOpacity * uPointerFromCenter;
+        result = mix(result, blendScreen(result, glare2), mask * glare2Opacity);
     }
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
