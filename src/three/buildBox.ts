@@ -187,7 +187,7 @@ export function buildBoxShell(
       new Vector3(-hw, hh, 0),
     ]
     for (let i = 0; i < framePts.length; i++) {
-      addFatLine(framePts[i], framePts[(i + 1) % framePts.length], true)
+      addFatLine(framePts[i]!, framePts[(i + 1) % framePts.length]!, true)
     }
   }
 
