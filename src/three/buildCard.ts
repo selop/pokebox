@@ -17,6 +17,7 @@ import regularHoloFrag from '@/shaders/regular-holo.frag'
 import specialIllustrationRareFrag from '@/shaders/special-illustration-rare.frag'
 import doubleRareFrag from '@/shaders/double-rare.frag'
 import ultraRareFrag from '@/shaders/ultra-rare.frag'
+import rainbowRareFrag from '@/shaders/rainbow-rare.frag'
 import reverseHoloFrag from '@/shaders/reverse-holo.frag'
 import masterBallFrag from '@/shaders/master-ball.frag'
 
@@ -37,6 +38,7 @@ const FRAGMENT_SHADERS: Record<ShaderStyle, string> = {
   'special-illustration-rare': specialIllustrationRareFrag,
   'double-rare': doubleRareFrag,
   'ultra-rare': ultraRareFrag,
+  'rainbow-rare': rainbowRareFrag,
   'reverse-holo': reverseHoloFrag,
   'master-ball': masterBallFrag,
 }
@@ -116,6 +118,21 @@ const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
     ['uSparkleRadius', 'ultraRareSparkleRadius'],
     ['uSparkleContrast', 'ultraRareSparkleContrast'],
     ['uSparkleColorShift', 'ultraRareSparkleColorShift'],
+  ],
+  'rainbow-rare': [
+    ['uBaseBrightness', 'rainbowRareBaseBrightness'],
+    ['uShineBrightness', 'rainbowRareShineBrightness'],
+    ['uShineContrast', 'rainbowRareShineContrast'],
+    ['uShineSaturation', 'rainbowRareShineSaturation'],
+    ['uShineBaseBrightness', 'rainbowRareShineBaseBrightness'],
+    ['uShineBaseContrast', 'rainbowRareShineBaseContrast'],
+    ['uShineBaseSaturation', 'rainbowRareShineBaseSaturation'],
+    ['uGlareContrast', 'rainbowRareGlareContrast'],
+    ['uGlare2Contrast', 'rainbowRareGlare2Contrast'],
+    ['uSparkleIntensity', 'rainbowRareSparkleIntensity'],
+    ['uSparkleRadius', 'rainbowRareSparkleRadius'],
+    ['uSparkleContrast', 'rainbowRareSparkleContrast'],
+    ['uSparkleColorShift', 'rainbowRareSparkleColorShift'],
   ],
   'reverse-holo': [
     ['uShineIntensity', 'reverseHoloShineIntensity'],
@@ -215,7 +232,7 @@ export function buildCardMesh(
 
   if (shaderStyle === 'special-illustration-rare') {
     addIriUniforms(uniforms, iriTextures)
-  } else if (shaderStyle === 'ultra-rare') {
+  } else if (shaderStyle === 'ultra-rare' || shaderStyle === 'rainbow-rare') {
     addIriUniforms(uniforms, iriTextures, true)
   }
 

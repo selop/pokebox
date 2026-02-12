@@ -26,12 +26,12 @@ export const useAppStore = defineStore('app', () => {
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
-  const currentCardId = ref('001')
+  const currentCardId = ref('161')
   const cardDisplayMode = ref<CardDisplayMode>('single')
   const sceneSeed = ref(Date.now())
 
   // --- Set state ---
-  const currentSetId = ref(SET_REGISTRY[0]!.id)
+  const currentSetId = ref(SET_REGISTRY[1]!.id)
   const setLoading = ref(false)
 
   // --- UI state ---
@@ -98,7 +98,7 @@ export const useAppStore = defineStore('app', () => {
     config.holoIntensity = CARD_DEFAULTS.holoIntensity / 100
     config.cardSpinSpeed = CARD_DEFAULTS.cardSpinSpeed
     const catalog = CARD_CATALOG.value
-    currentCardId.value = catalog.length > 0 ? catalog[0]!.id : '001'
+    currentCardId.value = catalog.length > 0 ? catalog[0]!.id : '161'
   }
 
   /** Callback for clearing card texture cache — set by useCardLoader. */
@@ -117,7 +117,7 @@ export const useAppStore = defineStore('app', () => {
       const catalog = await loadSetCatalog(setId)
       // Set card ID BEFORE catalog so the displayCardIds watcher
       // fires only once with a valid ID in the new catalog.
-      currentCardId.value = catalog.length > 0 ? catalog[0]!.id : '001'
+      currentCardId.value = catalog.length > 0 ? catalog[0]!.id : '161'
       CARD_CATALOG.value = catalog
     } finally {
       setLoading.value = false

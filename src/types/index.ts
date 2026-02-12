@@ -83,6 +83,20 @@ export interface AppConfig {
   ultraRareSparkleRadius: number
   ultraRareSparkleContrast: number
   ultraRareSparkleColorShift: number
+  // Rainbow Rare shader parameters
+  rainbowRareBaseBrightness: number
+  rainbowRareShineBrightness: number
+  rainbowRareShineContrast: number
+  rainbowRareShineSaturation: number
+  rainbowRareShineBaseBrightness: number
+  rainbowRareShineBaseContrast: number
+  rainbowRareShineBaseSaturation: number
+  rainbowRareGlareContrast: number
+  rainbowRareGlare2Contrast: number
+  rainbowRareSparkleIntensity: number
+  rainbowRareSparkleRadius: number
+  rainbowRareSparkleContrast: number
+  rainbowRareSparkleColorShift: number
   // Reverse Holo shader parameters
   reverseHoloShineIntensity: number
   reverseHoloShineOpacity: number
@@ -139,6 +153,7 @@ export type ShaderStyle =
   | 'special-illustration-rare'
   | 'double-rare'
   | 'ultra-rare'
+  | 'rainbow-rare'
   | 'reverse-holo'
   | 'master-ball'
 export type HoloType =
@@ -147,6 +162,7 @@ export type HoloType =
   | 'special-illustration-rare'
   | 'double-rare'
   | 'ultra-rare'
+  | 'rainbow-rare'
   | 'reverse-holo'
   | 'master-ball'
 

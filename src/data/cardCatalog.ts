@@ -22,7 +22,10 @@ export function mapHoloType(designation: string, foilType?: string, foilMask?: s
     case 'ULTRA_RARE':
       return 'ultra-rare'
     case 'DOUBLE_RARE':
-      return foilType === 'SUN_PILLAR' ? 'double-rare' : 'illustration-rare'
+      if (foilType === 'SUN_PILLAR') {
+        return 'double-rare'
+      }
+      if (foilType === 'SV_ULTRA' && foilMask === 'ETCHED') return 'rainbow-rare'
     case 'ILLUSTRATION_RARE':
       return 'illustration-rare'
     case 'HYPER_RARE':
@@ -117,7 +120,11 @@ export async function loadSetCatalog(setId: string): Promise<CardCatalogEntry[]>
     const entry: CardCatalogEntry = { id: cardNum, label, front, mask, foil, holoType }
 
     // Add iridescent textures for special-illustration-rare and ultra-rare cards
-    if (holoType === 'special-illustration-rare' || holoType === 'ultra-rare') {
+    if (
+      holoType === 'special-illustration-rare' ||
+      holoType === 'ultra-rare' ||
+      holoType === 'rainbow-rare'
+    ) {
       entry.iri7 = 'img/151/iri-7.webp'
       entry.iri8 = 'img/151/iri-8.webp'
       entry.iri9 = 'img/151/iri-9.webp'

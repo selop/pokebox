@@ -149,6 +149,13 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Also build immediately (without card textures if not ready yet)
     rebuildScene()
 
+    // On HMR re-init, switchSet is a no-op (set already loaded) so the
+    // displayCardIds watcher never fires. Load textures explicitly to restore cards.
+    const ids = store.displayCardIds
+    if (ids.length > 0) {
+      cardLoader.loadCards(ids).then(() => rebuildScene())
+    }
+
     // Start render loop
     lastTime = performance.now() * 0.001
     animate()
@@ -207,7 +214,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
               // Layer 0 (front-left): full composited result (card + holo shader)
               const effectiveShader = getEffectiveShader(id)
               const iriTextures =
-                effectiveShader === 'special-illustration-rare' || effectiveShader === 'ultra-rare'
+                effectiveShader === 'special-illustration-rare' || effectiveShader === 'ultra-rare' || effectiveShader === 'rainbow-rare'
                   ? cardLoader!.getIriTextures()
                   : null
               const birthdayTextures =
@@ -1383,6 +1390,35 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.reverseHoloBaseSaturation, 'uBaseSaturation'],
   ]
   for (const [getter, uniformName] of reverseHoloUniformMap) {
+    watch(getter, (val) => {
+      for (const mesh of cardMeshes.value) {
+        if (
+          (mesh.material as ShaderMaterial).isShaderMaterial &&
+          (mesh.material as ShaderMaterial).uniforms[uniformName]
+        ) {
+          ;(mesh.material as ShaderMaterial).uniforms[uniformName]!.value = val
+        }
+      }
+    })
+  }
+
+  // Watch rainbow-rare shader parameters
+  const rainbowRareUniformMap: [() => number, string][] = [
+    [() => store.config.rainbowRareBaseBrightness, 'uBaseBrightness'],
+    [() => store.config.rainbowRareShineBrightness, 'uShineBrightness'],
+    [() => store.config.rainbowRareShineContrast, 'uShineContrast'],
+    [() => store.config.rainbowRareShineSaturation, 'uShineSaturation'],
+    [() => store.config.rainbowRareShineBaseBrightness, 'uShineBaseBrightness'],
+    [() => store.config.rainbowRareShineBaseContrast, 'uShineBaseContrast'],
+    [() => store.config.rainbowRareShineBaseSaturation, 'uShineBaseSaturation'],
+    [() => store.config.rainbowRareGlareContrast, 'uGlareContrast'],
+    [() => store.config.rainbowRareGlare2Contrast, 'uGlare2Contrast'],
+    [() => store.config.rainbowRareSparkleIntensity, 'uSparkleIntensity'],
+    [() => store.config.rainbowRareSparkleRadius, 'uSparkleRadius'],
+    [() => store.config.rainbowRareSparkleContrast, 'uSparkleContrast'],
+    [() => store.config.rainbowRareSparkleColorShift, 'uSparkleColorShift'],
+  ]
+  for (const [getter, uniformName] of rainbowRareUniformMap) {
     watch(getter, (val) => {
       for (const mesh of cardMeshes.value) {
         if (

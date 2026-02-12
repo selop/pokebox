@@ -6,6 +6,7 @@ import regularHoloFrag from '../regular-holo.frag'
 import specialIllustrationRareFrag from '../special-illustration-rare.frag'
 import doubleRareFrag from '../double-rare.frag'
 import ultraRareFrag from '../ultra-rare.frag'
+import rainbowRareFrag from '../rainbow-rare.frag'
 import reverseHoloFrag from '../reverse-holo.frag'
 import masterBallFrag from '../master-ball.frag'
 
@@ -157,6 +158,23 @@ describe('Shader Compilation', () => {
     'uBarIntensityEnd1',
     'uBarIntensityStart2',
     'uBarIntensityEnd2',
+    'uSparkleIntensity',
+    'uSparkleRadius',
+    'uSparkleContrast',
+    'uSparkleColorShift',
+    'uIri7Tex',
+  ])
+
+  testShaderCompilation('rainbow-rare', rainbowRareFrag, [
+    'uBaseBrightness',
+    'uShineBrightness',
+    'uShineContrast',
+    'uShineSaturation',
+    'uShineBaseBrightness',
+    'uShineBaseContrast',
+    'uShineBaseSaturation',
+    'uGlareContrast',
+    'uGlare2Contrast',
     'uSparkleIntensity',
     'uSparkleRadius',
     'uSparkleContrast',
