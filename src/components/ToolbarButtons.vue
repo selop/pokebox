@@ -41,6 +41,13 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
     {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
   </button>
   <button
+    v-show="store.sceneMode === 'cards'"
+    class="toolbar-btn flip-btn"
+    @click="store.requestFlip()"
+  >
+    &#x21BB; Flip
+  </button>
+  <button
     v-show="store.sceneMode === 'furniture'"
     class="toolbar-btn randomize-btn"
     @click="store.randomizeSeed()"
@@ -51,6 +58,7 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
   <div v-show="store.sceneMode === 'cards'" class="nav-hint">
     <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
     <span v-show="store.cardDisplayMode === 'single'">&middot; <kbd>M</kbd> merge</span>
+    &middot; <kbd>F</kbd> flip
   </div>
 </template>
 
@@ -99,6 +107,9 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 }
 .slideshow-btn {
   left: 540px;
+}
+.flip-btn {
+  left: 650px;
 }
 .slideshow-btn.active {
   border-color: #f72585;

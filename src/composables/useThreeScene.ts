@@ -46,6 +46,15 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let wallTexture: Texture | null = null
   const mouseTilt = useMouseTilt()
 
+  const FLIP_DURATION = 1.5
+  let flipStartTime = -1
+
+  function triggerFlip() {
+    if (flipStartTime < 0) {
+      flipStartTime = performance.now() * 0.001
+    }
+  }
+
   // Delegates
   const mergeAnimator = new MergeAnimator(store)
   const cardNavigator = new CardNavigator(
@@ -355,12 +364,20 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       cardAngle += store.config.cardSpinSpeed * (Math.PI / 180) * dt
     }
 
-    // Apply mouse tilt + rotation to all cards
+    let flipAngle = 0
+    if (flipStartTime >= 0) {
+      const t = Math.min((time - flipStartTime) / FLIP_DURATION, 1)
+      // Cubic ease-in-out: accelerates then decelerates like a figure skater spin
+      const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+      flipAngle = ease * Math.PI * 2
+      if (t >= 1) flipStartTime = -1
+    }
+
     const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
     for (const mesh of meshes) {
       mesh.rotation.x = mouseTilt.state.rotateX
       const explodeRotY = mesh.userData.explodeRotationY || 0
-      mesh.rotation.y = baseRotY + mouseTilt.state.rotateY + explodeRotY
+      mesh.rotation.y = baseRotY + mouseTilt.state.rotateY + explodeRotY + flipAngle
     }
 
     // Update holo shader uniforms for all cards
@@ -424,6 +441,10 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   function onKeydown(e: KeyboardEvent) {
     if ((e.target as HTMLElement).tagName === 'INPUT') return
     if (store.sceneMode !== 'cards') return
+    if (e.key === 'f') {
+      triggerFlip()
+      return
+    }
     if (cardNavigator.handleKeydown(e)) {
       store.isSlideshowActive = false
     } else {
@@ -1180,7 +1201,17 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     },
   )
 
-  // Slideshow: auto-advance cards every 3s
+  watch(
+    () => store.isFlipRequested,
+    (requested) => {
+      if (requested) {
+        triggerFlip()
+        store.isFlipRequested = false
+      }
+    },
+  )
+
+
   let slideshowInterval: ReturnType<typeof setInterval> | null = null
   watch(
     () => store.isSlideshowActive,
