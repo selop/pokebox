@@ -57,7 +57,7 @@ void main() {
 
     // Primary specular: configurable radius and power
     float specular = 1.0 - smoothstep(0.0, uSpecularRadius, spotDist);
-    specular = pow(specular, uSpecularPower);
+    specular = pow(specular, uSpecularPower * 0.5);
 
     // Broader secondary glow
     float glow = 1.0 - smoothstep(0.0, uSpecularRadius * 2.0, spotDist);
@@ -69,7 +69,7 @@ void main() {
     vec3 shineColor = vec3(uShineColorR, uShineColorG, uShineColorB);
 
     // Modulate metallic layer by pointer proximity
-    vec3 metallic = shineColor * (0.1 + totalHighlight * uShineIntensity * 100.0);
+    vec3 metallic = shineColor * (0.1 + totalHighlight * uShineIntensity);
     metallic = clamp(metallic, 0.0, 1.0);
 
     // ── Compose onto card ────────────────────────────

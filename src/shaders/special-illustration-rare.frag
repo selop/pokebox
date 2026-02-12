@@ -129,13 +129,13 @@ void main() {
     glitterAfter = clamp(glitterAfter, 0.0, 1.0);
 
     // ── GLARE ────────────────────────────────────────
-    vec3 glareLight = vec3(5.0);   // Bright white center
+    vec3 glareLight = vec3(3.0);   // Bright white center
     vec3 glareDark = vec3(0.85);   // Light gray edge
 
-    float glareMix = smoothstep(0.0, 0.15, spotDist) + smoothstep(0.15, 0.8, spotDist);
+    float glareMix = smoothstep(0.0, 1.3, spotDist) + smoothstep(0.3, 1.8, spotDist);
     vec3 glare = mix(glareLight, glareDark, glareMix);
 
-    glare = adjustContrast(glare, 1.1);
+    glare = adjustContrast(glare, 0.8);
     glare = clamp(glare, 0.0, 1.0);
 
     // ── Compose layers ───────────────────────────────
