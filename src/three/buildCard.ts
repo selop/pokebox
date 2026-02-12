@@ -30,6 +30,113 @@ const blackPixel = new DataTexture(
 )
 blackPixel.needsUpdate = true
 
+const FRAGMENT_SHADERS: Record<ShaderStyle, string> = {
+  'illustration-rare': illustrationRareFrag,
+  'regular-holo': regularHoloFrag,
+  'special-illustration-rare': specialIllustrationRareFrag,
+  'double-rare': doubleRareFrag,
+  'ultra-rare': ultraRareFrag,
+  'reverse-holo': reverseHoloFrag,
+}
+
+type UniformMapping = [uniformName: string, configKey: keyof AppConfig]
+
+const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
+  'illustration-rare': [
+    ['uRainbowScale', 'illustRareRainbowScale'],
+    ['uBarAngle', 'illustRareBarAngle'],
+    ['uBarDensity', 'illustRareBarDensity'],
+    ['uBarOffsetBgXMult', 'illustRareBarOffsetBgXMult'],
+    ['uBarOffsetBgYMult', 'illustRareBarOffsetBgYMult'],
+    ['uBar2OffsetBgXMult', 'illustRareBar2OffsetBgXMult'],
+    ['uBar2OffsetBgYMult', 'illustRareBar2OffsetBgYMult'],
+    ['uBarWidth', 'illustRareBarWidth'],
+    ['uBarIntensity', 'illustRareBarIntensity'],
+    ['uBarHue', 'illustRareBarHue'],
+    ['uBarMediumSaturation', 'illustRareBarMediumSaturation'],
+    ['uBarMediumLightness', 'illustRareBarMediumLightness'],
+    ['uBarBrightSaturation', 'illustRareBarBrightSaturation'],
+    ['uBarBrightLightness', 'illustRareBarBrightLightness'],
+    ['uShine1Contrast', 'illustRareShine1Contrast'],
+    ['uShine1Saturation', 'illustRareShine1Saturation'],
+    ['uShine2Opacity', 'illustRareShine2Opacity'],
+    ['uGlareOpacity', 'illustRareGlareOpacity'],
+  ],
+  'special-illustration-rare': [
+    ['uSirShineAngle', 'sirShineAngle'],
+    ['uSirShineFrequency', 'sirShineFrequency'],
+    ['uSirShineBrightness', 'sirShineBrightness'],
+    ['uSirShineContrast', 'sirShineContrast'],
+    ['uSirShineSaturation', 'sirShineSaturation'],
+    ['uSirGlitterContrast', 'sirGlitterContrast'],
+    ['uSirGlitterSaturation', 'sirGlitterSaturation'],
+    ['uSirWashScale', 'sirWashScale'],
+    ['uSirWashTiltSensitivity', 'sirWashTiltSensitivity'],
+    ['uSirWashSaturation', 'sirWashSaturation'],
+    ['uSirWashContrast', 'sirWashContrast'],
+    ['uSirWashOpacity', 'sirWashOpacity'],
+    ['uSirBaseBrightness', 'sirBaseBrightness'],
+    ['uSirBaseContrast', 'sirBaseContrast'],
+  ],
+  'ultra-rare': [
+    ['uBaseBrightness', 'ultraRareBaseBrightness'],
+    ['uShineBrightness', 'ultraRareShineBrightness'],
+    ['uShineContrast', 'ultraRareShineContrast'],
+    ['uShineSaturation', 'ultraRareShineSaturation'],
+    ['uShineAfterBrightness', 'ultraRareShineAfterBrightness'],
+    ['uShineAfterContrast', 'ultraRareShineAfterContrast'],
+    ['uShineAfterSaturation', 'ultraRareShineAfterSaturation'],
+    ['uShineBaseBrightness', 'ultraRareShineBaseBrightness'],
+    ['uShineBaseContrast', 'ultraRareShineBaseContrast'],
+    ['uShineBaseSaturation', 'ultraRareShineBaseSaturation'],
+    ['uGlareContrast', 'ultraRareGlareContrast'],
+    ['uGlare2Contrast', 'ultraRareGlare2Contrast'],
+    ['uRotateDelta', 'ultraRareRotateDelta'],
+    ['uAngle1Mult', 'ultraRareAngle1Mult'],
+    ['uAngle2Mult', 'ultraRareAngle2Mult'],
+    ['uBgYMult1', 'ultraRareBgYMult1'],
+    ['uBgYMult2', 'ultraRareBgYMult2'],
+    ['uBarAngle', 'ultraRareBarAngle'],
+    ['uBarOffsetBgXMult', 'ultraRareBarOffsetBgXMult'],
+    ['uBarOffsetBgYMult', 'ultraRareBarOffsetBgYMult'],
+    ['uBarFrequency', 'ultraRareBarFrequency'],
+    ['uBarIntensityStart1', 'ultraRareBarIntensityStart1'],
+    ['uBarIntensityEnd1', 'ultraRareBarIntensityEnd1'],
+    ['uBarIntensityStart2', 'ultraRareBarIntensityStart2'],
+    ['uBarIntensityEnd2', 'ultraRareBarIntensityEnd2'],
+    ['uSparkleIntensity', 'ultraRareSparkleIntensity'],
+    ['uSparkleRadius', 'ultraRareSparkleRadius'],
+    ['uSparkleContrast', 'ultraRareSparkleContrast'],
+    ['uSparkleColorShift', 'ultraRareSparkleColorShift'],
+  ],
+}
+
+function addIriUniforms(
+  uniforms: Record<string, { value: unknown }>,
+  iriTextures?: { iri7: Texture; iri8: Texture; iri9: Texture } | null,
+  singleOnly = false,
+) {
+  if (iriTextures) {
+    uniforms.uIri7Tex = { value: iriTextures.iri7 }
+    if (!singleOnly) {
+      uniforms.uIri8Tex = { value: iriTextures.iri8 }
+      uniforms.uIri9Tex = { value: iriTextures.iri9 }
+      uniforms.uHasIri7 = { value: 1.0 }
+      uniforms.uHasIri8 = { value: 1.0 }
+      uniforms.uHasIri9 = { value: 1.0 }
+    }
+  } else {
+    uniforms.uIri7Tex = { value: blackPixel }
+    if (!singleOnly) {
+      uniforms.uIri8Tex = { value: blackPixel }
+      uniforms.uIri9Tex = { value: blackPixel }
+      uniforms.uHasIri7 = { value: 0.0 }
+      uniforms.uHasIri8 = { value: 0.0 }
+      uniforms.uHasIri9 = { value: 0.0 }
+    }
+  }
+}
+
 export function buildCardMesh(
   dims: DerivedDimensions,
   cardTexture: Texture,
@@ -46,167 +153,57 @@ export function buildCardMesh(
   const cardW = cardH * CARD_ASPECT
   const cardGeo = new PlaneGeometry(cardW, cardH)
 
-  let cardMat
-  if (maskTexture || foilTexture) {
-    // Select fragment shader based on style
-    let fragmentShader = illustrationRareFrag
-    if (shaderStyle === 'reverse-holo') {
-      fragmentShader = reverseHoloFrag
-    } else if (shaderStyle === 'regular-holo') {
-      fragmentShader = regularHoloFrag
-    } else if (shaderStyle === 'special-illustration-rare') {
-      fragmentShader = specialIllustrationRareFrag
-    } else if (shaderStyle === 'double-rare') {
-      fragmentShader = doubleRareFrag
-    } else if (shaderStyle === 'ultra-rare') {
-      fragmentShader = ultraRareFrag
-    } else if (shaderStyle === 'illustration-rare') {
-      fragmentShader = illustrationRareFrag
-    }
-
-    const uniforms: any = {
-      uCardTex: { value: cardTexture },
-      uCardBackTex: { value: cardBackTexture || cardTexture },
-      uMaskTex: { value: maskTexture || blackPixel },
-      uFoilTex: { value: foilTexture || blackPixel },
-      uGlitterTex: { value: glitterTexture || blackPixel },
-      uHasFoil: { value: foilTexture ? 1.0 : 0.0 },
-      uHasGlitter: { value: glitterTexture ? 1.0 : 0.0 },
-      uPointer: { value: new Vector2(0.5, 0.5) },
-      uBackground: { value: new Vector2(0.5, 0.5) },
-      uPointerFromCenter: { value: 0.0 },
-      uPointerFromLeft: { value: 0.5 },
-      uPointerFromTop: { value: 0.5 },
-      uCardOpacity: { value: config.holoIntensity || 0.75 },
-      uTime: { value: 0.0 },
-      uFade: { value: 1.0 },
-      uRotateX: { value: 0.0 },
-    }
-
-    // Add illustration-rare shader-specific uniforms
-    if (shaderStyle === 'illustration-rare') {
-      uniforms.uRainbowScale = { value: config.illustRareRainbowScale }
-      uniforms.uBarAngle = { value: config.illustRareBarAngle }
-      uniforms.uBarDensity = { value: config.illustRareBarDensity }
-      uniforms.uBarOffsetBgXMult = { value: config.illustRareBarOffsetBgXMult }
-      uniforms.uBarOffsetBgYMult = { value: config.illustRareBarOffsetBgYMult }
-      uniforms.uBar2OffsetBgXMult = { value: config.illustRareBar2OffsetBgXMult }
-      uniforms.uBar2OffsetBgYMult = { value: config.illustRareBar2OffsetBgYMult }
-      uniforms.uBarWidth = { value: config.illustRareBarWidth }
-      uniforms.uBarIntensity = { value: config.illustRareBarIntensity }
-      uniforms.uBarHue = { value: config.illustRareBarHue }
-      uniforms.uBarMediumSaturation = { value: config.illustRareBarMediumSaturation }
-      uniforms.uBarMediumLightness = { value: config.illustRareBarMediumLightness }
-      uniforms.uBarBrightSaturation = { value: config.illustRareBarBrightSaturation }
-      uniforms.uBarBrightLightness = { value: config.illustRareBarBrightLightness }
-      uniforms.uShine1Contrast = { value: config.illustRareShine1Contrast }
-      uniforms.uShine1Saturation = { value: config.illustRareShine1Saturation }
-      uniforms.uShine2Opacity = { value: config.illustRareShine2Opacity }
-      uniforms.uGlareOpacity = { value: config.illustRareGlareOpacity }
-    }
-
-    // Add iridescent textures for special illustration rare shader
-    if (shaderStyle === 'special-illustration-rare' && iriTextures) {
-      uniforms.uIri7Tex = { value: iriTextures.iri7 }
-      uniforms.uIri8Tex = { value: iriTextures.iri8 }
-      uniforms.uIri9Tex = { value: iriTextures.iri9 }
-      uniforms.uHasIri7 = { value: 1.0 }
-      uniforms.uHasIri8 = { value: 1.0 }
-      uniforms.uHasIri9 = { value: 1.0 }
-    } else if (shaderStyle === 'special-illustration-rare') {
-      // Fallback to black pixels if textures not provided
-      uniforms.uIri7Tex = { value: blackPixel }
-      uniforms.uIri8Tex = { value: blackPixel }
-      uniforms.uIri9Tex = { value: blackPixel }
-      uniforms.uHasIri7 = { value: 0.0 }
-      uniforms.uHasIri8 = { value: 0.0 }
-      uniforms.uHasIri9 = { value: 0.0 }
-    }
-
-    // Add special illustration rare shader-specific uniforms
-    if (shaderStyle === 'special-illustration-rare') {
-      uniforms.uSirShineAngle = { value: config.sirShineAngle }
-      uniforms.uSirShineFrequency = { value: config.sirShineFrequency }
-      uniforms.uSirShineBrightness = { value: config.sirShineBrightness }
-      uniforms.uSirShineContrast = { value: config.sirShineContrast }
-      uniforms.uSirShineSaturation = { value: config.sirShineSaturation }
-      uniforms.uSirGlitterContrast = { value: config.sirGlitterContrast }
-      uniforms.uSirGlitterSaturation = { value: config.sirGlitterSaturation }
-      uniforms.uSirWashScale = { value: config.sirWashScale }
-      uniforms.uSirWashTiltSensitivity = { value: config.sirWashTiltSensitivity }
-      uniforms.uSirWashSaturation = { value: config.sirWashSaturation }
-      uniforms.uSirWashContrast = { value: config.sirWashContrast }
-      uniforms.uSirWashOpacity = { value: config.sirWashOpacity }
-      uniforms.uSirBaseBrightness = { value: config.sirBaseBrightness }
-      uniforms.uSirBaseContrast = { value: config.sirBaseContrast }
-    }
-
-    // Add birthday textures for double rare shader
-    if (shaderStyle === 'double-rare' && birthdayTextures) {
-      uniforms.uBirthdayDankTex = { value: birthdayTextures.dank }
-      uniforms.uBirthdayDank2Tex = { value: birthdayTextures.dank2 }
-    } else if (shaderStyle === 'double-rare') {
-      // Fallback to black pixels if textures not provided
-      uniforms.uBirthdayDankTex = { value: blackPixel }
-      uniforms.uBirthdayDank2Tex = { value: blackPixel }
-    }
-
-    // Add iridescent texture for ultra-rare shader
-    if (shaderStyle === 'ultra-rare' && iriTextures) {
-      uniforms.uIri7Tex = { value: iriTextures.iri7 }
-    } else if (shaderStyle === 'ultra-rare') {
-      uniforms.uIri7Tex = { value: blackPixel }
-    }
-
-    // Add ultra-rare shader-specific uniforms
-    if (shaderStyle === 'ultra-rare') {
-      uniforms.uBaseBrightness = { value: config.ultraRareBaseBrightness }
-      uniforms.uShineBrightness = { value: config.ultraRareShineBrightness }
-      uniforms.uShineContrast = { value: config.ultraRareShineContrast }
-      uniforms.uShineSaturation = { value: config.ultraRareShineSaturation }
-      uniforms.uShineAfterBrightness = { value: config.ultraRareShineAfterBrightness }
-      uniforms.uShineAfterContrast = { value: config.ultraRareShineAfterContrast }
-      uniforms.uShineAfterSaturation = { value: config.ultraRareShineAfterSaturation }
-      uniforms.uShineBaseBrightness = { value: config.ultraRareShineBaseBrightness }
-      uniforms.uShineBaseContrast = { value: config.ultraRareShineBaseContrast }
-      uniforms.uShineBaseSaturation = { value: config.ultraRareShineBaseSaturation }
-      uniforms.uGlareContrast = { value: config.ultraRareGlareContrast }
-      uniforms.uGlare2Contrast = { value: config.ultraRareGlare2Contrast }
-      uniforms.uRotateDelta = { value: config.ultraRareRotateDelta }
-      uniforms.uAngle1Mult = { value: config.ultraRareAngle1Mult }
-      uniforms.uAngle2Mult = { value: config.ultraRareAngle2Mult }
-      uniforms.uBgYMult1 = { value: config.ultraRareBgYMult1 }
-      uniforms.uBgYMult2 = { value: config.ultraRareBgYMult2 }
-      uniforms.uBarAngle = { value: config.ultraRareBarAngle }
-      uniforms.uBarOffsetBgXMult = { value: config.ultraRareBarOffsetBgXMult }
-      uniforms.uBarOffsetBgYMult = { value: config.ultraRareBarOffsetBgYMult }
-      uniforms.uBarFrequency = { value: config.ultraRareBarFrequency }
-      uniforms.uBarIntensityStart1 = { value: config.ultraRareBarIntensityStart1 }
-      uniforms.uBarIntensityEnd1 = { value: config.ultraRareBarIntensityEnd1 }
-      uniforms.uBarIntensityStart2 = { value: config.ultraRareBarIntensityStart2 }
-      uniforms.uBarIntensityEnd2 = { value: config.ultraRareBarIntensityEnd2 }
-      uniforms.uSparkleIntensity = { value: config.ultraRareSparkleIntensity }
-      uniforms.uSparkleRadius = { value: config.ultraRareSparkleRadius }
-      uniforms.uSparkleContrast = { value: config.ultraRareSparkleContrast }
-      uniforms.uSparkleColorShift = { value: config.ultraRareSparkleColorShift }
-    }
-
-    cardMat = new ShaderMaterial({
-      uniforms,
-      vertexShader: holoVert,
-      fragmentShader,
-      side: DoubleSide,
-      transparent: true,
-    })
-  } else {
-    cardMat = new MeshBasicMaterial({
-      map: cardTexture,
-      side: DoubleSide,
-      transparent: true,
-    })
+  if (!(maskTexture || foilTexture)) {
+    return new Mesh(
+      cardGeo,
+      new MeshBasicMaterial({ map: cardTexture, side: DoubleSide, transparent: true }),
+    )
   }
 
-  return new Mesh(cardGeo, cardMat)
+  const uniforms: Record<string, { value: unknown }> = {
+    uCardTex: { value: cardTexture },
+    uCardBackTex: { value: cardBackTexture || cardTexture },
+    uMaskTex: { value: maskTexture || blackPixel },
+    uFoilTex: { value: foilTexture || blackPixel },
+    uGlitterTex: { value: glitterTexture || blackPixel },
+    uHasFoil: { value: foilTexture ? 1.0 : 0.0 },
+    uHasGlitter: { value: glitterTexture ? 1.0 : 0.0 },
+    uPointer: { value: new Vector2(0.5, 0.5) },
+    uBackground: { value: new Vector2(0.5, 0.5) },
+    uPointerFromCenter: { value: 0.0 },
+    uPointerFromLeft: { value: 0.5 },
+    uPointerFromTop: { value: 0.5 },
+    uCardOpacity: { value: config.holoIntensity || 0.75 },
+    uTime: { value: 0.0 },
+    uFade: { value: 1.0 },
+    uRotateX: { value: 0.0 },
+  }
+
+  for (const [uniformName, configKey] of STYLE_UNIFORMS[shaderStyle] ?? []) {
+    uniforms[uniformName] = { value: config[configKey] }
+  }
+
+  if (shaderStyle === 'special-illustration-rare') {
+    addIriUniforms(uniforms, iriTextures)
+  } else if (shaderStyle === 'ultra-rare') {
+    addIriUniforms(uniforms, iriTextures, true)
+  }
+
+  if (shaderStyle === 'double-rare') {
+    uniforms.uBirthdayDankTex = { value: birthdayTextures?.dank ?? blackPixel }
+    uniforms.uBirthdayDank2Tex = { value: birthdayTextures?.dank2 ?? blackPixel }
+  }
+
+  return new Mesh(
+    cardGeo,
+    new ShaderMaterial({
+      uniforms,
+      vertexShader: holoVert,
+      fragmentShader: FRAGMENT_SHADERS[shaderStyle],
+      side: DoubleSide,
+      transparent: true,
+    }),
+  )
 }
 
 export function applyCardTransform(
