@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview section
 
-This is a Three.js + Vue 3 + TypeScript project for rendering Pokemon cards with holographic/parallax shader effects. Always consider WebGL/shader context when making changes to rendering code.
+This project is a Vue 3 + TypeScript + Three.js Pokemon card viewer with GLSL shaders.
 
 ## Commands
 
@@ -48,8 +48,6 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
   - Cards #198–204 → `'special-illustration-rare'`
   - Cards in `HOLO_SV_HOLO` set (#15, 26, 34, 45, etc.) → `'regular-holo'`
   - All other cards → `'illustration-rare'`
-- The global shader toggle (H key / toolbar button) cycles: illustration-rare → regular-holo → special-illustration-rare → parallax
-- When not in parallax mode, each card uses its assigned `holoType`
 
 ### Key modules
 
@@ -66,9 +64,9 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 
 Each `CardCatalogEntry` defines texture paths and shader type (relative to `public/`):
 
-- `front` — base card image
-- `mask` — grayscale holo area mask (white = holographic effect area; stored in `cards/holo-masks/`)
-- `foil` — grayscale etched foil texture (empty string = no etch; stored in `cards/etch-foils/`)
+- `fronts` — base card image
+- `holo-masks` — grayscale holo area mask (white = holographic effect area; stored in `cards/holo-masks/`)
+- `etch-foils` — grayscale etched foil texture (empty string = no etch; stored in `cards/etch-foils/`)
 - `holoType` — which holo shader to use: `'illustration-rare'`, `'regular-holo'`, or `'special-illustration-rare'`
 
 `useCardLoader` loads all non-empty textures in parallel and resolves when all are ready. `buildCardMesh` uses `ShaderMaterial` when any effect texture is present (selecting the appropriate fragment shader based on `holoType`), otherwise falls back to `MeshBasicMaterial`.
@@ -115,20 +113,27 @@ The shader test suite (`src/shaders/__tests__/`) includes:
    - Validates uniform configuration
 
 **When adding new shaders**:
+
 1. Use shared includes (`#include "common/blend.glsl"`, etc.) instead of copy-pasting blend modes/filters
 2. Add shader to both test files
 3. List required uniforms in compilation test
 4. Run `bun test:shader` to verify
 5. Add uniforms to `AppConfig` type, `defaults.ts`, and `buildCard.ts`
 
+**When modifying shader uniforms**:
+
+or adding new visual controls, ALWAYS update all related files in a single pass: the shader (.glsl/.frag), the Vue component (ShaderControlsPanel.vue), the defaults file (defaults.ts), and the store. Do not consider the task complete until all four are updated.
+
 **When modifying shared includes** (`src/shaders/common/*.glsl`):
+
 - Changes affect ALL shaders that include them — run `bun test:shader` and visually verify
 - Never remove a function from a shared include without checking all consuming shaders
 
 **Common errors caught by tests**:
+
 - Undefined blend mode functions (e.g., `blendScreen` not defined)
 - Missing uniform declarations
 - Type mismatches in GLSL operations
 - Syntax errors (missing semicolons, unbalanced braces)
 
-See `SHADER-TESTING.md` for detailed testing documentation.
+See `docs/SHADER-TESTING.md` for detailed testing documentation.
