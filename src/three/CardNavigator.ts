@@ -5,7 +5,18 @@ import { CARD_CATALOG } from '@/data/cardCatalog'
 import type { useAppStore } from '@/stores/app'
 import { perfTracker } from '@/utils/perfTracker'
 
-const TRANSITION_DURATION = 1.5
+const DEPART_DURATION = 0.6
+const ARRIVE_DURATION = 0.5
+
+/** Ease-out cubic: fast start, gentle landing. */
+function easeOutCubic(t: number): number {
+  return 1 - (1 - t) * (1 - t) * (1 - t)
+}
+
+/** Ease-in-out sine: smooth start and end. */
+function easeInOutSine(t: number): number {
+  return -(Math.cos(Math.PI * t) - 1) / 2
+}
 
 /** Set the fade/opacity on a card mesh (works with both ShaderMaterial and MeshBasicMaterial). */
 export function setCardFade(mesh: Mesh, fade: number): void {
@@ -20,13 +31,17 @@ export function setCardFade(mesh: Mesh, fade: number): void {
 /**
  * Handles prev/next card navigation and the departing-mesh fade transition.
  *
+ * Uses two independent timelines to avoid the overlap bug where departing
+ * and arriving meshes are the same objects before the async scene rebuild.
+ *
  * Single Responsibility: card selection traversal + transition animation.
  * Dependency Inversion: receives store, scene accessor, and mesh ref via constructor.
  */
 export class CardNavigator {
   private departingMeshes: { mesh: Mesh; startZ: number }[] = []
-  private transitionStart = 0
-  private fadeInMeshes = false
+  private departStart = 0
+  private arrivalStart = 0
+  private arriving = false
 
   constructor(
     private readonly store: ReturnType<typeof useAppStore>,
@@ -53,8 +68,9 @@ export class CardNavigator {
       mesh,
       startZ: mesh.position.z,
     }))
-    this.transitionStart = performance.now() * 0.001
-    this.fadeInMeshes = true
+    this.departStart = performance.now() * 0.001
+    // Don't start arrival yet — wait for onSceneRebuilt
+    this.arriving = false
 
     // Advance selection — triggers displayCardIds watcher
     const newIdx = (idx + dir + CARD_CATALOG.value.length) % CARD_CATALOG.value.length
@@ -66,30 +82,43 @@ export class CardNavigator {
     perfTracker.markNavigationEnd()
     const scene = this.getScene()
     for (const { mesh } of this.departingMeshes) scene?.add(mesh)
-    if (this.fadeInMeshes) {
+    if (this.departingMeshes.length > 0) {
+      // New meshes are ready — start arrival timeline now
       for (const mesh of this.cardMeshes.value) setCardFade(mesh, 0)
+      this.arrivalStart = performance.now() * 0.001
+      this.arriving = true
     }
   }
 
   /** Animate departing/arriving card transition. Call once per frame. */
   tick(time: number): void {
-    if (this.departingMeshes.length === 0) return
+    if (this.departingMeshes.length === 0 && !this.arriving) return
 
-    const elapsed = time - this.transitionStart
-    const t = Math.min(elapsed / TRANSITION_DURATION, 1)
-    const ease = 1 - (1 - t) * (1 - t) // ease-out quadratic
+    // --- Departing meshes: fade out + push back ---
+    if (this.departingMeshes.length > 0) {
+      const dt = Math.min((time - this.departStart) / DEPART_DURATION, 1)
+      const dEase = easeOutCubic(dt)
 
-    const pushZ = this.store.dimensions.boxD * 0.3
-    for (const { mesh, startZ } of this.departingMeshes) {
-      setCardFade(mesh, 1 - ease)
-      mesh.position.z = startZ - ease * pushZ
+      const pushZ = this.store.dimensions.boxD * 0.25
+      for (const { mesh, startZ } of this.departingMeshes) {
+        setCardFade(mesh, 1 - dEase)
+        mesh.position.z = startZ - dEase * pushZ
+      }
+
+      if (dt >= 1) this.finalizeDeparting()
     }
 
-    for (const mesh of this.cardMeshes.value) {
-      setCardFade(mesh, ease)
-    }
+    // --- Arriving meshes: fade in (independent timeline) ---
+    if (this.arriving) {
+      const at = Math.min((time - this.arrivalStart) / ARRIVE_DURATION, 1)
+      const aEase = easeInOutSine(at)
 
-    if (t >= 1) this.finalizeDeparting()
+      for (const mesh of this.cardMeshes.value) {
+        setCardFade(mesh, aEase)
+      }
+
+      if (at >= 1) this.arriving = false
+    }
   }
 
   /** Handle keyboard events. Returns true if the event was consumed. */
@@ -109,6 +138,5 @@ export class CardNavigator {
     const scene = this.getScene()
     for (const { mesh } of this.departingMeshes) scene?.remove(mesh)
     this.departingMeshes = []
-    this.fadeInMeshes = false
   }
 }
