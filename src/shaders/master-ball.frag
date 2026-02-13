@@ -20,7 +20,11 @@ uniform float uRainbowShift;
 uniform float uSparkleScale;
 uniform float uSparkleIntensity;
 uniform float uSparkleTiltSensitivity;
+uniform float uRainbowOpacity;
 uniform float uGlareOpacity;
+uniform float uGlareContrast;
+uniform float uGlareSaturation;
+uniform float uEtchOpacity;
 uniform float uBaseBrightness;
 uniform float uBaseContrast;
 
@@ -57,10 +61,10 @@ void main() {
     // ── 2. Rainbow holo (mask-driven) ────────────────
     if (mask > 0.01) {
         float tiltOffset = (0.5 - bgY) * uRainbowShift;
-        float rainbowT = uv.y * uRainbowScale + tiltOffset + sin(uTime * 0.3) * 0.05;
+        float rainbowT = uv.y * uRainbowScale + tiltOffset + sin(uTime * 0.3) * 0.5;
         vec3 rainbow = sunpillarGradient(rainbowT);
 
-        result = mix(result, blendOverlay(result, rainbow), mask * uCardOpacity);
+        result = mix(result, blendOverlay(result, rainbow), mask * uCardOpacity * uRainbowOpacity);
     }
 
     // ── 3. Etch sparkle (foil-driven) ────────────────
@@ -71,26 +75,40 @@ void main() {
             : 1.0;
 
         // Tilt reveal: sparkles appear as card tilts away from center
-        float tiltAmount = abs(bgY - 0.5);
+        float tiltAmount = abs(bgY - 0.5) * 2.0; // normalize to 0–1 range
         float sparkleReveal = smoothstep(uSparkleTiltSensitivity, uSparkleTiltSensitivity + 0.3, tiltAmount);
 
-        vec3 sparkle = vec3(glitter * sparkleReveal);
-        result = mix(result, blendScreen(result, sparkle), foil * uSparkleIntensity * uCardOpacity);
+        // Additive blend so even dim glitter values produce visible highlights
+        result += vec3(glitter * sparkleReveal) * foil * uSparkleIntensity * uCardOpacity;
     }
 
+    // ── Pointer-driven values ────────────────────────
+    float ptrX = uPointer.x;
+    float ptrY = uPointer.y;
+    float spotDist = length(uv - vec2(ptrX, ptrY));
     // ── 4. Glare (pointer-following radial) ──────────
-    float spotDist = length(uv - uPointer);
-    vec3 glare = mix(vec3(1.0), vec3(0.0), smoothstep(0.0, 0.85, spotDist));
-    glare = adjustBrightness(glare, 0.9);
-    glare = adjustContrast(glare, 1.0);
+    vec3 glareCenter = vec3(0.8);
+    vec3 glareEdge = vec3(0.6); 
+    vec3 glare = mix(glareCenter, glareEdge, smoothstep(0.1, 0.7, spotDist));
+    
+    glare = adjustBrightness(glare, 0.7);
+    glare = adjustContrast(glare, uGlareContrast);
+    glare = adjustSaturate(glare, uGlareSaturation);
     glare = clamp(glare, 0.0, 1.0);
 
-    float glareArea = max(mask, foil);
-    result = mix(result, blendOverlay(result, glare), glareArea * uCardOpacity * uGlareOpacity * 0.8);
+    result = mix(result, blendOverlay(result, glare), foil * uCardOpacity * uGlareOpacity);
 
     // ── 5. Final adjustments ─────────────────────────
     result = adjustBrightness(result, uBaseBrightness);
     result = adjustContrast(result, uBaseContrast);
+
+        // Etch foil overlay
+    // if (uHasFoil > 0.5) {
+    //     vec4 foilColor = texture2D(uFoilTex, uv);
+    //     // Blend etch foil on top using alpha compositing
+    //     float foilAlpha = foilColor.a * uCardOpacity * 0.3;
+    //     cardColor.rgb = mix(cardColor.rgb, foilColor.rgb, foilAlpha);
+    // }
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
 }

@@ -114,7 +114,11 @@ export interface AppConfig {
   masterBallSparkleScale: number
   masterBallSparkleIntensity: number
   masterBallSparkleTiltSensitivity: number
+  masterBallEtchOpacity: number
+  masterBallRainbowOpacity: number
   masterBallGlareOpacity: number
+  masterBallGlareContrast: number
+  masterBallGlareSaturation: number
   masterBallBaseBrightness: number
   masterBallBaseContrast: number
 }

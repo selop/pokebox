@@ -562,763 +562,87 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     },
   )
 
-  // TODO: this is a lot repeating code which can be simplified and put into a dedicated class
-
-  // Watch holo intensity (update uniform directly on all cards)
-  watch(
-    () => store.config.holoIntensity,
-    (val) => {
+  // Helper: watch a store config getter and push its value to a shader uniform on all card meshes
+  function watchUniform(getter: () => number, uniformName: string) {
+    watch(getter, (val) => {
       for (const mesh of cardMeshes.value) {
-        if ((mesh.material as ShaderMaterial).isShaderMaterial) {
-          ;(mesh.material as ShaderMaterial).uniforms['uCardOpacity']!.value = val
+        const mat = mesh.material as ShaderMaterial
+        if (mat.isShaderMaterial && mat.uniforms[uniformName]) {
+          mat.uniforms[uniformName]!.value = val
         }
       }
-    },
-  )
+    })
+  }
 
-  // Watch illustration-rare shader parameters
-  watch(
-    () => store.config.illustRareRainbowScale,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uRainbowScale']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uRainbowScale']!.value = val
-        }
-      }
-    },
-  )
+  // Holo intensity
+  watchUniform(() => store.config.holoIntensity, 'uCardOpacity')
 
-  watch(
-    () => store.config.illustRareBarAngle,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarAngle']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarAngle']!.value = val
-        }
-      }
-    },
-  )
+  // Illustration-rare shader parameters
+  const illustRareUniformMap: [() => number, string][] = [
+    [() => store.config.illustRareRainbowScale, 'uRainbowScale'],
+    [() => store.config.illustRareBarAngle, 'uBarAngle'],
+    [() => store.config.illustRareBarDensity, 'uBarDensity'],
+    [() => store.config.illustRareBarDensity2, 'uBarDensity2'],
+    [() => store.config.illustRareBarOffsetBgYMult, 'uBarOffsetBgYMult'],
+    [() => store.config.illustRareBar2OffsetBgYMult, 'uBar2OffsetBgYMult'],
+    [() => store.config.illustRareBarWidth, 'uBarWidth'],
+    [() => store.config.illustRareBarWidth2, 'uBarWidth2'],
+    [() => store.config.illustRareBarIntensity, 'uBarIntensity'],
+    [() => store.config.illustRareBarHue, 'uBarHue'],
+    [() => store.config.illustRareBarMediumSaturation, 'uBarMediumSaturation'],
+    [() => store.config.illustRareBarMediumLightness, 'uBarMediumLightness'],
+    [() => store.config.illustRareBarBrightSaturation, 'uBarBrightSaturation'],
+    [() => store.config.illustRareBarBrightLightness, 'uBarBrightLightness'],
+    [() => store.config.illustRareBarIntensity2, 'uBarIntensity2'],
+    [() => store.config.illustRareBarHue2, 'uBarHue2'],
+    [() => store.config.illustRareBarMediumSaturation2, 'uBarMediumSaturation2'],
+    [() => store.config.illustRareBarMediumLightness2, 'uBarMediumLightness2'],
+    [() => store.config.illustRareBarBrightSaturation2, 'uBarBrightSaturation2'],
+    [() => store.config.illustRareBarBrightLightness2, 'uBarBrightLightness2'],
+    [() => store.config.illustRareShine1Contrast, 'uShine1Contrast'],
+    [() => store.config.illustRareShine1Saturation, 'uShine1Saturation'],
+    [() => store.config.illustRareShine2Opacity, 'uShine2Opacity'],
+    [() => store.config.illustRareGlareOpacity, 'uGlareOpacity'],
+  ]
+  for (const [getter, uniformName] of illustRareUniformMap) {
+    watchUniform(getter, uniformName)
+  }
 
-  watch(
-    () => store.config.illustRareBarDensity,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarDensity']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarDensity']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarDensity2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarDensity2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarDensity2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarOffsetBgYMult,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarOffsetBgYMult']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarOffsetBgYMult']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBar2OffsetBgYMult,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBar2OffsetBgYMult']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBar2OffsetBgYMult']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarWidth,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarWidth']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarWidth']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarWidth2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarWidth2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarWidth2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarIntensity,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarIntensity']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensity']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarHue,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarHue']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarHue']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarMediumSaturation,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarMediumSaturation']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarMediumSaturation']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarMediumLightness,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarMediumLightness']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarMediumLightness']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarBrightSaturation,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarBrightSaturation']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarBrightSaturation']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarBrightLightness,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarBrightLightness']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarBrightLightness']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarIntensity2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarIntensity2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensity2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarHue2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarHue2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarHue2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarMediumSaturation2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarMediumSaturation2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarMediumSaturation2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarMediumLightness2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarMediumLightness2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarMediumLightness2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarBrightSaturation2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarBrightSaturation2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarBrightSaturation2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareBarBrightLightness2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarBrightLightness2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarBrightLightness2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareShine1Contrast,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShine1Contrast']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShine1Contrast']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareShine1Saturation,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShine1Saturation']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShine1Saturation']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareShine2Opacity,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShine2Opacity']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShine2Opacity']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.illustRareGlareOpacity,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uGlareOpacity']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uGlareOpacity']!.value = val
-        }
-      }
-    },
-  )
-
-  // Watch ultra-rare shader parameters
-  watch(
-    () => store.config.ultraRareBaseBrightness,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBaseBrightness']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBaseBrightness']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareShineBrightness,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShineBrightness']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShineBrightness']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareShineContrast,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShineContrast']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShineContrast']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareShineSaturation,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShineSaturation']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShineSaturation']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareShineAfterBrightness,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShineAfterBrightness']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShineAfterBrightness']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareShineAfterContrast,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShineAfterContrast']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShineAfterContrast']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareShineAfterSaturation,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShineAfterSaturation']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShineAfterSaturation']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareShineBaseBrightness,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShineBaseBrightness']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShineBaseBrightness']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareShineBaseContrast,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShineBaseContrast']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShineBaseContrast']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareShineBaseSaturation,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uShineBaseSaturation']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uShineBaseSaturation']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareGlareContrast,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uGlareContrast']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uGlareContrast']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareGlare2Contrast,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uGlare2Contrast']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uGlare2Contrast']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareRotateDelta,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uRotateDelta']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uRotateDelta']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareAngle1Mult,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uAngle1Mult']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uAngle1Mult']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareAngle2Mult,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uAngle2Mult']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uAngle2Mult']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareBgYMult1,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBgYMult1']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBgYMult1']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareBgYMult2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBgYMult2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBgYMult2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareBarAngle,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarAngle']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarAngle']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareBarOffsetBgXMult,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarOffsetBgXMult']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarOffsetBgXMult']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareBarOffsetBgYMult,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarOffsetBgYMult']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarOffsetBgYMult']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareBarFrequency,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarFrequency']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarFrequency']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareBarIntensityStart1,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarIntensityStart1']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensityStart1']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareBarIntensityEnd1,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarIntensityEnd1']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensityEnd1']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareBarIntensityStart2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarIntensityStart2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensityStart2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareBarIntensityEnd2,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uBarIntensityEnd2']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uBarIntensityEnd2']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareSparkleIntensity,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uSparkleIntensity']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uSparkleIntensity']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareSparkleRadius,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uSparkleRadius']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uSparkleRadius']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareSparkleContrast,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uSparkleContrast']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uSparkleContrast']!.value = val
-        }
-      }
-    },
-  )
-
-  watch(
-    () => store.config.ultraRareSparkleColorShift,
-    (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms['uSparkleColorShift']
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms['uSparkleColorShift']!.value = val
-        }
-      }
-    },
-  )
+  // Ultra-rare shader parameters
+  const ultraRareUniformMap: [() => number, string][] = [
+    [() => store.config.ultraRareBaseBrightness, 'uBaseBrightness'],
+    [() => store.config.ultraRareShineBrightness, 'uShineBrightness'],
+    [() => store.config.ultraRareShineContrast, 'uShineContrast'],
+    [() => store.config.ultraRareShineSaturation, 'uShineSaturation'],
+    [() => store.config.ultraRareShineAfterBrightness, 'uShineAfterBrightness'],
+    [() => store.config.ultraRareShineAfterContrast, 'uShineAfterContrast'],
+    [() => store.config.ultraRareShineAfterSaturation, 'uShineAfterSaturation'],
+    [() => store.config.ultraRareShineBaseBrightness, 'uShineBaseBrightness'],
+    [() => store.config.ultraRareShineBaseContrast, 'uShineBaseContrast'],
+    [() => store.config.ultraRareShineBaseSaturation, 'uShineBaseSaturation'],
+    [() => store.config.ultraRareGlareContrast, 'uGlareContrast'],
+    [() => store.config.ultraRareGlare2Contrast, 'uGlare2Contrast'],
+    [() => store.config.ultraRareRotateDelta, 'uRotateDelta'],
+    [() => store.config.ultraRareAngle1Mult, 'uAngle1Mult'],
+    [() => store.config.ultraRareAngle2Mult, 'uAngle2Mult'],
+    [() => store.config.ultraRareBgYMult1, 'uBgYMult1'],
+    [() => store.config.ultraRareBgYMult2, 'uBgYMult2'],
+    [() => store.config.ultraRareBarAngle, 'uBarAngle'],
+    [() => store.config.ultraRareBarOffsetBgXMult, 'uBarOffsetBgXMult'],
+    [() => store.config.ultraRareBarOffsetBgYMult, 'uBarOffsetBgYMult'],
+    [() => store.config.ultraRareBarFrequency, 'uBarFrequency'],
+    [() => store.config.ultraRareBarIntensityStart1, 'uBarIntensityStart1'],
+    [() => store.config.ultraRareBarIntensityEnd1, 'uBarIntensityEnd1'],
+    [() => store.config.ultraRareBarIntensityStart2, 'uBarIntensityStart2'],
+    [() => store.config.ultraRareBarIntensityEnd2, 'uBarIntensityEnd2'],
+    [() => store.config.ultraRareSparkleIntensity, 'uSparkleIntensity'],
+    [() => store.config.ultraRareSparkleRadius, 'uSparkleRadius'],
+    [() => store.config.ultraRareSparkleContrast, 'uSparkleContrast'],
+    [() => store.config.ultraRareSparkleColorShift, 'uSparkleColorShift'],
+  ]
+  for (const [getter, uniformName] of ultraRareUniformMap) {
+    watchUniform(getter, uniformName)
+  }
 
   watch(
     () => store.isFlipRequested,
@@ -1346,7 +670,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     },
   )
 
-  // Watch special-illustration-rare shader parameters
+  // Special-illustration-rare shader parameters
   const sirUniformMap: [() => number, string][] = [
     [() => store.config.sirShineAngle, 'uSirShineAngle'],
     [() => store.config.sirShineFrequency, 'uSirShineFrequency'],
@@ -1364,19 +688,10 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.sirBaseContrast, 'uSirBaseContrast'],
   ]
   for (const [getter, uniformName] of sirUniformMap) {
-    watch(getter, (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms[uniformName]
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms[uniformName]!.value = val
-        }
-      }
-    })
+    watchUniform(getter, uniformName)
   }
 
-  // Watch reverse-holo shader parameters
+  // Reverse-holo shader parameters
   const reverseHoloUniformMap: [() => number, string][] = [
     [() => store.config.reverseHoloShineIntensity, 'uShineIntensity'],
     [() => store.config.reverseHoloShineOpacity, 'uShineOpacity'],
@@ -1390,19 +705,10 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.reverseHoloBaseSaturation, 'uBaseSaturation'],
   ]
   for (const [getter, uniformName] of reverseHoloUniformMap) {
-    watch(getter, (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms[uniformName]
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms[uniformName]!.value = val
-        }
-      }
-    })
+    watchUniform(getter, uniformName)
   }
 
-  // Watch rainbow-rare shader parameters
+  // Rainbow-rare shader parameters
   const rainbowRareUniformMap: [() => number, string][] = [
     [() => store.config.rainbowRareBaseBrightness, 'uBaseBrightness'],
     [() => store.config.rainbowRareShineBrightness, 'uShineBrightness'],
@@ -1419,19 +725,10 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.rainbowRareSparkleColorShift, 'uSparkleColorShift'],
   ]
   for (const [getter, uniformName] of rainbowRareUniformMap) {
-    watch(getter, (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms[uniformName]
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms[uniformName]!.value = val
-        }
-      }
-    })
+    watchUniform(getter, uniformName)
   }
 
-  // Watch master-ball shader parameters
+  // Master-ball shader parameters
   const masterBallUniformMap: [() => number, string][] = [
     [() => store.config.masterBallRainbowScale, 'uRainbowScale'],
     [() => store.config.masterBallRainbowShift, 'uRainbowShift'],
@@ -1443,16 +740,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.masterBallBaseContrast, 'uBaseContrast'],
   ]
   for (const [getter, uniformName] of masterBallUniformMap) {
-    watch(getter, (val) => {
-      for (const mesh of cardMeshes.value) {
-        if (
-          (mesh.material as ShaderMaterial).isShaderMaterial &&
-          (mesh.material as ShaderMaterial).uniforms[uniformName]
-        ) {
-          ;(mesh.material as ShaderMaterial).uniforms[uniformName]!.value = val
-        }
-      }
-    })
+    watchUniform(getter, uniformName)
   }
 
   function dispose() {
