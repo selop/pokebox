@@ -99,6 +99,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Load glitter texture for illustration rare cards
     cardLoader.loadGlitterTexture()
 
+    // Load noise texture for master ball sparkle layer 2
+    cardLoader.loadNoiseTexture()
+
     // Load card-back texture
     cardLoader.loadCardBackTexture()
 
@@ -575,10 +578,21 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   const masterBallUniformMap: [() => number, string][] = [
     [() => store.config.masterBallRainbowScale, 'uRainbowScale'],
     [() => store.config.masterBallRainbowShift, 'uRainbowShift'],
+    [() => store.config.masterBallRainbowOpacity, 'uRainbowOpacity'],
+    [() => store.config.masterBallEtchOpacity, 'uEtchOpacity'],
+    [() => store.config.masterBallEtchContrast, 'uEtchContrast'],
+    [() => store.config.masterBallEtchStampOpacity, 'uEtchStampOpacity'],
     [() => store.config.masterBallSparkleScale, 'uSparkleScale'],
     [() => store.config.masterBallSparkleIntensity, 'uSparkleIntensity'],
     [() => store.config.masterBallSparkleTiltSensitivity, 'uSparkleTiltSensitivity'],
+    [() => store.config.masterBallSparkleTexMix, 'uSparkleTexMix'],
+    [() => store.config.masterBallSparkle2Scale, 'uSparkle2Scale'],
+    [() => store.config.masterBallSparkle2Intensity, 'uSparkle2Intensity'],
+    [() => store.config.masterBallSparkle2TiltSensitivity, 'uSparkle2TiltSensitivity'],
+    [() => store.config.masterBallSparkle2TexMix, 'uSparkle2TexMix'],
     [() => store.config.masterBallGlareOpacity, 'uGlareOpacity'],
+    [() => store.config.masterBallGlareContrast, 'uGlareContrast'],
+    [() => store.config.masterBallGlareSaturation, 'uGlareSaturation'],
     [() => store.config.masterBallBaseBrightness, 'uBaseBrightness'],
     [() => store.config.masterBallBaseContrast, 'uBaseContrast'],
   ]

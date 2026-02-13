@@ -46,8 +46,9 @@ export class CardSceneBuilder {
     const birthdayTextures =
       effectiveShader === 'double-rare' ? loader.getBirthdayTextures() : null
     const glitterTexture = loader.getGlitterTexture()
+    const noiseTexture = loader.getNoiseTexture()
     const cardBackTexture = loader.getCardBackTexture()
-    return { iriTextures, birthdayTextures, glitterTexture, cardBackTexture }
+    return { iriTextures, birthdayTextures, glitterTexture, noiseTexture, cardBackTexture }
   }
 
   cardLayout() {
@@ -88,7 +89,7 @@ export class CardSceneBuilder {
     if (hasEffect) {
       // Layer 0 (front-left): full composited result (card + holo shader)
       const effectiveShader = this.getEffectiveShader(id)
-      const { iriTextures, birthdayTextures, glitterTexture, cardBackTexture } =
+      const { iriTextures, birthdayTextures, glitterTexture, noiseTexture, cardBackTexture } =
         this.resolveExtraTextures(loader, effectiveShader)
       const compositeMesh = buildCardMesh(
         dims,
@@ -103,6 +104,7 @@ export class CardSceneBuilder {
         iriTextures,
         birthdayTextures,
         glitterTexture,
+        noiseTexture,
         cardBackTexture,
       )
       compositeMesh.geometry.dispose()
@@ -170,7 +172,7 @@ export class CardSceneBuilder {
       const tex = loader.get(id)
       if (!tex) return
       const effectiveShader = this.getEffectiveShader(id)
-      const { iriTextures, birthdayTextures, glitterTexture, cardBackTexture } =
+      const { iriTextures, birthdayTextures, glitterTexture, noiseTexture, cardBackTexture } =
         this.resolveExtraTextures(loader, effectiveShader)
       const mesh = buildCardMesh(
         dims,
@@ -182,6 +184,7 @@ export class CardSceneBuilder {
         iriTextures,
         birthdayTextures,
         glitterTexture,
+        noiseTexture,
         cardBackTexture,
       )
       const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing

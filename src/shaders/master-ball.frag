@@ -5,8 +5,10 @@ uniform sampler2D uCardBackTex;
 uniform sampler2D uMaskTex;
 uniform sampler2D uFoilTex;
 uniform sampler2D uGlitterTex;
+uniform sampler2D uNoiseTex;
 uniform float uHasFoil;
 uniform float uHasGlitter;
+uniform float uHasNoise;
 uniform vec2 uPointer;
 uniform vec2 uBackground;
 uniform float uPointerFromCenter;
@@ -20,11 +22,18 @@ uniform float uRainbowShift;
 uniform float uSparkleScale;
 uniform float uSparkleIntensity;
 uniform float uSparkleTiltSensitivity;
+uniform float uSparkleTexMix;
+uniform float uSparkle2Scale;
+uniform float uSparkle2Intensity;
+uniform float uSparkle2TiltSensitivity;
+uniform float uSparkle2TexMix;
 uniform float uRainbowOpacity;
 uniform float uGlareOpacity;
 uniform float uGlareContrast;
 uniform float uGlareSaturation;
 uniform float uEtchOpacity;
+uniform float uEtchContrast;
+uniform float uEtchStampOpacity;
 uniform float uBaseBrightness;
 uniform float uBaseContrast;
 
@@ -58,6 +67,12 @@ void main() {
     vec3 result = cardColor.rgb;
     float bgY = uBackground.y;
 
+    // Sharpen foil mask with contrast curve, then apply etch visibility
+    if (foil > 0.01) {
+        foil = clamp(pow(foil, 1.0 / uEtchContrast), 0.0, 1.0);
+        result = mix(result, result + vec3(foil), uEtchOpacity * uCardOpacity * 0.1);
+    }
+
     // ── 2. Rainbow holo (mask-driven) ────────────────
     if (mask > 0.01) {
         float tiltOffset = (0.5 - bgY) * uRainbowShift;
@@ -67,20 +82,30 @@ void main() {
         result = mix(result, blendOverlay(result, rainbow), mask * uCardOpacity * uRainbowOpacity);
     }
 
-    // ── 3. Etch sparkle (foil-driven) ────────────────
     if (foil > 0.01) {
-        // Sample glitter texture at scaled UV
-        float glitter = uHasGlitter > 0.5
-            ? texture2D(uGlitterTex, uv * uSparkleScale).r
-            : 1.0;
+        // ── 3. Etch sparkle (foil-driven, top/bottom tilt) ─
+        float glitter1 = uHasGlitter > 0.5 ? texture2D(uGlitterTex, uv * uSparkleScale).r : 1.0;
+        float noise1 = uHasNoise > 0.5 ? texture2D(uNoiseTex, uv * uSparkleScale).r : 1.0;
+        noise1 = smoothstep(0.45, 0.85, noise1);
+        float sparkle = mix(glitter1, noise1, uSparkleTexMix);
 
-        // Tilt reveal: sparkles appear as card tilts away from center
-        float tiltAmount = abs(bgY - 0.5) * 2.0; // normalize to 0–1 range
+        float tiltAmount = abs(bgY - 0.5) * 2.0;
         float sparkleReveal = smoothstep(uSparkleTiltSensitivity, uSparkleTiltSensitivity + 0.3, tiltAmount);
 
-        // Additive blend so even dim glitter values produce visible highlights
-        result += vec3(glitter * sparkleReveal) * foil * uSparkleIntensity * uCardOpacity;
+        result += vec3(sparkle * sparkleReveal) * foil * uSparkleIntensity * uCardOpacity;
+
+        // ── 3b. Etch sparkle layer 2 (foil-driven, left/right tilt) ─
+        float glitter2 = uHasGlitter > 0.5 ? texture2D(uGlitterTex, uv * uSparkle2Scale).r : 1.0;
+        float noise2 = uHasNoise > 0.5 ? texture2D(uNoiseTex, uv * uSparkle2Scale).r : 1.0;
+        noise2 = smoothstep(0.45, 0.85, noise2);
+        float sparkle2 = mix(glitter2, noise2, uSparkle2TexMix);
+
+        float tiltAmountX = abs(uBackground.x - 0.5) * 2.0;
+        float sparkle2Reveal = smoothstep(uSparkle2TiltSensitivity, uSparkle2TiltSensitivity + 0.3, tiltAmountX);
+
+        result += vec3(sparkle2 * sparkle2Reveal) * foil * uSparkle2Intensity * uCardOpacity;
     }
+
 
     // ── Pointer-driven values ────────────────────────
     float ptrX = uPointer.x;
@@ -102,53 +127,11 @@ void main() {
     result = adjustBrightness(result, uBaseBrightness);
     result = adjustContrast(result, uBaseContrast);
 
-        // Etch foil overlay
-    // if (uHasFoil > 0.5) {
-    //     vec4 foilColor = texture2D(uFoilTex, uv);
-    //     // Blend etch foil on top using alpha compositing
-    //     float foilAlpha = foilColor.a * uCardOpacity * 0.3;
-    //     cardColor.rgb = mix(cardColor.rgb, foilColor.rgb, foilAlpha);
-    // }
+    // ── 6. Etch stamp (darken where foil is dark) ───
+    if (uHasFoil > 0.5 && uEtchStampOpacity > 0.01) {
+        float rawFoil = texture2D(uFoilTex, uv).r;
+        result *= mix(vec3(1.0), vec3(rawFoil), uEtchStampOpacity * uCardOpacity);
+    }
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
 }
-
-// TODO start from scratch
-
-// precision highp float;
-
-// uniform sampler2D uCardTex;
-// uniform sampler2D uCardBackTex;
-// uniform sampler2D uMaskTex;
-// uniform sampler2D uFoilTex;
-// uniform float uHasFoil;
-// uniform vec2 uPointer;
-// uniform float uCardOpacity;
-// uniform float uTime;
-// uniform float uFade;
-
-// varying vec2 vUv;
-
-// void main() {
-//     vec2 uv = vUv;
-
-//     // Back face: show card-back texture
-//     if (!gl_FrontFacing) {
-//         vec4 backColor = texture2D(uCardBackTex, uv);
-//         gl_FragColor = vec4(backColor.rgb, backColor.a * uFade);
-//         return;
-//     }
-
-//     // Base card
-//     vec4 cardColor = texture2D(uCardTex, uv);
-
-//     // Etch foil overlay
-//     if (uHasFoil > 0.5) {
-//         vec4 foilColor = texture2D(uFoilTex, uv);
-//         // Blend etch foil on top using alpha compositing
-//         float foilAlpha = foilColor.a * uCardOpacity * 0.3;
-//         cardColor.rgb = mix(cardColor.rgb, foilColor.rgb, foilAlpha);
-//     }
-
-//     gl_FragColor = vec4(cardColor.rgb, cardColor.a * uFade);
-// }

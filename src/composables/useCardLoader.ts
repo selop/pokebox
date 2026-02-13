@@ -26,6 +26,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
   let iriTextures: IriTextures | null = null
   let birthdayTextures: BirthdayTextures | null = null
   let glitterTexture: Texture | null = null
+  let noiseTexture: Texture | null = null
   let cardBackTexture: Texture | null = null
 
   function clearCache(): void {
@@ -201,6 +202,23 @@ export function useCardLoader(renderer: WebGLRenderer) {
     return glitterTexture
   }
 
+  function loadNoiseTexture(): Promise<Texture> {
+    if (noiseTexture) return Promise.resolve(noiseTexture)
+
+    return new Promise<Texture>((resolve) => {
+      loader.load('img/151/noise-base.webp', (tex) => {
+        applyFilters(tex)
+        tex.wrapS = tex.wrapT = 1000 // RepeatWrapping
+        noiseTexture = tex
+        resolve(noiseTexture)
+      })
+    })
+  }
+
+  function getNoiseTexture(): Texture | null {
+    return noiseTexture
+  }
+
   function loadCardBackTexture(): Promise<Texture> {
     if (cardBackTexture) return Promise.resolve(cardBackTexture)
 
@@ -228,6 +246,8 @@ export function useCardLoader(renderer: WebGLRenderer) {
     getBirthdayTextures,
     loadGlitterTexture,
     getGlitterTexture,
+    loadNoiseTexture,
+    getNoiseTexture,
     loadCardBackTexture,
     getCardBackTexture,
   }
