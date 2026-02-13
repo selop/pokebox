@@ -64,6 +64,7 @@ void main() {
 
     // Mask & foil
     float mask = texture2D(uMaskTex, uv).r;
+    float foil = uHasFoil > 0.1 ? texture2D(uFoilTex, uv).r : 0.0;
 
     // Etch foil overlay
     if (uHasFoil > 0.5) {
@@ -72,11 +73,11 @@ void main() {
         result = mix(result, foilColor.rgb, foilAlpha);
     }
 
-    // ── Classic TCG holo shine (mask-driven) ──────────
-    result = holoShine(
+    // ── Classic TCG holo shine (mask-driven, 133° angle) ──────────
+    result = holoShineAngled(
         result, uv, uPointer, uBackground.y, mask,
         uMaskThreshold, uRainbowScale, uRainbowShift,
-        uHoloOpacity, uCardOpacity
+        uHoloOpacity, uCardOpacity, 133.0
     );
 
     if (mask > 0.7) {
@@ -119,7 +120,7 @@ void main() {
     }
 
     // ── Metallic sparkle spotlight ──────────────────────
-    if (uHasFoil > 0.5 && uSparkleIntensity > 0.01) {
+    if (uHasFoil > 0.2 && uSparkleIntensity > 0.01) {
         vec3 foilTex = texture2D(uFoilTex, uv).rgb;
         float ptrX = uPointer.x;
         float ptrY = uPointer.y;
@@ -145,7 +146,7 @@ void main() {
         sparkleColor = clamp(sparkleColor, 0.0, 1.0);
 
         vec3 metallic = sparkleColor * sparkleSpotlight * uSparkleIntensity;
-        result = mix(result, blendPlusLighter(result, metallic), mask * uCardOpacity);
+        result = mix(result, blendPlusLighter(result, metallic), foil * uCardOpacity);
     }
 
     // ── Base adjustments ─────────────────────────────────
