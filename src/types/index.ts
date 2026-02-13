@@ -122,6 +122,7 @@ export interface AppConfig {
   masterBallEtchOpacity: number
   masterBallEtchContrast: number
   masterBallEtchStampOpacity: number
+  masterBallEtchStampHoloOpacity: number
   masterBallRainbowOpacity: number
   masterBallGlareOpacity: number
   masterBallGlareContrast: number

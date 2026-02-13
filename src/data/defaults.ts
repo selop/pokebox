@@ -115,6 +115,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   masterBallEtchOpacity: 0.0,
   masterBallEtchContrast: 1.2,
   masterBallEtchStampOpacity: 0.65,
+  masterBallEtchStampHoloOpacity: 0.3,
   masterBallSparkleScale: 1.75,
   masterBallSparkleIntensity: 0.75,
   masterBallSparkleTiltSensitivity: 0.03,

@@ -258,6 +258,14 @@ const sections: ShaderSection[] = [
       { label: 'Opacity', key: 'masterBallEtchOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
       { label: 'Contrast', key: 'masterBallEtchContrast', min: 0.1, max: 5, step: 0.1 },
       { label: 'Stamp', key: 'masterBallEtchStampOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      {
+        label: 'Stamp holo',
+        key: 'masterBallEtchStampHoloOpacity',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        suffix: '%',
+      },
       { subsection: 'Sparkle (T/B)' },
       { label: 'Scale', key: 'masterBallSparkleScale', min: 0.5, max: 5.0, step: 0.05 },
       {

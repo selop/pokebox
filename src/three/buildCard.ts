@@ -160,6 +160,7 @@ const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
     ['uEtchOpacity', 'masterBallEtchOpacity'],
     ['uEtchContrast', 'masterBallEtchContrast'],
     ['uEtchStampOpacity', 'masterBallEtchStampOpacity'],
+    ['uEtchStampHoloOpacity', 'masterBallEtchStampHoloOpacity'],
     ['uRainbowOpacity', 'masterBallRainbowOpacity'],
     ['uGlareOpacity', 'masterBallGlareOpacity'],
     ['uGlareContrast', 'masterBallGlareContrast'],

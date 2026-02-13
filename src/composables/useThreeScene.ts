@@ -582,6 +582,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.masterBallEtchOpacity, 'uEtchOpacity'],
     [() => store.config.masterBallEtchContrast, 'uEtchContrast'],
     [() => store.config.masterBallEtchStampOpacity, 'uEtchStampOpacity'],
+    [() => store.config.masterBallEtchStampHoloOpacity, 'uEtchStampHoloOpacity'],
     [() => store.config.masterBallSparkleScale, 'uSparkleScale'],
     [() => store.config.masterBallSparkleIntensity, 'uSparkleIntensity'],
     [() => store.config.masterBallSparkleTiltSensitivity, 'uSparkleTiltSensitivity'],

@@ -34,6 +34,7 @@ uniform float uGlareSaturation;
 uniform float uEtchOpacity;
 uniform float uEtchContrast;
 uniform float uEtchStampOpacity;
+uniform float uEtchStampHoloOpacity;
 uniform float uBaseBrightness;
 uniform float uBaseContrast;
 
@@ -70,7 +71,7 @@ void main() {
     // Sharpen foil mask with contrast curve, then apply etch visibility
     if (foil > 0.01) {
         foil = clamp(pow(foil, 1.0 / uEtchContrast), 0.0, 1.0);
-        result = mix(result, result + vec3(foil), uEtchOpacity * uCardOpacity * 0.1);
+        result = mix(result, result + vec3(foil), uEtchOpacity * uCardOpacity * 0.2);
     }
 
     // ── 2. Rainbow holo (mask-driven) ────────────────
@@ -127,10 +128,20 @@ void main() {
     result = adjustBrightness(result, uBaseBrightness);
     result = adjustContrast(result, uBaseContrast);
 
-    // ── 6. Etch stamp (darken where foil is dark) ───
-    if (uHasFoil > 0.5 && uEtchStampOpacity > 0.01) {
+    // ── 6. Etch stamp (darken where foil is dark + rainbow holo) ───
+    if (uHasFoil > 0.25 && (uEtchStampOpacity > 0.01 || uEtchStampHoloOpacity > 0.01)) {
         float rawFoil = texture2D(uFoilTex, uv).r;
         result *= mix(vec3(1.0), vec3(rawFoil), uEtchStampOpacity * uCardOpacity);
+
+        // Rainbow holo on etch stamp areas — screen blend brightens the
+        // darkened etch with rainbow; (1-rawFoil) targets the dark etch lines
+        if (uEtchStampHoloOpacity > 0.01) {
+            float stampTiltOffset = (0.5 - bgY) * uRainbowShift;
+            float stampRainbowT = uv.y * uRainbowScale + uv.x * 0.5 + stampTiltOffset;
+            vec3 stampRainbow = sunpillarGradient(stampRainbowT);
+            float etchMask = 1.0 - rawFoil;
+            result = mix(result, blendScreen(result, stampRainbow), etchMask * uEtchStampHoloOpacity * uCardOpacity);
+        }
     }
 
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), cardColor.a * uFade);
