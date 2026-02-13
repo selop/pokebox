@@ -12,12 +12,18 @@ export const CARD_CATALOG = shallowRef<CardCatalogEntry[]>([])
 /** Cache fetched JSON per set to avoid re-fetching. */
 const jsonCache = new Map<string, SetCardJson[]>()
 
-export function mapHoloType(designation: string, foilType?: string, foilMask?: string): HoloType {
+export function mapHoloType(
+  designation: string,
+  foilType?: string,
+  foilMask?: string,
+  tags?: string[],
+): HoloType {
   // Master-ball holo: RAINBOW foil with ETCHED mask (common/uncommon masterball variants)
   if (foilType === 'RAINBOW' && foilMask === 'ETCHED') return 'master-ball'
 
   switch (designation) {
     case 'SPECIAL_ILLUSTRATION_RARE':
+      if (tags?.includes('TERA')) return 'tera-rainbow-rare'
       return 'special-illustration-rare'
     case 'ULTRA_RARE':
       return 'ultra-rare'
@@ -100,7 +106,7 @@ export async function loadSetCatalog(setId: string): Promise<CardCatalogEntry[]>
     const foilType = best.foil!.type
     const foilMask = best.foil!.mask
     const isEtched = foilMask === 'ETCHED'
-    const holoType = mapHoloType(designation, foilType, foilMask)
+    const holoType = mapHoloType(designation, foilType, foilMask, best.tags)
 
     // Get the file variant prefix from the JSON metadata, then map to actual files
     const jsonPrefix = extractPrefix(best.ext.tcgl.longFormID)

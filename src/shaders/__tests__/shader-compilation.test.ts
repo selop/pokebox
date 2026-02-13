@@ -8,6 +8,7 @@ import doubleRareFrag from '../double-rare.frag'
 import ultraRareFrag from '../ultra-rare.frag'
 import rainbowRareFrag from '../rainbow-rare.frag'
 import reverseHoloFrag from '../reverse-holo.frag'
+import teraRainbowRareFrag from '../tera-rainbow-rare.frag'
 import masterBallFrag from '../master-ball.frag'
 
 describe('Shader Compilation', () => {
@@ -183,6 +184,30 @@ describe('Shader Compilation', () => {
   ])
 
   testShaderCompilation('reverse-holo', reverseHoloFrag)
+
+  testShaderCompilation('tera-rainbow-rare', teraRainbowRareFrag, [
+    'uHasFoil',
+    'uPointerFromCenter',
+    'uHoloOpacity',
+    'uRainbowScale',
+    'uRainbowShift',
+    'uMaskThreshold',
+    'uSparkleIntensity',
+    'uSparkleRadius',
+    'uSparkleContrast',
+    'uSparkleColorShift',
+    'uEtchSparkleScale',
+    'uEtchSparkleIntensity',
+    'uEtchSparkleTiltSensitivity',
+    'uEtchSparkleTexMix',
+    'uEtchSparkle2Scale',
+    'uEtchSparkle2Intensity',
+    'uEtchSparkle2TiltSensitivity',
+    'uEtchSparkle2TexMix',
+    'uBaseBrightness',
+    'uBaseContrast',
+    'uBaseSaturation',
+  ])
 
   testShaderCompilation('master-ball', masterBallFrag, [
     'uHasFoil',

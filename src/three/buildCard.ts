@@ -19,6 +19,7 @@ import doubleRareFrag from '@/shaders/double-rare.frag'
 import ultraRareFrag from '@/shaders/ultra-rare.frag'
 import rainbowRareFrag from '@/shaders/rainbow-rare.frag'
 import reverseHoloFrag from '@/shaders/reverse-holo.frag'
+import teraRainbowRareFrag from '@/shaders/tera-rainbow-rare.frag'
 import masterBallFrag from '@/shaders/master-ball.frag'
 
 export const CARD_ASPECT = 733 / 1024 // width / height
@@ -40,6 +41,7 @@ const FRAGMENT_SHADERS: Record<ShaderStyle, string> = {
   'ultra-rare': ultraRareFrag,
   'rainbow-rare': rainbowRareFrag,
   'reverse-holo': reverseHoloFrag,
+  'tera-rainbow-rare': teraRainbowRareFrag,
   'master-ball': masterBallFrag,
 }
 
@@ -87,6 +89,27 @@ const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
     ['uSirWashOpacity', 'sirWashOpacity'],
     ['uSirBaseBrightness', 'sirBaseBrightness'],
     ['uSirBaseContrast', 'sirBaseContrast'],
+  ],
+  'tera-rainbow-rare': [
+    ['uHoloOpacity', 'trrHoloOpacity'],
+    ['uRainbowScale', 'trrRainbowScale'],
+    ['uRainbowShift', 'trrRainbowShift'],
+    ['uMaskThreshold', 'trrMaskThreshold'],
+    ['uSparkleIntensity', 'trrSparkleIntensity'],
+    ['uSparkleRadius', 'trrSparkleRadius'],
+    ['uSparkleContrast', 'trrSparkleContrast'],
+    ['uSparkleColorShift', 'trrSparkleColorShift'],
+    ['uEtchSparkleScale', 'trrEtchSparkleScale'],
+    ['uEtchSparkleIntensity', 'trrEtchSparkleIntensity'],
+    ['uEtchSparkleTiltSensitivity', 'trrEtchSparkleTiltSensitivity'],
+    ['uEtchSparkleTexMix', 'trrEtchSparkleTexMix'],
+    ['uEtchSparkle2Scale', 'trrEtchSparkle2Scale'],
+    ['uEtchSparkle2Intensity', 'trrEtchSparkle2Intensity'],
+    ['uEtchSparkle2TiltSensitivity', 'trrEtchSparkle2TiltSensitivity'],
+    ['uEtchSparkle2TexMix', 'trrEtchSparkle2TexMix'],
+    ['uBaseBrightness', 'trrBaseBrightness'],
+    ['uBaseContrast', 'trrBaseContrast'],
+    ['uBaseSaturation', 'trrBaseSaturation'],
   ],
   'ultra-rare': [
     ['uBaseBrightness', 'ultraRareBaseBrightness'],

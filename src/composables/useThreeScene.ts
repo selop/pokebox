@@ -303,9 +303,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     const dir = scene.getObjectByName('solidDir') as DirectionalLight | undefined
     const back = scene.getObjectByName('solidBack') as PointLight | undefined
     if (ambient && dir && back) {
-      const targetA = store.isDimmed ? 0.03 : 0.3
-      const targetD = store.isDimmed ? 0.05 : 0.5
-      const targetB = store.isDimmed ? 0.05 : 0.16
+      const targetA = store.isDimmed ? 0.015 : 0.3
+      const targetD = store.isDimmed ? 0.025 : 0.5
+      const targetB = store.isDimmed ? 0.025 : 0.16
       ambient.intensity += (targetA - ambient.intensity) * dimRate
       dir.intensity += (targetD - dir.intensity) * dimRate
       back.intensity += (targetB - back.intensity) * dimRate
@@ -534,6 +534,32 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.sirBaseContrast, 'uSirBaseContrast'],
   ]
   for (const [getter, uniformName] of sirUniformMap) {
+    watchUniform(getter, uniformName)
+  }
+
+  // Tera-rainbow-rare shader parameters
+  const trrUniformMap: [() => number, string][] = [
+    [() => store.config.trrHoloOpacity, 'uHoloOpacity'],
+    [() => store.config.trrRainbowScale, 'uRainbowScale'],
+    [() => store.config.trrRainbowShift, 'uRainbowShift'],
+    [() => store.config.trrMaskThreshold, 'uMaskThreshold'],
+    [() => store.config.trrSparkleIntensity, 'uSparkleIntensity'],
+    [() => store.config.trrSparkleRadius, 'uSparkleRadius'],
+    [() => store.config.trrSparkleContrast, 'uSparkleContrast'],
+    [() => store.config.trrSparkleColorShift, 'uSparkleColorShift'],
+    [() => store.config.trrEtchSparkleScale, 'uEtchSparkleScale'],
+    [() => store.config.trrEtchSparkleIntensity, 'uEtchSparkleIntensity'],
+    [() => store.config.trrEtchSparkleTiltSensitivity, 'uEtchSparkleTiltSensitivity'],
+    [() => store.config.trrEtchSparkleTexMix, 'uEtchSparkleTexMix'],
+    [() => store.config.trrEtchSparkle2Scale, 'uEtchSparkle2Scale'],
+    [() => store.config.trrEtchSparkle2Intensity, 'uEtchSparkle2Intensity'],
+    [() => store.config.trrEtchSparkle2TiltSensitivity, 'uEtchSparkle2TiltSensitivity'],
+    [() => store.config.trrEtchSparkle2TexMix, 'uEtchSparkle2TexMix'],
+    [() => store.config.trrBaseBrightness, 'uBaseBrightness'],
+    [() => store.config.trrBaseContrast, 'uBaseContrast'],
+    [() => store.config.trrBaseSaturation, 'uBaseSaturation'],
+  ]
+  for (const [getter, uniformName] of trrUniformMap) {
     watchUniform(getter, uniformName)
   }
 

@@ -6,6 +6,7 @@ import doubleRareFrag from '../double-rare.frag'
 import ultraRareFrag from '../ultra-rare.frag'
 import rainbowRareFrag from '../rainbow-rare.frag'
 import reverseHoloFrag from '../reverse-holo.frag'
+import teraRainbowRareFrag from '../tera-rainbow-rare.frag'
 import masterBallFrag from '../master-ball.frag'
 
 /**
@@ -21,6 +22,7 @@ describe('Shader Static Validation', () => {
     'ultra-rare': ultraRareFrag,
     'rainbow-rare': rainbowRareFrag,
     'reverse-holo': reverseHoloFrag,
+    'tera-rainbow-rare': teraRainbowRareFrag,
     'master-ball': masterBallFrag,
   }
 

@@ -51,6 +51,26 @@ export interface AppConfig {
   sirWashOpacity: number
   sirBaseBrightness: number
   sirBaseContrast: number
+  // Tera Rainbow Rare shader parameters
+  trrHoloOpacity: number
+  trrRainbowScale: number
+  trrRainbowShift: number
+  trrMaskThreshold: number
+  trrSparkleIntensity: number
+  trrSparkleRadius: number
+  trrSparkleContrast: number
+  trrSparkleColorShift: number
+  trrEtchSparkleScale: number
+  trrEtchSparkleIntensity: number
+  trrEtchSparkleTiltSensitivity: number
+  trrEtchSparkleTexMix: number
+  trrEtchSparkle2Scale: number
+  trrEtchSparkle2Intensity: number
+  trrEtchSparkle2TiltSensitivity: number
+  trrEtchSparkle2TexMix: number
+  trrBaseBrightness: number
+  trrBaseContrast: number
+  trrBaseSaturation: number
   // Ultra Rare shader parameters
   ultraRareBaseBrightness: number
   ultraRareShineBrightness: number
@@ -165,6 +185,7 @@ export type ShaderStyle =
   | 'illustration-rare'
   | 'regular-holo'
   | 'special-illustration-rare'
+  | 'tera-rainbow-rare'
   | 'double-rare'
   | 'ultra-rare'
   | 'rainbow-rare'
@@ -174,6 +195,7 @@ export type HoloType =
   | 'illustration-rare'
   | 'regular-holo'
   | 'special-illustration-rare'
+  | 'tera-rainbow-rare'
   | 'double-rare'
   | 'ultra-rare'
   | 'rainbow-rare'
@@ -198,5 +220,6 @@ export interface SetCardJson {
   collector_number: { numerator: string; numeric: number }
   rarity: { designation: string }
   foil?: { type: string; mask: string }
+  tags?: string[]
   ext: { tcgl: { longFormID: string } }
 }
