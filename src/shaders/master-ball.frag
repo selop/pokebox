@@ -35,6 +35,8 @@ uniform float uEtchOpacity;
 uniform float uEtchContrast;
 uniform float uEtchStampOpacity;
 uniform float uEtchStampHoloOpacity;
+uniform float uEtchStampHoloScale;
+uniform float uEtchStampMaskThreshold;
 uniform float uBaseBrightness;
 uniform float uBaseContrast;
 
@@ -83,6 +85,7 @@ void main() {
         result = mix(result, blendOverlay(result, rainbow), mask * uCardOpacity * uRainbowOpacity);
     }
 
+    float damp = 1.0;
     if (foil > 0.01) {
         // ── 3. Etch sparkle (foil-driven, top/bottom tilt) ─
         float glitter1 = uHasGlitter > 0.5 ? texture2D(uGlitterTex, uv * uSparkleScale).r : 1.0;
@@ -93,7 +96,7 @@ void main() {
         float tiltAmount = abs(bgY - 0.5) * 2.0;
         float sparkleReveal = smoothstep(uSparkleTiltSensitivity, uSparkleTiltSensitivity + 0.3, tiltAmount);
 
-        result += vec3(sparkle * sparkleReveal) * foil * uSparkleIntensity * uCardOpacity;
+        result += vec3(sparkle * sparkleReveal) * foil * uSparkleIntensity * uCardOpacity * damp;
 
         // ── 3b. Etch sparkle layer 2 (foil-driven, left/right tilt) ─
         float glitter2 = uHasGlitter > 0.5 ? texture2D(uGlitterTex, uv * uSparkle2Scale).r : 1.0;
@@ -104,7 +107,7 @@ void main() {
         float tiltAmountX = abs(uBackground.x - 0.5) * 2.0;
         float sparkle2Reveal = smoothstep(uSparkle2TiltSensitivity, uSparkle2TiltSensitivity + 0.3, tiltAmountX);
 
-        result += vec3(sparkle2 * sparkle2Reveal) * foil * uSparkle2Intensity * uCardOpacity;
+        result += vec3(sparkle2 * sparkle2Reveal) * foil * uSparkle2Intensity * uCardOpacity * damp;
     }
 
 
@@ -113,11 +116,11 @@ void main() {
     float ptrY = uPointer.y;
     float spotDist = length(uv - vec2(ptrX, ptrY));
     // ── 4. Glare (pointer-following radial) ──────────
-    vec3 glareCenter = vec3(0.8);
-    vec3 glareEdge = vec3(0.6); 
+    vec3 glareCenter = vec3(0.6);
+    vec3 glareEdge = vec3(0.3); 
     vec3 glare = mix(glareCenter, glareEdge, smoothstep(0.1, 0.7, spotDist));
     
-    glare = adjustBrightness(glare, 0.7);
+    glare = adjustBrightness(glare, 0.6);
     glare = adjustContrast(glare, uGlareContrast);
     glare = adjustSaturate(glare, uGlareSaturation);
     glare = clamp(glare, 0.0, 1.0);
@@ -129,17 +132,24 @@ void main() {
     result = adjustContrast(result, uBaseContrast);
 
     // ── 6. Etch stamp (darken where foil is dark + rainbow holo) ───
-    if (uHasFoil > 0.25 && (uEtchStampOpacity > 0.01 || uEtchStampHoloOpacity > 0.01)) {
+    if (uHasFoil > 0.5 && (uEtchStampOpacity > 0.01 || uEtchStampHoloOpacity > 0.01)) {
         float rawFoil = texture2D(uFoilTex, uv).r;
         result *= mix(vec3(1.0), vec3(rawFoil), uEtchStampOpacity * uCardOpacity);
 
         // Rainbow holo on etch stamp areas — screen blend brightens the
-        // darkened etch with rainbow; (1-rawFoil) targets the dark etch lines
+        // darkened etch with rainbow; (1-rawFoil) targets the dark etch lines.
+        // Pointer drives both the rainbow phase and a radial spotlight.
         if (uEtchStampHoloOpacity > 0.01) {
             float stampTiltOffset = (0.5 - bgY) * uRainbowShift;
-            float stampRainbowT = uv.y * uRainbowScale + uv.x * 0.5 + stampTiltOffset;
+            float stampPtrOffset = (0.5 - ptrY) * 0.5;
+            float stampRainbowT = uv.y * uEtchStampHoloScale + uv.x * 0.5 + stampTiltOffset + stampPtrOffset;
             vec3 stampRainbow = sunpillarGradient(stampRainbowT);
-            float etchMask = 1.0 - rawFoil;
+            float stampSpotlight = 0.5 + (0.75 - smoothstep(0.1, 0.7, spotDist));
+            stampRainbow *= stampSpotlight;
+            // Only apply where mask is above threshold (white mask = holo area).
+            // smoothstep gives a soft edge to avoid harsh cutoff artifacts.
+            float stampMask = 1.0 - smoothstep(uEtchStampMaskThreshold - 0.05, uEtchStampMaskThreshold + 0.05, foil);
+            float etchMask = (1.0 - rawFoil) * stampMask;
             result = mix(result, blendScreen(result, stampRainbow), etchMask * uEtchStampHoloOpacity * uCardOpacity);
         }
     }
