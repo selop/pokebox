@@ -36,8 +36,8 @@ export function useKeyboardControls() {
         return
     }
 
-    if (store.targetEye.z < store.config.nearPlane + 0.01) {
-      store.targetEye.z = store.config.nearPlane + 0.01
+    if (store.targetEye.z < store.config.nearPlane + 1) {
+      store.targetEye.z = store.config.nearPlane + 1
     }
   }
 

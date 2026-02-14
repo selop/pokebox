@@ -97,7 +97,7 @@ export function useFaceTracking(videoRef: Ref<HTMLVideoElement | null>) {
 
     store.targetEye.x = headXWorld
     store.targetEye.y = headYWorld
-    store.targetEye.z = Math.max(headZWorld, store.config.nearPlane + 0.01)
+    store.targetEye.z = Math.max(headZWorld, store.config.nearPlane + 1)
   }
 
   function stop() {
