@@ -28,6 +28,8 @@ coverage
 
 .eslintcache
 
+.claude/skills/
+
 # Cypress
 /cypress/videos/
 /cypress/screenshots/
