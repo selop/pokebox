@@ -266,10 +266,9 @@ MASK_ARGS=(
 )
 
 ETCH_ARGS=(
-  -modulate 100x0
-  -background black -alpha remove -alpha off
-  -channel RGB -brightness-contrast 63x73
+  -alpha set -background none -channel A -evaluate multiply 8 +channel
   -channel RGB -brightness-contrast 32x52
+  -modulate 100x0
   -colorspace LAB -filter Lanczos2 -distort resize 50% -colorspace sRGB
 )
 

@@ -5,7 +5,9 @@ description: Edit Fragment Shader & Create UI Controls
 
 ## Step-by-step checklist
 
-When adding or modifying a shader uniform with a UI slider, **always update all 6 files in a single pass**:
+When adding or modifying a shader uniform with a UI slider, **always update all 6 files in a single pass**.
+
+When **adding an entirely new shader**, also update `src/types/index.ts` (add to `ShaderStyle`, `HoloType` unions, add config interface, add to `ShaderConfigs`), `src/data/cardCatalog.ts` (map rarity to new holo type), and both test files (`shader-compilation.test.ts`, `shader-validation.test.ts`).
 
 | #   | File                                     | What to do                                                                                                          |
 | --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -32,6 +34,7 @@ When adding or modifying a shader uniform with a UI slider, **always update all 
 | `rainbow-rare.frag`              | `rainbowRare` |
 | `master-ball.frag`               | `masterBall`  |
 | `reverse-holo.frag`              | `reverseHolo` |
+| `shiny-rare.frag`                | `shinyRare`   |
 
 ## Slider definition format
 
@@ -43,7 +46,7 @@ When adding or modifying a shader uniform with a UI slider, **always update all 
 
 ## Common pitfalls
 
-1. **Forgetting `useThreeScene.ts`** — sliders will appear to work on load but won't update in real-time when dragged
+1. **Forgetting `useThreeScene.ts`** — sliders will appear to work on load but won't update in real-time when dragged. `STYLE_UNIFORMS` in `buildCard.ts` only sets **initial** values; the `watchUniform` calls in `useThreeScene.ts` are what make sliders reactive at runtime. Both are required.
 2. **Forgetting `buildCard.ts`** — uniform will be `undefined` at material creation, causing shader errors or zero values
 3. **Using `blendScreen` for additive effects** — screen blend with near-zero values is a no-op; use `result +=` for additive highlights
 4. **`uBackground` range is compressed** — values are mapped to ~0.37–0.63 (see `useThreeScene.ts` lines 272-273), so `abs(bg - 0.5)` maxes at ~0.13, not 0.5. Multiply to normalize if using for thresholds
