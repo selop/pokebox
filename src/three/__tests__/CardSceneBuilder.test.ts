@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { DataTexture, RGBAFormat, Scene, UnsignedByteType } from 'three'
 import { CardSceneBuilder, CARD_X_OFFSETS, CARD_Z_OFFSETS } from '../CardSceneBuilder'
 import { CARD_ASPECT } from '../buildCard'
-import { SINGLE_CARD_SIZE } from '../MergeAnimator'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 import { DEFAULT_CONFIG, DEFAULT_CARD } from '@/data/defaults'
 import type { CardCatalogEntry } from '@/types'
@@ -56,6 +55,7 @@ function makeStore(overrides: Partial<{
     config: { ...DEFAULT_CONFIG },
     cardTransform: { ...DEFAULT_CARD },
     dimensions: DIMS,
+    singleCardSize: 0.85,
     ...overrides,
   } as unknown as MockStore
 }
@@ -66,6 +66,7 @@ function makeLoader(cards: Record<string, { card: ReturnType<typeof makeTex>; ma
     getIriTextures: vi.fn(() => ({ iri7: makeTex(), iri8: makeTex(), iri9: makeTex() })),
     getBirthdayTextures: vi.fn(() => ({ dank: makeTex(), dank2: makeTex() })),
     getGlitterTexture: vi.fn(() => makeTex()),
+    getNoiseTexture: vi.fn(() => makeTex()),
     getCardBackTexture: vi.fn(() => makeTex()),
   } as unknown as MockLoader
 }

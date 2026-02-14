@@ -4,12 +4,14 @@ import { useThreeScene } from '@/composables/useThreeScene'
 import { useKeyboardControls } from '@/composables/useKeyboardControls'
 
 const canvasContainer = ref<HTMLElement | null>(null)
-const { init } = useThreeScene(canvasContainer)
+const { init, gyroscope } = useThreeScene(canvasContainer)
 useKeyboardControls()
 
 onMounted(() => {
   init()
 })
+
+defineExpose({ gyroscope })
 </script>
 
 <template>

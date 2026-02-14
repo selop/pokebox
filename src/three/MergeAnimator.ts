@@ -3,8 +3,6 @@ import { MeshBasicMaterial } from 'three'
 import { CARD_ASPECT } from './buildCard'
 import type { useAppStore } from '@/stores/app'
 
-export const SINGLE_CARD_SIZE = 0.85
-
 const MERGE_LERP_RATE = 0.06
 
 /**
@@ -40,7 +38,7 @@ export class MergeAnimator {
     }
 
     const dims = this.store.dimensions
-    const cardH = dims.screenH * SINGLE_CARD_SIZE
+    const cardH = dims.screenH * this.store.singleCardSize
     const cardW = cardH * CARD_ASPECT
     const zGap = dims.boxD * 0.15
     const xGap = cardW * (meshes.length >= 4 ? 0.25 : 0.5)

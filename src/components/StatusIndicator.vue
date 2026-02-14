@@ -35,4 +35,13 @@ const store = useAppStore()
   background: #00f5d4;
   box-shadow: 0 0 10px #00f5d4;
 }
+
+@media (max-width: 768px) {
+  .status {
+    top: auto;
+    bottom: 56px;
+    right: 16px;
+    font-size: 0.6rem;
+  }
+}
 </style>

@@ -494,4 +494,14 @@ watch(
   text-align: center;
   padding: 20px 0;
 }
+
+@media (max-width: 768px) {
+  .shader-panel {
+    width: calc(100vw - 32px);
+    right: 16px;
+    top: 50px;
+    padding: 16px;
+    max-height: calc(100vh - 66px);
+  }
+}
 </style>

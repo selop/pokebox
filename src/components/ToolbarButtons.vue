@@ -251,4 +251,26 @@ function onCardChange(e: Event) {
   font-size: 0.6rem;
   color: rgba(255, 255, 255, 0.6);
 }
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-wrap: wrap;
+    max-width: calc(100vw - 32px);
+    gap: 4px;
+  }
+
+  .toolbar-sep {
+    display: none;
+  }
+
+  .toolbar-btn,
+  .toolbar-select {
+    padding: 6px 8px;
+    font-size: 0.58rem;
+  }
+
+  .nav-hint {
+    display: none;
+  }
+}
 </style>

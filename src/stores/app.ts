@@ -6,6 +6,7 @@ import type {
   CardTransform,
   DerivedDimensions,
   EyePosition,
+  InputMode,
   RenderMode,
   SceneMode,
   ShaderConfigs,
@@ -40,6 +41,9 @@ export const useAppStore = defineStore('app', () => {
   const currentSetId = ref(SET_REGISTRY[1]!.id)
   const setLoading = ref(false)
 
+  // --- Input mode ---
+  const inputMode = ref<InputMode>('keyboard')
+
   // --- UI state ---
   const isPanelOpen = ref(false)
   const isShaderPanelOpen = ref(false)
@@ -63,6 +67,15 @@ export const useAppStore = defineStore('app', () => {
     const boxD = screenH * config.boxDepthRatio
     const eyeDefaultZ = config.viewingDistanceCm * config.worldScale
     return { screenW, screenH, boxD, eyeDefaultZ }
+  })
+
+  // --- Single-card size (responsive to viewport aspect ratio) ---
+  const singleCardSize = computed(() => {
+    const aspect = viewportWidth.value / viewportHeight.value
+    const cardAspect = 733 / 1024 // width / height — mirrors CARD_ASPECT in buildCard.ts
+    // Cap so card width doesn't exceed 90% of screen width
+    const maxByWidth = (aspect / cardAspect) * 0.9
+    return Math.min(0.85, maxByWidth)
   })
 
   // --- Display card IDs (single = just center, triple = center + neighbors) ---
@@ -180,6 +193,7 @@ export const useAppStore = defineStore('app', () => {
     currentCardId,
     cardDisplayMode,
     sceneSeed,
+    inputMode,
     currentSetId,
     setLoading,
     isPanelOpen,
@@ -194,6 +208,7 @@ export const useAppStore = defineStore('app', () => {
     viewportWidth,
     viewportHeight,
     dimensions,
+    singleCardSize,
     displayCardIds,
     rebuildCounter,
     triggerRebuild,

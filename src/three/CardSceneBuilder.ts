@@ -4,7 +4,6 @@ import type { useAppStore } from '@/stores/app'
 import type { useCardLoader } from '@/composables/useCardLoader'
 import type { ShaderStyle } from '@/types'
 import { buildCardMesh, CARD_ASPECT } from '@/three/buildCard'
-import { SINGLE_CARD_SIZE } from '@/three/MergeAnimator'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 
 // Per-card offsets for staggering (x = fraction of spacing, z = fraction of boxD)
@@ -78,7 +77,7 @@ export class CardSceneBuilder {
     const tex = loader.get(id)
     if (!tex) return meshes
 
-    const cardH = dims.screenH * SINGLE_CARD_SIZE
+    const cardH = dims.screenH * store.singleCardSize
     const cardW = cardH * CARD_ASPECT
     const zGap = dims.boxD * 0.08
     const xGap = cardW * 0.1
@@ -98,7 +97,7 @@ export class CardSceneBuilder {
         tex.foil,
         {
           ...store.config,
-          cardSize: SINGLE_CARD_SIZE,
+          cardSize: store.singleCardSize,
         },
         effectiveShader,
         iriTextures,

@@ -2,6 +2,10 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 
+const props = defineProps<{
+  isMobile: boolean
+}>()
+
 const store = useAppStore()
 
 function onKeydown(e: KeyboardEvent) {
@@ -15,6 +19,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 const emit = defineEmits<{
   enableCamera: []
+  enableGyroscope: []
 }>()
 
 function onSceneChange(value: string) {
@@ -22,7 +27,11 @@ function onSceneChange(value: string) {
 }
 
 function onStart() {
-  emit('enableCamera')
+  if (props.isMobile) {
+    emit('enableGyroscope')
+  } else {
+    emit('enableCamera')
+  }
 }
 
 function onClose() {
@@ -34,7 +43,11 @@ function onClose() {
   <div class="instructions" :class="{ hidden: !store.showInstructions }">
     <button class="close-btn" @click="onClose" aria-label="Close">×</button>
     <h2>Virtual Pokebox Demo</h2>
-    <p>
+    <p v-if="isMobile">
+      This demonstrates off-axis perspective projection. Tilt your phone to move the parallax
+      and see the holographic card effects respond to physical movement.
+    </p>
+    <p v-else>
       This demonstrates off-axis perspective projection. Your webcam tracks your head position and
       renders a 3D box behind the screen. Move your head to peek around the edges — like looking
       through a window into a real box.
@@ -50,8 +63,12 @@ function onClose() {
         <option value="cards">Pokemon Cards</option>
       </select>
     </div>
-    <button class="start-btn" @click="onStart">Enable Camera</button>
-    <p class="keyboard-hint">Or use arrow keys + W/S to test without camera</p>
+    <button class="start-btn" @click="onStart">
+      {{ isMobile ? 'Enable Gyroscope' : 'Enable Camera' }}
+    </button>
+    <p class="keyboard-hint">
+      {{ isMobile ? 'Tilt your phone to move the parallax' : 'Or use arrow keys + W/S to test without camera' }}
+    </p>
   </div>
 </template>
 
@@ -179,5 +196,16 @@ function onClose() {
 .close-btn:hover {
   color: #fff;
   transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .instructions {
+    padding: 28px 24px;
+    max-width: calc(100vw - 32px);
+  }
+
+  .instructions h2 {
+    font-size: 1.2rem;
+  }
 }
 </style>

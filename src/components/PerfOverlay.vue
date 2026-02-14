@@ -120,4 +120,12 @@ const m = perfTracker.metrics
   opacity: 0;
   transform: translateY(6px);
 }
+
+@media (max-width: 768px) {
+  .perf-overlay {
+    bottom: auto;
+    top: 50px;
+    right: 16px;
+  }
+}
 </style>

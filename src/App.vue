@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import ThreeCanvas from './components/ThreeCanvas.vue'
 import VideoFeed from './components/VideoFeed.vue'
 import StatusIndicator from './components/StatusIndicator.vue'
@@ -11,9 +11,19 @@ import InstructionsModal from './components/InstructionsModal.vue'
 import CardSearch from './components/CardSearch.vue'
 import PerfOverlay from './components/PerfOverlay.vue'
 import { useFaceTracking } from './composables/useFaceTracking'
+import { useAppStore } from './stores/app'
+
+const store = useAppStore()
 
 const videoFeedRef = ref<InstanceType<typeof VideoFeed> | null>(null)
 const videoElRef = ref<HTMLVideoElement | null>(null)
+const threeCanvasRef = ref<InstanceType<typeof ThreeCanvas> | null>(null)
+
+const isMobile = computed(
+  () =>
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && !matchMedia('(pointer: fine)').matches),
+)
 
 // Lazy-init face tracking when camera is requested
 let faceTrackingStarted = false
@@ -28,10 +38,22 @@ function onEnableCamera() {
   }
   faceTracking.start()
 }
+
+async function onEnableGyroscope() {
+  const gyroscope = threeCanvasRef.value?.gyroscope
+  if (!gyroscope) return
+  const ok = await gyroscope.start()
+  if (ok) {
+    store.inputMode = 'gyroscope'
+    store.isTrackingActive = true
+    store.statusText = 'Gyroscope active'
+    store.showInstructions = false
+  }
+}
 </script>
 
 <template>
-  <ThreeCanvas />
+  <ThreeCanvas ref="threeCanvasRef" />
   <VideoFeed ref="videoFeedRef" />
   <StatusIndicator />
   <TrackingData />
@@ -40,5 +62,9 @@ function onEnableCamera() {
   <ShaderControlsPanel />
   <CardSearch />
   <PerfOverlay />
-  <InstructionsModal @enable-camera="onEnableCamera" />
+  <InstructionsModal
+    :is-mobile="isMobile"
+    @enable-camera="onEnableCamera"
+    @enable-gyroscope="onEnableGyroscope"
+  />
 </template>

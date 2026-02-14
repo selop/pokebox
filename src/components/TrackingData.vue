@@ -56,4 +56,10 @@ const store = useAppStore()
   color: #fff;
   font-variant-numeric: tabular-nums;
 }
+
+@media (max-width: 768px) {
+  .tracking-data {
+    display: none;
+  }
+}
 </style>

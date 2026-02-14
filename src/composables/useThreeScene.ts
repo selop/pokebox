@@ -21,10 +21,11 @@ import { populateFurniture } from '@/three/buildFurniture'
 import { CARD_ASPECT } from '@/three/buildCard'
 import { mulberry32 } from '@/three/utils'
 import { CardNavigator } from '@/three/CardNavigator'
-import { MergeAnimator, SINGLE_CARD_SIZE } from '@/three/MergeAnimator'
+import { MergeAnimator } from '@/three/MergeAnimator'
 import { CardSceneBuilder, CARD_X_OFFSETS, CARD_Z_OFFSETS } from '@/three/CardSceneBuilder'
 import { useCardLoader } from './useCardLoader'
 import { useMouseTilt } from './useMouseTilt'
+import { useGyroscope } from './useGyroscope'
 import { perfTracker } from '@/utils/perfTracker'
 
 export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
@@ -42,6 +43,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let cardLoader: ReturnType<typeof useCardLoader> | null = null
   let wallTexture: Texture | null = null
   const mouseTilt = useMouseTilt()
+  const gyroscope = useGyroscope()
 
   const FLIP_DURATION = 1.5
   let flipStartTime = -1
@@ -217,8 +219,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Update off-axis camera
     updateOffAxisCamera(store.eyePos.x, store.eyePos.y, store.eyePos.z)
 
-    // Update mouse tilt springs
-    mouseTilt.update(dt)
+    // Update tilt springs (gyroscope or mouse)
+    const tilt = gyroscope.isActive.value ? gyroscope : mouseTilt
+    tilt.update(dt)
 
     // Auto-rotate cards
     const meshes = cardMeshes.value
@@ -237,9 +240,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
     const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
     for (const mesh of meshes) {
-      mesh.rotation.x = mouseTilt.state.rotateX
+      mesh.rotation.x = tilt.state.rotateX
       const explodeRotY = mesh.userData.explodeRotationY || 0
-      mesh.rotation.y = baseRotY + mouseTilt.state.rotateY + explodeRotY + flipAngle
+      mesh.rotation.y = baseRotY + tilt.state.rotateY + explodeRotY + flipAngle
     }
 
     // Update holo shader uniforms for all cards
@@ -261,7 +264,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
       const dims = store.dimensions
       const effectiveSize =
-        store.cardDisplayMode === 'single' ? SINGLE_CARD_SIZE : store.config.cardSize
+        store.cardDisplayMode === 'single' ? store.singleCardSize : store.config.cardSize
       const cardH = dims.screenH * effectiveSize
       const cardW = cardH * CARD_ASPECT
 
@@ -350,6 +353,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       store.config.viewingDistanceCm,
       store.config.boxDepthRatio,
       store.config.cardSize,
+      store.singleCardSize,
       store.cardDisplayMode,
     ],
     () => {
@@ -375,7 +379,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       const cz = -(store.cardTransform.z / 100) * dims.boxD
 
       if (store.cardDisplayMode === 'single') {
-        const cardH = dims.screenH * SINGLE_CARD_SIZE
+        const cardH = dims.screenH * store.singleCardSize
         const cardW = cardH * CARD_ASPECT
         const zGap = dims.boxD * 0.08
         const xGap = cardW * 0.35
@@ -635,6 +639,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     window.removeEventListener('resize', onResize)
     window.removeEventListener('keydown', onKeydown)
     mouseTilt.detach()
+    gyroscope.stop()
     renderer?.dispose()
   }
 
@@ -642,5 +647,5 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     dispose()
   })
 
-  return { init, rebuildScene, dispose }
+  return { init, rebuildScene, dispose, gyroscope }
 }

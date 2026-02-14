@@ -335,4 +335,14 @@ function formatValue(v: number): string {
   border-color: #f72585;
   color: #f72585;
 }
+
+@media (max-width: 768px) {
+  .calibration-panel {
+    width: calc(100vw - 32px);
+    left: 16px;
+    top: 50px;
+    padding: 16px;
+    max-height: calc(100vh - 66px);
+  }
+}
 </style>

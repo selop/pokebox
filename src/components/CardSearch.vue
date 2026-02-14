@@ -156,4 +156,15 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
   font-size: 0.6rem;
   color: #666;
 }
+
+@media (max-width: 768px) {
+  .card-search {
+    width: calc(100vw - 32px);
+    bottom: 16px;
+  }
+
+  .search-dropdown {
+    max-height: 240px;
+  }
+}
 </style>

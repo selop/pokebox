@@ -204,6 +204,7 @@ export interface EyePosition {
   z: number
 }
 
+export type InputMode = 'camera' | 'gyroscope' | 'keyboard'
 export type SceneMode = 'furniture' | 'cards'
 export type RenderMode = 'xray' | 'solid'
 export type CardDisplayMode = 'single' | 'triple'

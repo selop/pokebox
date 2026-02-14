@@ -24,4 +24,10 @@ defineExpose({ videoEl })
   transform: scaleX(-1);
   opacity: 0.85;
 }
+
+@media (max-width: 768px) {
+  .video-feed {
+    display: none;
+  }
+}
 </style>
