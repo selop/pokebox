@@ -21,6 +21,7 @@ import rainbowRareFrag from '@/shaders/rainbow-rare.frag'
 import reverseHoloFrag from '@/shaders/reverse-holo.frag'
 import teraRainbowRareFrag from '@/shaders/tera-rainbow-rare.frag'
 import masterBallFrag from '@/shaders/master-ball.frag'
+import shinyRareFrag from '@/shaders/shiny-rare.frag'
 
 export const CARD_ASPECT = 733 / 1024 // width / height
 
@@ -43,6 +44,7 @@ const FRAGMENT_SHADERS: Record<ShaderStyle, string> = {
   'reverse-holo': reverseHoloFrag,
   'tera-rainbow-rare': teraRainbowRareFrag,
   'master-ball': masterBallFrag,
+  'shiny-rare': shinyRareFrag,
 }
 
 type UniformMapping = [uniformName: string, getValue: (config: AppConfig) => number]
@@ -192,6 +194,51 @@ const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
     ['uGlareSaturation', (c) => c.shaders.masterBall.glareSaturation],
     ['uBaseBrightness', (c) => c.shaders.masterBall.baseBrightness],
     ['uBaseContrast', (c) => c.shaders.masterBall.baseContrast],
+  ],
+  'shiny-rare': [
+    ['uRainbowScale', (c) => c.shaders.shinyRare.rainbowScale],
+    ['uRainbowShift', (c) => c.shaders.shinyRare.rainbowShift],
+    ['uEtchOpacity', (c) => c.shaders.shinyRare.etchOpacity],
+    ['uEtchContrast', (c) => c.shaders.shinyRare.etchContrast],
+    ['uEtchStampOpacity', (c) => c.shaders.shinyRare.etchStampOpacity],
+    ['uEtchStampHoloOpacity', (c) => c.shaders.shinyRare.etchStampHoloOpacity],
+    ['uEtchStampHoloScale', (c) => c.shaders.shinyRare.etchStampHoloScale],
+    ['uEtchStampMaskThreshold', (c) => c.shaders.shinyRare.etchStampMaskThreshold],
+    ['uRainbowOpacity', (c) => c.shaders.shinyRare.rainbowOpacity],
+    ['uGlareOpacity', (c) => c.shaders.shinyRare.glareOpacity],
+    ['uGlareContrast', (c) => c.shaders.shinyRare.glareContrast],
+    ['uGlareSaturation', (c) => c.shaders.shinyRare.glareSaturation],
+    ['uBaseBrightness', (c) => c.shaders.shinyRare.baseBrightness],
+    ['uBaseContrast', (c) => c.shaders.shinyRare.baseContrast],
+    ['uMetalIntensity', (c) => c.shaders.shinyRare.metalIntensity],
+    ['uMetalMaskThreshold', (c) => c.shaders.shinyRare.metalMaskThreshold],
+    ['uMetalTiltSensitivity', (c) => c.shaders.shinyRare.metalTiltSensitivity],
+    ['uMetalTiltThreshold', (c) => c.shaders.shinyRare.metalTiltThreshold],
+    ['uMetalBrightness', (c) => c.shaders.shinyRare.metalBrightness],
+    ['uMetalNoiseScale', (c) => c.shaders.shinyRare.metalNoiseScale],
+    ['uMetalSaturation', (c) => c.shaders.shinyRare.metalSaturation],
+    ['uBarAngle', (c) => c.shaders.shinyRare.barAngle],
+    ['uBarDensity', (c) => c.shaders.shinyRare.barDensity],
+    ['uBarOffsetBgYMult', (c) => c.shaders.shinyRare.barOffsetBgYMult],
+    ['uBarWidth', (c) => c.shaders.shinyRare.barWidth],
+    ['uBarIntensity', (c) => c.shaders.shinyRare.barIntensity],
+    ['uBarHue', (c) => c.shaders.shinyRare.barHue],
+    ['uBarMediumSaturation', (c) => c.shaders.shinyRare.barMediumSaturation],
+    ['uBarMediumLightness', (c) => c.shaders.shinyRare.barMediumLightness],
+    ['uBarBrightSaturation', (c) => c.shaders.shinyRare.barBrightSaturation],
+    ['uBarBrightLightness', (c) => c.shaders.shinyRare.barBrightLightness],
+    ['uBarDensity2', (c) => c.shaders.shinyRare.barDensity2],
+    ['uBar2OffsetBgYMult', (c) => c.shaders.shinyRare.bar2OffsetBgYMult],
+    ['uBarWidth2', (c) => c.shaders.shinyRare.barWidth2],
+    ['uBarIntensity2', (c) => c.shaders.shinyRare.barIntensity2],
+    ['uBarHue2', (c) => c.shaders.shinyRare.barHue2],
+    ['uBarMediumSaturation2', (c) => c.shaders.shinyRare.barMediumSaturation2],
+    ['uBarMediumLightness2', (c) => c.shaders.shinyRare.barMediumLightness2],
+    ['uBarBrightSaturation2', (c) => c.shaders.shinyRare.barBrightSaturation2],
+    ['uBarBrightLightness2', (c) => c.shaders.shinyRare.barBrightLightness2],
+    ['uShine1Contrast', (c) => c.shaders.shinyRare.shine1Contrast],
+    ['uShine1Saturation', (c) => c.shaders.shinyRare.shine1Saturation],
+    ['uShine2Opacity', (c) => c.shaders.shinyRare.shine2Opacity],
   ],
 }
 

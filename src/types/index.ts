@@ -165,6 +165,52 @@ export interface MasterBallConfig {
   baseContrast: number
 }
 
+export interface ShinyRareConfig {
+  rainbowScale: number
+  rainbowShift: number
+  etchOpacity: number
+  etchContrast: number
+  etchStampOpacity: number
+  etchStampHoloOpacity: number
+  etchStampHoloScale: number
+  etchStampMaskThreshold: number
+  rainbowOpacity: number
+  glareOpacity: number
+  glareContrast: number
+  glareSaturation: number
+  baseBrightness: number
+  baseContrast: number
+  metalIntensity: number
+  metalMaskThreshold: number
+  metalTiltSensitivity: number
+  metalTiltThreshold: number
+  metalBrightness: number
+  metalNoiseScale: number
+  metalSaturation: number
+  barAngle: number
+  barDensity: number
+  barOffsetBgYMult: number
+  barWidth: number
+  barIntensity: number
+  barHue: number
+  barMediumSaturation: number
+  barMediumLightness: number
+  barBrightSaturation: number
+  barBrightLightness: number
+  barDensity2: number
+  bar2OffsetBgYMult: number
+  barWidth2: number
+  barIntensity2: number
+  barHue2: number
+  barMediumSaturation2: number
+  barMediumLightness2: number
+  barBrightSaturation2: number
+  barBrightLightness2: number
+  shine1Contrast: number
+  shine1Saturation: number
+  shine2Opacity: number
+}
+
 export interface ShaderConfigs {
   illustrationRare: IllustrationRareConfig
   specialIllustrationRare: SpecialIllustrationRareConfig
@@ -173,6 +219,7 @@ export interface ShaderConfigs {
   rainbowRare: RainbowRareConfig
   reverseHolo: ReverseHoloConfig
   masterBall: MasterBallConfig
+  shinyRare: ShinyRareConfig
 }
 
 export interface AppConfig extends SceneConfig {
@@ -218,6 +265,7 @@ export type ShaderStyle =
   | 'rainbow-rare'
   | 'reverse-holo'
   | 'master-ball'
+  | 'shiny-rare'
 export type HoloType =
   | 'illustration-rare'
   | 'regular-holo'
@@ -228,6 +276,7 @@ export type HoloType =
   | 'rainbow-rare'
   | 'reverse-holo'
   | 'master-ball'
+  | 'shiny-rare'
 
 export interface DerivedDimensions {
   screenW: number

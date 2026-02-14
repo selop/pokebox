@@ -8,6 +8,7 @@ import rainbowRareFrag from '../rainbow-rare.frag'
 import reverseHoloFrag from '../reverse-holo.frag'
 import teraRainbowRareFrag from '../tera-rainbow-rare.frag'
 import masterBallFrag from '../master-ball.frag'
+import shinyRareFrag from '../shiny-rare.frag'
 
 /**
  * Static analysis tests for shader code
@@ -24,6 +25,7 @@ describe('Shader Static Validation', () => {
     'reverse-holo': reverseHoloFrag,
     'tera-rainbow-rare': teraRainbowRareFrag,
     'master-ball': masterBallFrag,
+    'shiny-rare': shinyRareFrag,
   }
 
   Object.entries(shaders).forEach(([name, shaderCode]) => {

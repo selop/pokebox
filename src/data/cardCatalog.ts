@@ -4,6 +4,7 @@ import type { CardCatalogEntry, HoloType, SetCardJson, SetDefinition } from '@/t
 export const SET_REGISTRY: SetDefinition[] = [
   { id: 'sv3-5_en', label: 'SV 151', jsonFile: 'sv3-5_en/sv3-5.en-US.json' },
   { id: 'sv8-5_en', label: 'SV Prismatic', jsonFile: 'sv8-5_en/sv8-5.en-US.json' },
+  { id: 'sv4-5_en', label: 'SV Paldean Fates', jsonFile: 'sv4-5_en/sv-4-5.en-US.json' },
 ]
 
 /** Reactive catalog — updated on set switch. */
@@ -22,6 +23,10 @@ export function mapHoloType(
   if (foilType === 'RAINBOW' && foilMask === 'ETCHED') return 'master-ball'
 
   switch (designation) {
+    case 'SHINY_RARE':
+      return 'shiny-rare'
+    case 'SHINY_ULTRA_RARE':
+      return 'ultra-rare'
     case 'SPECIAL_ILLUSTRATION_RARE':
       if (tags?.includes('TERA')) return 'tera-rainbow-rare'
       return 'special-illustration-rare'

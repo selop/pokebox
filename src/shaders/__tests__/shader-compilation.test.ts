@@ -10,6 +10,7 @@ import rainbowRareFrag from '../rainbow-rare.frag'
 import reverseHoloFrag from '../reverse-holo.frag'
 import teraRainbowRareFrag from '../tera-rainbow-rare.frag'
 import masterBallFrag from '../master-ball.frag'
+import shinyRareFrag from '../shiny-rare.frag'
 
 describe('Shader Compilation', () => {
   /**
@@ -222,5 +223,48 @@ describe('Shader Compilation', () => {
     'uGlareOpacity',
     'uBaseBrightness',
     'uBaseContrast',
+  ])
+
+  testShaderCompilation('shiny-rare', shinyRareFrag, [
+    'uHasFoil',
+    'uHasGlitter',
+    'uGlitterTex',
+    'uPointerFromCenter',
+    'uRainbowScale',
+    'uRainbowShift',
+    'uGlareOpacity',
+    'uBaseBrightness',
+    'uBaseContrast',
+    'uMetalIntensity',
+    'uMetalMaskThreshold',
+    'uMetalTiltSensitivity',
+    'uMetalTiltThreshold',
+    'uMetalBrightness',
+    'uMetalNoiseScale',
+    'uMetalSaturation',
+    'uNoiseTex',
+    'uHasNoise',
+    'uBarAngle',
+    'uBarDensity',
+    'uBarOffsetBgYMult',
+    'uBarWidth',
+    'uBarIntensity',
+    'uBarHue',
+    'uBarMediumSaturation',
+    'uBarMediumLightness',
+    'uBarBrightSaturation',
+    'uBarBrightLightness',
+    'uBarDensity2',
+    'uBar2OffsetBgYMult',
+    'uBarWidth2',
+    'uBarIntensity2',
+    'uBarHue2',
+    'uBarMediumSaturation2',
+    'uBarMediumLightness2',
+    'uBarBrightSaturation2',
+    'uBarBrightLightness2',
+    'uShine1Contrast',
+    'uShine1Saturation',
+    'uShine2Opacity',
   ])
 })

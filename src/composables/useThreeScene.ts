@@ -633,6 +633,56 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     watchUniform(getter, uniformName)
   }
 
+  // Shiny-rare shader parameters
+  const shinyRareUniformMap: [() => number, string][] = [
+    [() => store.config.shaders.shinyRare.rainbowScale, 'uRainbowScale'],
+    [() => store.config.shaders.shinyRare.rainbowShift, 'uRainbowShift'],
+    [() => store.config.shaders.shinyRare.rainbowOpacity, 'uRainbowOpacity'],
+    [() => store.config.shaders.shinyRare.etchOpacity, 'uEtchOpacity'],
+    [() => store.config.shaders.shinyRare.etchContrast, 'uEtchContrast'],
+    [() => store.config.shaders.shinyRare.etchStampOpacity, 'uEtchStampOpacity'],
+    [() => store.config.shaders.shinyRare.etchStampHoloOpacity, 'uEtchStampHoloOpacity'],
+    [() => store.config.shaders.shinyRare.etchStampHoloScale, 'uEtchStampHoloScale'],
+    [() => store.config.shaders.shinyRare.etchStampMaskThreshold, 'uEtchStampMaskThreshold'],
+    [() => store.config.shaders.shinyRare.glareOpacity, 'uGlareOpacity'],
+    [() => store.config.shaders.shinyRare.glareContrast, 'uGlareContrast'],
+    [() => store.config.shaders.shinyRare.glareSaturation, 'uGlareSaturation'],
+    [() => store.config.shaders.shinyRare.baseBrightness, 'uBaseBrightness'],
+    [() => store.config.shaders.shinyRare.baseContrast, 'uBaseContrast'],
+    [() => store.config.shaders.shinyRare.metalIntensity, 'uMetalIntensity'],
+    [() => store.config.shaders.shinyRare.metalMaskThreshold, 'uMetalMaskThreshold'],
+    [() => store.config.shaders.shinyRare.metalTiltSensitivity, 'uMetalTiltSensitivity'],
+    [() => store.config.shaders.shinyRare.metalTiltThreshold, 'uMetalTiltThreshold'],
+    [() => store.config.shaders.shinyRare.metalBrightness, 'uMetalBrightness'],
+    [() => store.config.shaders.shinyRare.metalNoiseScale, 'uMetalNoiseScale'],
+    [() => store.config.shaders.shinyRare.metalSaturation, 'uMetalSaturation'],
+    [() => store.config.shaders.shinyRare.barAngle, 'uBarAngle'],
+    [() => store.config.shaders.shinyRare.barDensity, 'uBarDensity'],
+    [() => store.config.shaders.shinyRare.barOffsetBgYMult, 'uBarOffsetBgYMult'],
+    [() => store.config.shaders.shinyRare.barWidth, 'uBarWidth'],
+    [() => store.config.shaders.shinyRare.barIntensity, 'uBarIntensity'],
+    [() => store.config.shaders.shinyRare.barHue, 'uBarHue'],
+    [() => store.config.shaders.shinyRare.barMediumSaturation, 'uBarMediumSaturation'],
+    [() => store.config.shaders.shinyRare.barMediumLightness, 'uBarMediumLightness'],
+    [() => store.config.shaders.shinyRare.barBrightSaturation, 'uBarBrightSaturation'],
+    [() => store.config.shaders.shinyRare.barBrightLightness, 'uBarBrightLightness'],
+    [() => store.config.shaders.shinyRare.barDensity2, 'uBarDensity2'],
+    [() => store.config.shaders.shinyRare.bar2OffsetBgYMult, 'uBar2OffsetBgYMult'],
+    [() => store.config.shaders.shinyRare.barWidth2, 'uBarWidth2'],
+    [() => store.config.shaders.shinyRare.barIntensity2, 'uBarIntensity2'],
+    [() => store.config.shaders.shinyRare.barHue2, 'uBarHue2'],
+    [() => store.config.shaders.shinyRare.barMediumSaturation2, 'uBarMediumSaturation2'],
+    [() => store.config.shaders.shinyRare.barMediumLightness2, 'uBarMediumLightness2'],
+    [() => store.config.shaders.shinyRare.barBrightSaturation2, 'uBarBrightSaturation2'],
+    [() => store.config.shaders.shinyRare.barBrightLightness2, 'uBarBrightLightness2'],
+    [() => store.config.shaders.shinyRare.shine1Contrast, 'uShine1Contrast'],
+    [() => store.config.shaders.shinyRare.shine1Saturation, 'uShine1Saturation'],
+    [() => store.config.shaders.shinyRare.shine2Opacity, 'uShine2Opacity'],
+  ]
+  for (const [getter, uniformName] of shinyRareUniformMap) {
+    watchUniform(getter, uniformName)
+  }
+
   function dispose() {
     if (animationId !== null) cancelAnimationFrame(animationId)
     if (slideshowInterval) clearInterval(slideshowInterval)
