@@ -33,15 +33,17 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
    - **Special Illustration Rare** (`special-illustration-rare.frag`): Diagonal rainbow + fine line texture + three iridescent texture layers (iri-7, iri-8, iri-9) with pointer-responsive shifts, matching special illustration rare cards with silvery holographic finish
    - **Double Rare** (`double-rare.frag`): Birthday holo with grain texture, dual dank textures, and tilt-revealed sparkles
    - **Ultra Rare** (`ultra-rare.frag`): Metallic sparkle with fully parameterized brightness/contrast/bar controls
+   - **Rainbow Rare** (`rainbow-rare.frag`): Metallic sparkle spotlight + iridescent glitter from iri-7 texture, for etched SV_ULTRA double rares
+   - **Tera Rainbow Rare** (`tera-rainbow-rare.frag`): Rainbow holo overlay + metallic sparkle spotlight + dual etch sparkle layers, for Tera-tagged special illustration rares
    - **Master Ball** (`master-ball.frag`): Etch foil composite on card base for RAINBOW+ETCHED masterball holo cards
-   - **Parallax** (`parallax.frag`): Alternative shader with parallax offset effect (global toggle)
-   - **Metallic** (`metallic.frag`): Brushed metal with anisotropic reflection (global toggle)
    - Shared GLSL functions live in `src/shaders/common/` and are included via `#include` (resolved by `vite-plugin-glsl`):
      - `common/blend.glsl` — blend modes (overlay, screen, color-dodge, hard-light, etc.)
      - `common/filters.glsl` — adjustBrightness, adjustContrast, adjustSaturate
      - `common/rainbow.glsl` — getSunColor, sunpillarGradient (6-hue rainbow palette)
+     - `common/base-adjust.glsl` — unified brightness/contrast/saturation adjustment helper
+     - `common/holo-shine.glsl` — classic TCG holo shine with mask-driven rainbow overlay at configurable angles
    - All holo types use the same base uniforms and are masked by grayscale textures (`uMaskTex`, `uFoilTex`)
-   - Special illustration rare additionally uses three iridescent textures loaded from `public/img/151/iri-{7,8,9}.webp`
+   - Special illustration rare, ultra rare, and rainbow rare use iridescent textures loaded from `public/img/151/iri-{7,8,9}.webp`
 
 ### Shader selection logic
 
@@ -50,11 +52,12 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 | Rarity | Foil Type | Shader |
 |--------|-----------|--------|
 | any | `RAINBOW` + `ETCHED` mask | `master-ball` |
+| `SPECIAL_ILLUSTRATION_RARE` | `TERA` tag | `tera-rainbow-rare` |
 | `SPECIAL_ILLUSTRATION_RARE` / `HYPER_RARE` | any | `special-illustration-rare` |
 | `ULTRA_RARE` / `ACE_SPEC_RARE` | any | `ultra-rare` |
 | `DOUBLE_RARE` | `SUN_PILLAR` | `double-rare` |
-| `DOUBLE_RARE` | other | `illustration-rare` |
-| `ILLUSTRATION_RARE` | any | `illustration-rare` |
+| `DOUBLE_RARE` | `SV_ULTRA` + `ETCHED` mask | `rainbow-rare` |
+| `DOUBLE_RARE` / `ILLUSTRATION_RARE` | other | `illustration-rare` |
 | `RARE` | `SV_HOLO` | `regular-holo` |
 | `COMMON` / `UNCOMMON` / `RARE` (other) | any | `reverse-holo` |
 
@@ -64,10 +67,10 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode, set switching)                                                       |
 | `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`     |
-| `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `geometryHelpers`, `utils` |
+| `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `CardSceneBuilder` (card scene orchestration), `CardNavigator` (card navigation), `MergeAnimator` (card transitions), `geometryHelpers`, `utils` |
 | `src/shaders/`      | GLSL fragment shaders; shared functions in `common/` subdir, included via `#include` (resolved by `vite-plugin-glsl`)                                        |
 | `src/data/`         | `cardCatalog.ts` (JSON-driven card catalog with `SET_REGISTRY` and `loadSetCatalog()`), `defaults.ts` (initial config values)                                |
-| `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `SetDefinition`, `SetCardJson`, `CardTransform`, `EyePosition`, `DerivedDimensions`                  |
+| `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `SetDefinition`, `SetCardJson`, `CardTransform`, `EyePosition`, `DerivedDimensions`, `HoloType`, `ShaderStyle` |
 | `docs/`             | `CARD-SETS.md` (card set system documentation, adding new sets), `SHADER-TESTING.md`                                                                         |
 
 ### Card catalog & texture system
@@ -89,6 +92,14 @@ Each `CardCatalogEntry` defines texture paths and shader type (relative to `publ
 
 See `docs/CARD-SETS.md` for detailed documentation on the set system, JSON format, and how to add new sets.
 
+### Asset processing scripts
+
+Shell scripts for downloading and processing card set assets:
+
+- **`process-set.sh`** — Main unified pipeline: downloads card images, upscales with Real-ESRGAN, and produces the `public/<setId>/` directory structure (fronts, holo-masks, etch-foils) expected by `cardCatalog.ts`
+- **`scrape-cards.sh`** — Downloads foil/etch images from JSON metadata (legacy, superseded by `process-set.sh`)
+- **`scrape-fronts.sh`** — Downloads front card images from JSON metadata (legacy, superseded by `process-set.sh`)
+
 ### State-driven rebuilds
 
 The scene watches store properties and rebuilds accordingly:
@@ -102,6 +113,7 @@ The scene watches store properties and rebuilds accordingly:
 - Path alias `@/` → `src/`
 - Shader uniforms prefixed `u` (e.g. `uCardTex`), varyings prefixed `v` (e.g. `vUv`)
 - Use `shallowRef` for Three.js objects to avoid deep reactivity overhead
+- `worldScale` is `1.0` — scene units equal centimeters
 - Card assets live under `public/<setId>/{fronts,holo-masks,etch-foils}/` (one directory per set)
 - Seeded PRNG (`mulberry32`) for reproducible procedural layouts
 - MediaPipe is dynamically imported to avoid bundling the full library
