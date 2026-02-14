@@ -8,13 +8,19 @@ import type {
   EyePosition,
   RenderMode,
   SceneMode,
+  ShaderConfigs,
 } from '@/types'
 import { CARD_DEFAULTS, DEFAULT_CARD, DEFAULT_CONFIG } from '@/data/defaults'
 import { CARD_CATALOG, loadSetCatalog, SET_REGISTRY } from '@/data/cardCatalog'
 
 export const useAppStore = defineStore('app', () => {
   // --- Config (reactive, slider-bound) ---
-  const config = reactive<AppConfig>({ ...DEFAULT_CONFIG })
+  const config = reactive<AppConfig>({
+    ...DEFAULT_CONFIG,
+    shaders: Object.fromEntries(
+      Object.entries(DEFAULT_CONFIG.shaders).map(([k, v]) => [k, { ...v }]),
+    ) as ShaderConfigs,
+  })
 
   // --- Card transform ---
   const cardTransform = reactive<CardTransform>({ ...DEFAULT_CARD })
@@ -88,7 +94,11 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function resetDefaults() {
-    Object.assign(config, DEFAULT_CONFIG)
+    const { shaders, ...sceneDefaults } = DEFAULT_CONFIG
+    Object.assign(config, sceneDefaults)
+    for (const key of Object.keys(shaders) as (keyof ShaderConfigs)[]) {
+      Object.assign(config.shaders[key], shaders[key])
+    }
     Object.assign(cardTransform, {
       x: CARD_DEFAULTS.x,
       y: CARD_DEFAULTS.y,

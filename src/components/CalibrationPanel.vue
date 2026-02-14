@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
+import type { SceneConfig } from '@/types'
 
 const store = useAppStore()
 
-function onConfigSlider(key: keyof typeof store.config, value: string, rebuild: boolean) {
-  ;(store.config as Record<string, number>)[key] = parseFloat(value)
+function onConfigSlider(key: keyof SceneConfig, value: string, rebuild: boolean) {
+  ;(store.config[key] as number) = parseFloat(value)
   if (rebuild) store.triggerRebuild()
 }
 

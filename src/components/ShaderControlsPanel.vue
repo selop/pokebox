@@ -2,14 +2,17 @@
 import { ref, computed, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { CARD_CATALOG } from '@/data/cardCatalog'
-import type { AppConfig } from '@/types'
+import type { ShaderConfigs } from '@/types'
 
 const store = useAppStore()
 const copied = ref(false)
 
+type ShaderKey = keyof ShaderConfigs
+type PropKey<K extends ShaderKey> = keyof ShaderConfigs[K] & string
+
 type SliderDef = {
   label: string
-  key: keyof AppConfig
+  prop: string
   min: number
   max: number
   step: number
@@ -22,376 +25,259 @@ function isSubsection(item: SectionItem): item is { subsection: string } {
   return 'subsection' in item
 }
 
-function displayValue(slider: SliderDef): string {
-  const v = store.config[slider.key] as number
-  if (slider.suffix === '%') return `${Math.round(v * 100)}%`
-  const formatted = v % 1 === 0 ? String(v) : v.toFixed(2)
-  return slider.suffix ? `${formatted}${slider.suffix}` : formatted
-}
-
 type ShaderSection = {
   id: string
+  shaderKey: ShaderKey
   title: string
   icon: string
   items: SectionItem[]
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getShaderObj(section: ShaderSection): Record<string, number> {
+  return store.config.shaders[section.shaderKey] as any
+}
+
+function displayValue(section: ShaderSection, slider: SliderDef): string {
+  const v = getShaderObj(section)[slider.prop]!
+  if (slider.suffix === '%') return `${Math.round(v * 100)}%`
+  const formatted = v % 1 === 0 ? String(v) : v.toFixed(2)
+  return slider.suffix ? `${formatted}${slider.suffix}` : formatted
+}
+
+function getSliderValue(section: ShaderSection, slider: SliderDef): number {
+  return getShaderObj(section)[slider.prop]!
+}
+
+function onShaderSlider(section: ShaderSection, prop: string, value: string) {
+  getShaderObj(section)[prop] = parseFloat(value)
+}
+
 const sections: ShaderSection[] = [
   {
     id: 'illustration-rare',
+    shaderKey: 'illustrationRare',
     title: 'Illustration Rare',
     icon: '✨',
     items: [
-      { label: 'Rainbow scale', key: 'illustRareRainbowScale', min: 0.5, max: 5, step: 0.1 },
-      { label: 'Bar angle', key: 'illustRareBarAngle', min: 0, max: 360, step: 1, suffix: '°' },
-      { label: 'Bar density', key: 'illustRareBarDensity', min: 0.5, max: 10, step: 0.1 },
+      { label: 'Rainbow scale', prop: 'rainbowScale', min: 0.5, max: 5, step: 0.1 },
+      { label: 'Bar angle', prop: 'barAngle', min: 0, max: 360, step: 1, suffix: '°' },
+      { label: 'Bar density', prop: 'barDensity', min: 0.5, max: 10, step: 0.1 },
       { subsection: 'Layer 1 Bars' },
-      { label: 'Offset Y', key: 'illustRareBarOffsetBgYMult', min: -5, max: 5, step: 0.05 },
-      { label: 'Width', key: 'illustRareBarWidth', min: 0.1, max: 10, step: 0.05 },
-      { label: 'Intensity', key: 'illustRareBarIntensity', min: 0, max: 20, step: 0.05 },
-      { label: 'Hue', key: 'illustRareBarHue', min: 0, max: 360, step: 1, suffix: '°' },
-      {
-        label: 'Med sat',
-        key: 'illustRareBarMediumSaturation',
-        min: 0,
-        max: 1,
-        step: 0.01,
-        suffix: '%',
-      },
-      {
-        label: 'Med light',
-        key: 'illustRareBarMediumLightness',
-        min: 0,
-        max: 1,
-        step: 0.01,
-        suffix: '%',
-      },
-      {
-        label: 'Bright sat',
-        key: 'illustRareBarBrightSaturation',
-        min: 0,
-        max: 1,
-        step: 0.01,
-        suffix: '%',
-      },
-      {
-        label: 'Bright light',
-        key: 'illustRareBarBrightLightness',
-        min: 0,
-        max: 1,
-        step: 0.01,
-        suffix: '%',
-      },
+      { label: 'Offset Y', prop: 'barOffsetBgYMult', min: -5, max: 5, step: 0.05 },
+      { label: 'Width', prop: 'barWidth', min: 0.1, max: 10, step: 0.05 },
+      { label: 'Intensity', prop: 'barIntensity', min: 0, max: 20, step: 0.05 },
+      { label: 'Hue', prop: 'barHue', min: 0, max: 360, step: 1, suffix: '°' },
+      { label: 'Med sat', prop: 'barMediumSaturation', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Med light', prop: 'barMediumLightness', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Bright sat', prop: 'barBrightSaturation', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Bright light', prop: 'barBrightLightness', min: 0, max: 1, step: 0.01, suffix: '%' },
       { subsection: 'Layer 2 Bars' },
-      { label: 'Density', key: 'illustRareBarDensity2', min: 0.5, max: 10, step: 0.1 },
-      { label: 'Offset Y', key: 'illustRareBar2OffsetBgYMult', min: -5, max: 5, step: 0.05 },
-      { label: 'Width', key: 'illustRareBarWidth2', min: 0.1, max: 10, step: 0.05 },
-      { label: 'Intensity', key: 'illustRareBarIntensity2', min: 0, max: 20, step: 0.05 },
-      { label: 'Hue', key: 'illustRareBarHue2', min: 0, max: 360, step: 1, suffix: '°' },
-      {
-        label: 'Med sat',
-        key: 'illustRareBarMediumSaturation2',
-        min: 0,
-        max: 1,
-        step: 0.01,
-        suffix: '%',
-      },
-      {
-        label: 'Med light',
-        key: 'illustRareBarMediumLightness2',
-        min: 0,
-        max: 1,
-        step: 0.01,
-        suffix: '%',
-      },
-      {
-        label: 'Bright sat',
-        key: 'illustRareBarBrightSaturation2',
-        min: 0,
-        max: 1,
-        step: 0.01,
-        suffix: '%',
-      },
-      {
-        label: 'Bright light',
-        key: 'illustRareBarBrightLightness2',
-        min: 0,
-        max: 1,
-        step: 0.01,
-        suffix: '%',
-      },
+      { label: 'Density', prop: 'barDensity2', min: 0.5, max: 10, step: 0.1 },
+      { label: 'Offset Y', prop: 'bar2OffsetBgYMult', min: -5, max: 5, step: 0.05 },
+      { label: 'Width', prop: 'barWidth2', min: 0.1, max: 10, step: 0.05 },
+      { label: 'Intensity', prop: 'barIntensity2', min: 0, max: 20, step: 0.05 },
+      { label: 'Hue', prop: 'barHue2', min: 0, max: 360, step: 1, suffix: '°' },
+      { label: 'Med sat', prop: 'barMediumSaturation2', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Med light', prop: 'barMediumLightness2', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Bright sat', prop: 'barBrightSaturation2', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Bright light', prop: 'barBrightLightness2', min: 0, max: 1, step: 0.01, suffix: '%' },
       { subsection: 'Shine & Glare' },
-      { label: 'Shine contrast', key: 'illustRareShine1Contrast', min: 1, max: 5, step: 0.05 },
-      { label: 'Shine saturate', key: 'illustRareShine1Saturation', min: 0, max: 2, step: 0.05 },
-      { label: 'Shine 2 opacity', key: 'illustRareShine2Opacity', min: 0, max: 1, step: 0.05 },
-      { label: 'Glare opacity', key: 'illustRareGlareOpacity', min: 0, max: 1, step: 0.05 },
+      { label: 'Shine contrast', prop: 'shine1Contrast', min: 1, max: 5, step: 0.05 },
+      { label: 'Shine saturate', prop: 'shine1Saturation', min: 0, max: 2, step: 0.05 },
+      { label: 'Shine 2 opacity', prop: 'shine2Opacity', min: 0, max: 1, step: 0.05 },
+      { label: 'Glare opacity', prop: 'glareOpacity', min: 0, max: 1, step: 0.05 },
     ],
   },
   {
     id: 'special-illustration-rare',
+    shaderKey: 'specialIllustrationRare',
     title: 'Special IR',
     icon: '✦',
     items: [
       { subsection: 'Shine (Rainbow)' },
-      { label: 'Angle', key: 'sirShineAngle', min: 0, max: 360, step: 1, suffix: '°' },
-      { label: 'Frequency', key: 'sirShineFrequency', min: 1, max: 30, step: 0.5 },
-      { label: 'Brightness', key: 'sirShineBrightness', min: 0, max: 3, step: 0.05 },
-      { label: 'Contrast', key: 'sirShineContrast', min: 0, max: 3, step: 0.05 },
-      { label: 'Saturation', key: 'sirShineSaturation', min: 0, max: 5, step: 0.05 },
+      { label: 'Angle', prop: 'shineAngle', min: 0, max: 360, step: 1, suffix: '°' },
+      { label: 'Frequency', prop: 'shineFrequency', min: 1, max: 30, step: 0.5 },
+      { label: 'Brightness', prop: 'shineBrightness', min: 0, max: 3, step: 0.05 },
+      { label: 'Contrast', prop: 'shineContrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Saturation', prop: 'shineSaturation', min: 0, max: 5, step: 0.05 },
       { subsection: 'Color Wash' },
-      { label: 'Scale', key: 'sirWashScale', min: 0.1, max: 5, step: 0.1 },
-      { label: 'Tilt sensitivity', key: 'sirWashTiltSensitivity', min: 0, max: 10, step: 0.1 },
-      { label: 'Saturation', key: 'sirWashSaturation', min: 0, max: 5, step: 0.05 },
-      { label: 'Contrast', key: 'sirWashContrast', min: 0, max: 3, step: 0.05 },
-      { label: 'Opacity', key: 'sirWashOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Scale', prop: 'washScale', min: 0.1, max: 5, step: 0.1 },
+      { label: 'Tilt sensitivity', prop: 'washTiltSensitivity', min: 0, max: 10, step: 0.1 },
+      { label: 'Saturation', prop: 'washSaturation', min: 0, max: 5, step: 0.05 },
+      { label: 'Contrast', prop: 'washContrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Opacity', prop: 'washOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
       { subsection: 'Glitter' },
-      { label: 'Contrast', key: 'sirGlitterContrast', min: 0, max: 5, step: 0.1 },
-      { label: 'Saturation', key: 'sirGlitterSaturation', min: 0, max: 5, step: 0.1 },
+      { label: 'Contrast', prop: 'glitterContrast', min: 0, max: 5, step: 0.1 },
+      { label: 'Saturation', prop: 'glitterSaturation', min: 0, max: 5, step: 0.1 },
       { subsection: 'Overall' },
-      { label: 'Base brightness', key: 'sirBaseBrightness', min: 0, max: 2, step: 0.05 },
-      { label: 'Base contrast', key: 'sirBaseContrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Base brightness', prop: 'baseBrightness', min: 0, max: 2, step: 0.05 },
+      { label: 'Base contrast', prop: 'baseContrast', min: 0, max: 3, step: 0.05 },
     ],
   },
   {
     id: 'tera-rainbow-rare',
+    shaderKey: 'teraRainbowRare',
     title: 'Tera Rainbow',
     icon: '💠',
     items: [
       { subsection: 'Holo Shine' },
-      {
-        label: 'Holo opacity',
-        key: 'trrHoloOpacity',
-        min: 0,
-        max: 1,
-        step: 0.05,
-        suffix: '%',
-      },
-      { label: 'Rainbow scale', key: 'trrRainbowScale', min: 0.1, max: 5, step: 0.1 },
-      { label: 'Rainbow shift', key: 'trrRainbowShift', min: 0, max: 10, step: 0.1 },
-      { label: 'Mask threshold', key: 'trrMaskThreshold', min: 0, max: 1, step: 0.01 },
+      { label: 'Holo opacity', prop: 'holoOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Rainbow scale', prop: 'rainbowScale', min: 0.1, max: 5, step: 0.1 },
+      { label: 'Rainbow shift', prop: 'rainbowShift', min: 0, max: 10, step: 0.1 },
+      { label: 'Mask threshold', prop: 'maskThreshold', min: 0, max: 1, step: 0.01 },
       { subsection: 'Metallic Sparkle' },
-      { label: 'Intensity', key: 'trrSparkleIntensity', min: 0, max: 2, step: 0.05 },
-      { label: 'Radius', key: 'trrSparkleRadius', min: 0.1, max: 3, step: 0.1 },
-      { label: 'Contrast', key: 'trrSparkleContrast', min: 0, max: 5, step: 0.1 },
-      { label: 'Color shift', key: 'trrSparkleColorShift', min: 0, max: 10, step: 0.1 },
+      { label: 'Intensity', prop: 'sparkleIntensity', min: 0, max: 2, step: 0.05 },
+      { label: 'Radius', prop: 'sparkleRadius', min: 0.1, max: 3, step: 0.1 },
+      { label: 'Contrast', prop: 'sparkleContrast', min: 0, max: 5, step: 0.1 },
+      { label: 'Color shift', prop: 'sparkleColorShift', min: 0, max: 10, step: 0.1 },
       { subsection: 'Etch Sparkle (T/B)' },
-      { label: 'Scale', key: 'trrEtchSparkleScale', min: 0.5, max: 10, step: 0.1 },
-      { label: 'Intensity', key: 'trrEtchSparkleIntensity', min: 0, max: 2, step: 0.05 },
-      { label: 'Tilt sensitivity', key: 'trrEtchSparkleTiltSensitivity', min: 0.0, max: 1.0, step: 0.01 },
-      { label: 'Tex mix', key: 'trrEtchSparkleTexMix', min: 0, max: 1, step: 0.05 },
+      { label: 'Scale', prop: 'etchSparkleScale', min: 0.5, max: 10, step: 0.1 },
+      { label: 'Intensity', prop: 'etchSparkleIntensity', min: 0, max: 2, step: 0.05 },
+      { label: 'Tilt sensitivity', prop: 'etchSparkleTiltSensitivity', min: 0.0, max: 1.0, step: 0.01 },
+      { label: 'Tex mix', prop: 'etchSparkleTexMix', min: 0, max: 1, step: 0.05 },
       { subsection: 'Etch Sparkle (L/R)' },
-      { label: 'Scale', key: 'trrEtchSparkle2Scale', min: 0.5, max: 10, step: 0.1 },
-      { label: 'Intensity', key: 'trrEtchSparkle2Intensity', min: 0, max: 2, step: 0.05 },
-      { label: 'Tilt sensitivity', key: 'trrEtchSparkle2TiltSensitivity', min: 0, max: 1, step: 0.01 },
-      { label: 'Tex mix', key: 'trrEtchSparkle2TexMix', min: 0, max: 1, step: 0.05 },
+      { label: 'Scale', prop: 'etchSparkle2Scale', min: 0.5, max: 10, step: 0.1 },
+      { label: 'Intensity', prop: 'etchSparkle2Intensity', min: 0, max: 2, step: 0.05 },
+      { label: 'Tilt sensitivity', prop: 'etchSparkle2TiltSensitivity', min: 0, max: 1, step: 0.01 },
+      { label: 'Tex mix', prop: 'etchSparkle2TexMix', min: 0, max: 1, step: 0.05 },
       { subsection: 'Base' },
-      { label: 'Brightness', key: 'trrBaseBrightness', min: 0, max: 3, step: 0.05 },
-      { label: 'Contrast', key: 'trrBaseContrast', min: 0, max: 3, step: 0.05 },
-      { label: 'Saturation', key: 'trrBaseSaturation', min: 0, max: 3, step: 0.05 },
+      { label: 'Brightness', prop: 'baseBrightness', min: 0, max: 3, step: 0.05 },
+      { label: 'Contrast', prop: 'baseContrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Saturation', prop: 'baseSaturation', min: 0, max: 3, step: 0.05 },
     ],
   },
   {
     id: 'ultra-rare',
+    shaderKey: 'ultraRare',
     title: 'Ultra Rare',
     icon: '💎',
     items: [
-      { label: 'Base brightness', key: 'ultraRareBaseBrightness', min: 0, max: 3, step: 0.05 },
+      { label: 'Base brightness', prop: 'baseBrightness', min: 0, max: 3, step: 0.05 },
       { subsection: 'Shine Before' },
-      { label: 'Brightness', key: 'ultraRareShineBrightness', min: 0, max: 1, step: 0.005 },
-      { label: 'Contrast', key: 'ultraRareShineContrast', min: 0, max: 1, step: 0.005 },
-      { label: 'Saturation', key: 'ultraRareShineSaturation', min: 0, max: 20, step: 0.1 },
+      { label: 'Brightness', prop: 'shineBrightness', min: 0, max: 1, step: 0.005 },
+      { label: 'Contrast', prop: 'shineContrast', min: 0, max: 1, step: 0.005 },
+      { label: 'Saturation', prop: 'shineSaturation', min: 0, max: 20, step: 0.1 },
       { subsection: 'Shine After' },
-      { label: 'Brightness', key: 'ultraRareShineAfterBrightness', min: 0, max: 3, step: 0.05 },
-      { label: 'Contrast', key: 'ultraRareShineAfterContrast', min: 0, max: 3, step: 0.05 },
-      { label: 'Saturation', key: 'ultraRareShineAfterSaturation', min: 0, max: 3, step: 0.05 },
+      { label: 'Brightness', prop: 'shineAfterBrightness', min: 0, max: 3, step: 0.05 },
+      { label: 'Contrast', prop: 'shineAfterContrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Saturation', prop: 'shineAfterSaturation', min: 0, max: 3, step: 0.05 },
       { subsection: 'Shine Base' },
-      { label: 'Brightness', key: 'ultraRareShineBaseBrightness', min: 0, max: 5, step: 0.05 },
-      { label: 'Contrast', key: 'ultraRareShineBaseContrast', min: 0, max: 3, step: 0.05 },
-      { label: 'Saturation', key: 'ultraRareShineBaseSaturation', min: 0, max: 5, step: 0.05 },
+      { label: 'Brightness', prop: 'shineBaseBrightness', min: 0, max: 5, step: 0.05 },
+      { label: 'Contrast', prop: 'shineBaseContrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Saturation', prop: 'shineBaseSaturation', min: 0, max: 5, step: 0.05 },
       { subsection: 'Glare' },
-      { label: 'Glare contrast', key: 'ultraRareGlareContrast', min: 0, max: 5, step: 0.05 },
-      { label: 'Glare2 contrast', key: 'ultraRareGlare2Contrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Glare contrast', prop: 'glareContrast', min: 0, max: 5, step: 0.05 },
+      { label: 'Glare2 contrast', prop: 'glare2Contrast', min: 0, max: 3, step: 0.05 },
       { subsection: 'Gradients' },
-      {
-        label: 'Rotate delta',
-        key: 'ultraRareRotateDelta',
-        min: 0,
-        max: 360,
-        step: 0.5,
-        suffix: '°',
-      },
-      { label: 'Angle1 mult', key: 'ultraRareAngle1Mult', min: -5, max: 5, step: 0.05 },
-      { label: 'Angle2 mult', key: 'ultraRareAngle2Mult', min: -5, max: 5, step: 0.05 },
-      { label: 'BgY mult 1', key: 'ultraRareBgYMult1', min: -5, max: 5, step: 0.05 },
-      { label: 'BgY mult 2', key: 'ultraRareBgYMult2', min: -5, max: 5, step: 0.05 },
+      { label: 'Rotate delta', prop: 'rotateDelta', min: 0, max: 360, step: 0.5, suffix: '°' },
+      { label: 'Angle1 mult', prop: 'angle1Mult', min: -5, max: 5, step: 0.05 },
+      { label: 'Angle2 mult', prop: 'angle2Mult', min: -5, max: 5, step: 0.05 },
+      { label: 'BgY mult 1', prop: 'bgYMult1', min: -5, max: 5, step: 0.05 },
+      { label: 'BgY mult 2', prop: 'bgYMult2', min: -5, max: 5, step: 0.05 },
       { subsection: 'Diagonal Bars' },
-      { label: 'Bar angle', key: 'ultraRareBarAngle', min: 0, max: 360, step: 0.5, suffix: '°' },
-      { label: 'Offset BgX mult', key: 'ultraRareBarOffsetBgXMult', min: -5, max: 5, step: 0.05 },
-      { label: 'Offset BgY mult', key: 'ultraRareBarOffsetBgYMult', min: -5, max: 5, step: 0.05 },
-      { label: 'Bar frequency', key: 'ultraRareBarFrequency', min: 0.5, max: 20, step: 0.1 },
-      {
-        label: 'Intensity start 1',
-        key: 'ultraRareBarIntensityStart1',
-        min: 0,
-        max: 1,
-        step: 0.01,
-      },
-      { label: 'Intensity end 1', key: 'ultraRareBarIntensityEnd1', min: 0, max: 1, step: 0.01 },
-      {
-        label: 'Intensity start 2',
-        key: 'ultraRareBarIntensityStart2',
-        min: 0,
-        max: 1,
-        step: 0.01,
-      },
-      { label: 'Intensity end 2', key: 'ultraRareBarIntensityEnd2', min: 0, max: 1, step: 0.01 },
+      { label: 'Bar angle', prop: 'barAngle', min: 0, max: 360, step: 0.5, suffix: '°' },
+      { label: 'Offset BgX mult', prop: 'barOffsetBgXMult', min: -5, max: 5, step: 0.05 },
+      { label: 'Offset BgY mult', prop: 'barOffsetBgYMult', min: -5, max: 5, step: 0.05 },
+      { label: 'Bar frequency', prop: 'barFrequency', min: 0.5, max: 20, step: 0.1 },
+      { label: 'Intensity start 1', prop: 'barIntensityStart1', min: 0, max: 1, step: 0.01 },
+      { label: 'Intensity end 1', prop: 'barIntensityEnd1', min: 0, max: 1, step: 0.01 },
+      { label: 'Intensity start 2', prop: 'barIntensityStart2', min: 0, max: 1, step: 0.01 },
+      { label: 'Intensity end 2', prop: 'barIntensityEnd2', min: 0, max: 1, step: 0.01 },
       { subsection: 'Metallic Sparkle' },
-      { label: 'Intensity', key: 'ultraRareSparkleIntensity', min: 0, max: 3, step: 0.05 },
-      { label: 'Radius', key: 'ultraRareSparkleRadius', min: 0.1, max: 1.5, step: 0.05 },
-      { label: 'Contrast', key: 'ultraRareSparkleContrast', min: 0.5, max: 10, step: 0.1 },
-      { label: 'Color shift', key: 'ultraRareSparkleColorShift', min: 0, max: 5, step: 0.1 },
+      { label: 'Intensity', prop: 'sparkleIntensity', min: 0, max: 3, step: 0.05 },
+      { label: 'Radius', prop: 'sparkleRadius', min: 0.1, max: 1.5, step: 0.05 },
+      { label: 'Contrast', prop: 'sparkleContrast', min: 0.5, max: 10, step: 0.1 },
+      { label: 'Color shift', prop: 'sparkleColorShift', min: 0, max: 5, step: 0.1 },
     ],
   },
   {
     id: 'rainbow-rare',
+    shaderKey: 'rainbowRare',
     title: 'Rainbow Rare',
     icon: '🌈',
     items: [
-      { label: 'Base brightness', key: 'rainbowRareBaseBrightness', min: 0, max: 3, step: 0.05 },
+      { label: 'Base brightness', prop: 'baseBrightness', min: 0, max: 3, step: 0.05 },
       { subsection: 'Shine' },
-      { label: 'Brightness', key: 'rainbowRareShineBrightness', min: 0, max: 1, step: 0.005 },
-      { label: 'Contrast', key: 'rainbowRareShineContrast', min: 0, max: 1, step: 0.005 },
-      { label: 'Saturation', key: 'rainbowRareShineSaturation', min: 0, max: 20, step: 0.1 },
+      { label: 'Brightness', prop: 'shineBrightness', min: 0, max: 1, step: 0.005 },
+      { label: 'Contrast', prop: 'shineContrast', min: 0, max: 1, step: 0.005 },
+      { label: 'Saturation', prop: 'shineSaturation', min: 0, max: 20, step: 0.1 },
       { subsection: 'Shine Base' },
-      { label: 'Brightness', key: 'rainbowRareShineBaseBrightness', min: 0, max: 5, step: 0.05 },
-      { label: 'Contrast', key: 'rainbowRareShineBaseContrast', min: 0, max: 3, step: 0.05 },
-      { label: 'Saturation', key: 'rainbowRareShineBaseSaturation', min: 0, max: 5, step: 0.05 },
+      { label: 'Brightness', prop: 'shineBaseBrightness', min: 0, max: 5, step: 0.05 },
+      { label: 'Contrast', prop: 'shineBaseContrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Saturation', prop: 'shineBaseSaturation', min: 0, max: 5, step: 0.05 },
       { subsection: 'Glare' },
-      { label: 'Glare contrast', key: 'rainbowRareGlareContrast', min: 0, max: 5, step: 0.05 },
-      { label: 'Glare2 contrast', key: 'rainbowRareGlare2Contrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Glare contrast', prop: 'glareContrast', min: 0, max: 5, step: 0.05 },
+      { label: 'Glare2 contrast', prop: 'glare2Contrast', min: 0, max: 3, step: 0.05 },
       { subsection: 'Metallic Sparkle' },
-      { label: 'Intensity', key: 'rainbowRareSparkleIntensity', min: 0, max: 3, step: 0.05 },
-      { label: 'Radius', key: 'rainbowRareSparkleRadius', min: 0.1, max: 1.5, step: 0.05 },
-      { label: 'Contrast', key: 'rainbowRareSparkleContrast', min: 0.5, max: 10, step: 0.1 },
-      { label: 'Color shift', key: 'rainbowRareSparkleColorShift', min: 0, max: 5, step: 0.1 },
+      { label: 'Intensity', prop: 'sparkleIntensity', min: 0, max: 3, step: 0.05 },
+      { label: 'Radius', prop: 'sparkleRadius', min: 0.1, max: 1.5, step: 0.05 },
+      { label: 'Contrast', prop: 'sparkleContrast', min: 0.5, max: 10, step: 0.1 },
+      { label: 'Color shift', prop: 'sparkleColorShift', min: 0, max: 5, step: 0.1 },
     ],
   },
   {
     id: 'master-ball',
+    shaderKey: 'masterBall',
     title: 'Master Ball',
     icon: '🔮',
     items: [
       { subsection: 'Rainbow' },
-      { label: 'Scale', key: 'masterBallRainbowScale', min: 0.1, max: 5, step: 0.1 },
-      { label: 'Tilt shift', key: 'masterBallRainbowShift', min: 0, max: 10, step: 0.1 },
-      {
-        label: 'Opacity',
-        key: 'masterBallRainbowOpacity',
-        min: 0,
-        max: 1,
-        step: 0.05,
-        suffix: '%',
-      },
+      { label: 'Scale', prop: 'rainbowScale', min: 0.1, max: 5, step: 0.1 },
+      { label: 'Tilt shift', prop: 'rainbowShift', min: 0, max: 10, step: 0.1 },
+      { label: 'Opacity', prop: 'rainbowOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
       { subsection: 'Etch' },
-      { label: 'Opacity', key: 'masterBallEtchOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
-      { label: 'Contrast', key: 'masterBallEtchContrast', min: 0.1, max: 5, step: 0.1 },
-      { label: 'Stamp', key: 'masterBallEtchStampOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
-      {
-        label: 'Stamp holo',
-        key: 'masterBallEtchStampHoloOpacity',
-        min: 0,
-        max: 1,
-        step: 0.05,
-        suffix: '%',
-      },
-      { label: 'Stamp holo scale', key: 'masterBallEtchStampHoloScale', min: 0.1, max: 5, step: 0.1 },
-      {
-        label: 'Stamp mask threshold',
-        key: 'masterBallEtchStampMaskThreshold',
-        min: 0,
-        max: 1,
-        step: 0.01,
-      },
+      { label: 'Opacity', prop: 'etchOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Contrast', prop: 'etchContrast', min: 0.1, max: 5, step: 0.1 },
+      { label: 'Stamp', prop: 'etchStampOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Stamp holo', prop: 'etchStampHoloOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Stamp holo scale', prop: 'etchStampHoloScale', min: 0.1, max: 5, step: 0.1 },
+      { label: 'Stamp mask threshold', prop: 'etchStampMaskThreshold', min: 0, max: 1, step: 0.01 },
       { subsection: 'Sparkle (T/B)' },
-      { label: 'Scale', key: 'masterBallSparkleScale', min: 0.5, max: 5.0, step: 0.05 },
-      {
-        label: 'Intensity',
-        key: 'masterBallSparkleIntensity',
-        min: 0,
-        max: 1,
-        step: 0.05,
-        suffix: '%',
-      },
-      {
-        label: 'Tilt sensitivity',
-        key: 'masterBallSparkleTiltSensitivity',
-        min: 0,
-        max: 0.5,
-        step: 0.01,
-      },
-      { label: 'Tex mix', key: 'masterBallSparkleTexMix', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Scale', prop: 'sparkleScale', min: 0.5, max: 5.0, step: 0.05 },
+      { label: 'Intensity', prop: 'sparkleIntensity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Tilt sensitivity', prop: 'sparkleTiltSensitivity', min: 0, max: 0.5, step: 0.01 },
+      { label: 'Tex mix', prop: 'sparkleTexMix', min: 0, max: 1, step: 0.05, suffix: '%' },
       { subsection: 'Sparkle 2 (L/R)' },
-      { label: 'Scale', key: 'masterBallSparkle2Scale', min: 0.5, max: 5.0, step: 0.05 },
-      {
-        label: 'Intensity',
-        key: 'masterBallSparkle2Intensity',
-        min: 0,
-        max: 1,
-        step: 0.05,
-        suffix: '%',
-      },
-      {
-        label: 'Tilt sensitivity',
-        key: 'masterBallSparkle2TiltSensitivity',
-        min: 0,
-        max: 0.5,
-        step: 0.01,
-      },
-      { label: 'Tex mix', key: 'masterBallSparkle2TexMix', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Scale', prop: 'sparkle2Scale', min: 0.5, max: 5.0, step: 0.05 },
+      { label: 'Intensity', prop: 'sparkle2Intensity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Tilt sensitivity', prop: 'sparkle2TiltSensitivity', min: 0, max: 0.5, step: 0.01 },
+      { label: 'Tex mix', prop: 'sparkle2TexMix', min: 0, max: 1, step: 0.05, suffix: '%' },
       { subsection: 'Glare' },
-      { label: 'Opacity', key: 'masterBallGlareOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
-      { label: 'Contrast', key: 'masterBallGlareContrast', min: 0, max: 5, step: 0.05 },
-      { label: 'Saturation', key: 'masterBallGlareSaturation', min: 0, max: 3, step: 0.05 },
+      { label: 'Opacity', prop: 'glareOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Contrast', prop: 'glareContrast', min: 0, max: 5, step: 0.05 },
+      { label: 'Saturation', prop: 'glareSaturation', min: 0, max: 3, step: 0.05 },
       { subsection: 'Overall' },
-      { label: 'Brightness', key: 'masterBallBaseBrightness', min: 0.5, max: 2, step: 0.05 },
-      { label: 'Contrast', key: 'masterBallBaseContrast', min: 0.5, max: 3, step: 0.05 },
+      { label: 'Brightness', prop: 'baseBrightness', min: 0.5, max: 2, step: 0.05 },
+      { label: 'Contrast', prop: 'baseContrast', min: 0.5, max: 3, step: 0.05 },
     ],
   },
   {
     id: 'reverse-holo',
+    shaderKey: 'reverseHolo',
     title: 'Reverse Holo',
     icon: '🪞',
     items: [
       { subsection: 'Shine' },
-      { label: 'Intensity', key: 'reverseHoloShineIntensity', min: 0, max: 5, step: 0.05 },
-      { label: 'Opacity', key: 'reverseHoloShineOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { label: 'Intensity', prop: 'shineIntensity', min: 0, max: 5, step: 0.05 },
+      { label: 'Opacity', prop: 'shineOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
       { subsection: 'Shine Color' },
-      { label: 'Red', key: 'reverseHoloShineColorR', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Green', key: 'reverseHoloShineColorG', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Blue', key: 'reverseHoloShineColorB', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Red', prop: 'shineColorR', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Green', prop: 'shineColorG', min: 0, max: 1, step: 0.01, suffix: '%' },
+      { label: 'Blue', prop: 'shineColorB', min: 0, max: 1, step: 0.01, suffix: '%' },
       { subsection: 'Specular' },
-      { label: 'Radius', key: 'reverseHoloSpecularRadius', min: 0.1, max: 1.5, step: 0.05 },
-      { label: 'Power', key: 'reverseHoloSpecularPower', min: 0.5, max: 8, step: 0.1 },
+      { label: 'Radius', prop: 'specularRadius', min: 0.1, max: 1.5, step: 0.05 },
+      { label: 'Power', prop: 'specularPower', min: 0.5, max: 8, step: 0.1 },
       { subsection: 'Overall' },
-      {
-        label: 'Base brightness',
-        key: 'reverseHoloBaseBrightness',
-        min: 0.4,
-        max: 1.0,
-        step: 0.05,
-      },
-      { label: 'Base contrast', key: 'reverseHoloBaseContrast', min: 0, max: 5, step: 0.05 },
-      { label: 'Base saturation', key: 'reverseHoloBaseSaturation', min: 0, max: 3, step: 0.05 },
+      { label: 'Base brightness', prop: 'baseBrightness', min: 0.4, max: 1.0, step: 0.05 },
+      { label: 'Base contrast', prop: 'baseContrast', min: 0, max: 5, step: 0.05 },
+      { label: 'Base saturation', prop: 'baseSaturation', min: 0, max: 3, step: 0.05 },
     ],
   },
 ]
 
-function sliderKeys(section: ShaderSection): (keyof AppConfig)[] {
-  return section.items.filter((item): item is SliderDef => !isSubsection(item)).map((s) => s.key)
-}
-
-function onShaderSlider(key: keyof AppConfig, value: string) {
-  ;(store.config as Record<string, number>)[key] = parseFloat(value)
+function sliderProps(section: ShaderSection): string[] {
+  return section.items.filter((item): item is SliderDef => !isSubsection(item)).map((s) => s.prop)
 }
 
 function formatNum(v: number): string {
@@ -399,8 +285,9 @@ function formatNum(v: number): string {
 }
 
 async function copyDefaults(section: ShaderSection) {
-  const keys = sliderKeys(section)
-  const lines = keys.map((k) => `  ${k}: ${formatNum(store.config[k] as number)},`)
+  const props = sliderProps(section)
+  const shaderConfig = getShaderObj(section)
+  const lines = props.map((p) => `  ${p}: ${formatNum(shaderConfig[p]!)},`)
   await navigator.clipboard.writeText(lines.join('\n'))
   copied.value = true
   setTimeout(() => (copied.value = false), 2000)
@@ -445,10 +332,10 @@ watch(
               :min="item.min"
               :max="item.max"
               :step="item.step"
-              :value="store.config[item.key]"
-              @input="onShaderSlider(item.key, ($event.target as HTMLInputElement).value)"
+              :value="getSliderValue(activeSection, item)"
+              @input="onShaderSlider(activeSection, item.prop, ($event.target as HTMLInputElement).value)"
             />
-            <span class="shader-value">{{ displayValue(item) }}</span>
+            <span class="shader-value">{{ displayValue(activeSection, item) }}</span>
           </div>
         </div>
       </template>

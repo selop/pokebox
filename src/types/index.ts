@@ -1,4 +1,4 @@
-export interface AppConfig {
+export interface SceneConfig {
   screenWidthCm: number
   screenHeightCm: number
   viewingDistanceCm: number
@@ -11,146 +11,172 @@ export interface AppConfig {
   cardSpinSpeed: number
   nearPlane: number
   farPlane: number
-  // Illustration Rare shader parameters
-  illustRareRainbowScale: number
-  illustRareBarAngle: number
-  illustRareBarDensity: number
-  illustRareBarDensity2: number
-  illustRareBarOffsetBgYMult: number
-  illustRareBar2OffsetBgYMult: number
-  illustRareBarWidth: number
-  illustRareBarWidth2: number
-  illustRareBarIntensity: number
-  illustRareBarHue: number
-  illustRareBarMediumSaturation: number
-  illustRareBarMediumLightness: number
-  illustRareBarBrightSaturation: number
-  illustRareBarBrightLightness: number
-  illustRareBarIntensity2: number
-  illustRareBarHue2: number
-  illustRareBarMediumSaturation2: number
-  illustRareBarMediumLightness2: number
-  illustRareBarBrightSaturation2: number
-  illustRareBarBrightLightness2: number
-  illustRareShine1Contrast: number
-  illustRareShine1Saturation: number
-  illustRareShine2Opacity: number
-  illustRareGlareOpacity: number
-  // Special Illustration Rare shader parameters
-  sirShineAngle: number
-  sirShineFrequency: number
-  sirShineBrightness: number
-  sirShineContrast: number
-  sirShineSaturation: number
-  sirGlitterContrast: number
-  sirGlitterSaturation: number
-  sirWashScale: number
-  sirWashTiltSensitivity: number
-  sirWashSaturation: number
-  sirWashContrast: number
-  sirWashOpacity: number
-  sirBaseBrightness: number
-  sirBaseContrast: number
-  // Tera Rainbow Rare shader parameters
-  trrHoloOpacity: number
-  trrRainbowScale: number
-  trrRainbowShift: number
-  trrMaskThreshold: number
-  trrSparkleIntensity: number
-  trrSparkleRadius: number
-  trrSparkleContrast: number
-  trrSparkleColorShift: number
-  trrEtchSparkleScale: number
-  trrEtchSparkleIntensity: number
-  trrEtchSparkleTiltSensitivity: number
-  trrEtchSparkleTexMix: number
-  trrEtchSparkle2Scale: number
-  trrEtchSparkle2Intensity: number
-  trrEtchSparkle2TiltSensitivity: number
-  trrEtchSparkle2TexMix: number
-  trrBaseBrightness: number
-  trrBaseContrast: number
-  trrBaseSaturation: number
-  // Ultra Rare shader parameters
-  ultraRareBaseBrightness: number
-  ultraRareShineBrightness: number
-  ultraRareShineContrast: number
-  ultraRareShineSaturation: number
-  ultraRareShineAfterBrightness: number
-  ultraRareShineAfterContrast: number
-  ultraRareShineAfterSaturation: number
-  ultraRareShineBaseBrightness: number
-  ultraRareShineBaseContrast: number
-  ultraRareShineBaseSaturation: number
-  ultraRareGlareContrast: number
-  ultraRareGlare2Contrast: number
-  ultraRareRotateDelta: number
-  ultraRareAngle1Mult: number
-  ultraRareAngle2Mult: number
-  ultraRareBgYMult1: number
-  ultraRareBgYMult2: number
-  // Ultra Rare diagonal bar parameters
-  ultraRareBarAngle: number
-  ultraRareBarOffsetBgXMult: number
-  ultraRareBarOffsetBgYMult: number
-  ultraRareBarFrequency: number
-  ultraRareBarIntensityStart1: number
-  ultraRareBarIntensityEnd1: number
-  ultraRareBarIntensityStart2: number
-  ultraRareBarIntensityEnd2: number
-  // Ultra Rare metallic sparkle parameters
-  ultraRareSparkleIntensity: number
-  ultraRareSparkleRadius: number
-  ultraRareSparkleContrast: number
-  ultraRareSparkleColorShift: number
-  // Rainbow Rare shader parameters
-  rainbowRareBaseBrightness: number
-  rainbowRareShineBrightness: number
-  rainbowRareShineContrast: number
-  rainbowRareShineSaturation: number
-  rainbowRareShineBaseBrightness: number
-  rainbowRareShineBaseContrast: number
-  rainbowRareShineBaseSaturation: number
-  rainbowRareGlareContrast: number
-  rainbowRareGlare2Contrast: number
-  rainbowRareSparkleIntensity: number
-  rainbowRareSparkleRadius: number
-  rainbowRareSparkleContrast: number
-  rainbowRareSparkleColorShift: number
-  // Reverse Holo shader parameters
-  reverseHoloShineIntensity: number
-  reverseHoloShineOpacity: number
-  reverseHoloShineColorR: number
-  reverseHoloShineColorG: number
-  reverseHoloShineColorB: number
-  reverseHoloSpecularRadius: number
-  reverseHoloSpecularPower: number
-  reverseHoloBaseBrightness: number
-  reverseHoloBaseContrast: number
-  reverseHoloBaseSaturation: number
-  // Master Ball shader parameters
-  masterBallRainbowScale: number
-  masterBallRainbowShift: number
-  masterBallSparkleScale: number
-  masterBallSparkleIntensity: number
-  masterBallSparkleTiltSensitivity: number
-  masterBallSparkleTexMix: number
-  masterBallSparkle2Scale: number
-  masterBallSparkle2Intensity: number
-  masterBallSparkle2TiltSensitivity: number
-  masterBallSparkle2TexMix: number
-  masterBallEtchOpacity: number
-  masterBallEtchContrast: number
-  masterBallEtchStampOpacity: number
-  masterBallEtchStampHoloOpacity: number
-  masterBallEtchStampHoloScale: number
-  masterBallEtchStampMaskThreshold: number
-  masterBallRainbowOpacity: number
-  masterBallGlareOpacity: number
-  masterBallGlareContrast: number
-  masterBallGlareSaturation: number
-  masterBallBaseBrightness: number
-  masterBallBaseContrast: number
+}
+
+export interface IllustrationRareConfig {
+  rainbowScale: number
+  barAngle: number
+  barDensity: number
+  barDensity2: number
+  barOffsetBgYMult: number
+  bar2OffsetBgYMult: number
+  barWidth: number
+  barWidth2: number
+  barIntensity: number
+  barHue: number
+  barMediumSaturation: number
+  barMediumLightness: number
+  barBrightSaturation: number
+  barBrightLightness: number
+  barIntensity2: number
+  barHue2: number
+  barMediumSaturation2: number
+  barMediumLightness2: number
+  barBrightSaturation2: number
+  barBrightLightness2: number
+  shine1Contrast: number
+  shine1Saturation: number
+  shine2Opacity: number
+  glareOpacity: number
+}
+
+export interface SpecialIllustrationRareConfig {
+  shineAngle: number
+  shineFrequency: number
+  shineBrightness: number
+  shineContrast: number
+  shineSaturation: number
+  glitterContrast: number
+  glitterSaturation: number
+  washScale: number
+  washTiltSensitivity: number
+  washSaturation: number
+  washContrast: number
+  washOpacity: number
+  baseBrightness: number
+  baseContrast: number
+}
+
+export interface TeraRainbowRareConfig {
+  holoOpacity: number
+  rainbowScale: number
+  rainbowShift: number
+  maskThreshold: number
+  sparkleIntensity: number
+  sparkleRadius: number
+  sparkleContrast: number
+  sparkleColorShift: number
+  etchSparkleScale: number
+  etchSparkleIntensity: number
+  etchSparkleTiltSensitivity: number
+  etchSparkleTexMix: number
+  etchSparkle2Scale: number
+  etchSparkle2Intensity: number
+  etchSparkle2TiltSensitivity: number
+  etchSparkle2TexMix: number
+  baseBrightness: number
+  baseContrast: number
+  baseSaturation: number
+}
+
+export interface UltraRareConfig {
+  baseBrightness: number
+  shineBrightness: number
+  shineContrast: number
+  shineSaturation: number
+  shineAfterBrightness: number
+  shineAfterContrast: number
+  shineAfterSaturation: number
+  shineBaseBrightness: number
+  shineBaseContrast: number
+  shineBaseSaturation: number
+  glareContrast: number
+  glare2Contrast: number
+  rotateDelta: number
+  angle1Mult: number
+  angle2Mult: number
+  bgYMult1: number
+  bgYMult2: number
+  barAngle: number
+  barOffsetBgXMult: number
+  barOffsetBgYMult: number
+  barFrequency: number
+  barIntensityStart1: number
+  barIntensityEnd1: number
+  barIntensityStart2: number
+  barIntensityEnd2: number
+  sparkleIntensity: number
+  sparkleRadius: number
+  sparkleContrast: number
+  sparkleColorShift: number
+}
+
+export interface RainbowRareConfig {
+  baseBrightness: number
+  shineBrightness: number
+  shineContrast: number
+  shineSaturation: number
+  shineBaseBrightness: number
+  shineBaseContrast: number
+  shineBaseSaturation: number
+  glareContrast: number
+  glare2Contrast: number
+  sparkleIntensity: number
+  sparkleRadius: number
+  sparkleContrast: number
+  sparkleColorShift: number
+}
+
+export interface ReverseHoloConfig {
+  shineIntensity: number
+  shineOpacity: number
+  shineColorR: number
+  shineColorG: number
+  shineColorB: number
+  specularRadius: number
+  specularPower: number
+  baseBrightness: number
+  baseContrast: number
+  baseSaturation: number
+}
+
+export interface MasterBallConfig {
+  rainbowScale: number
+  rainbowShift: number
+  sparkleScale: number
+  sparkleIntensity: number
+  sparkleTiltSensitivity: number
+  sparkleTexMix: number
+  sparkle2Scale: number
+  sparkle2Intensity: number
+  sparkle2TiltSensitivity: number
+  sparkle2TexMix: number
+  etchOpacity: number
+  etchContrast: number
+  etchStampOpacity: number
+  etchStampHoloOpacity: number
+  etchStampHoloScale: number
+  etchStampMaskThreshold: number
+  rainbowOpacity: number
+  glareOpacity: number
+  glareContrast: number
+  glareSaturation: number
+  baseBrightness: number
+  baseContrast: number
+}
+
+export interface ShaderConfigs {
+  illustrationRare: IllustrationRareConfig
+  specialIllustrationRare: SpecialIllustrationRareConfig
+  teraRainbowRare: TeraRainbowRareConfig
+  ultraRare: UltraRareConfig
+  rainbowRare: RainbowRareConfig
+  reverseHolo: ReverseHoloConfig
+  masterBall: MasterBallConfig
+}
+
+export interface AppConfig extends SceneConfig {
+  shaders: ShaderConfigs
 }
 
 export interface CardTransform {
