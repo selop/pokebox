@@ -61,18 +61,17 @@ public/cards/holo-masks/
 
 refs/
 
-public/sv3-5_en/etch-foils/
+public/*/etch-foils/
 
-public/sv3-5_en/fronts/
+public/*/fronts/
 
-public/sv3-5_en/holo-masks/
+public/*/holo-masks/
+public/*/*.json
 
-public/sv8-5_en/fronts/
+public/sv4-5_en/.staging/etches/
 
-public/sv8-5_en/holo-masks/
+public/sv4-5_en/.staging/foils/
 
-public/sv8-5_en/etch-foils/
+public/sv4-5_en/.staging/fronts/
 
-public/sv3-5_en/sv3-5.en-US.json
-
-public/sv8-5_en/sv8-5.en-US.json
+public/sv4-5_en/.staging/fronts_up/
