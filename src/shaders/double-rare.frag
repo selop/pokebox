@@ -186,6 +186,27 @@ void main() {
     // CSS: opacity: calc(var(--card-opacity) * var(--pointer-from-center) * 0.66)
     float glare2Opacity = uCardOpacity * uPointerFromCenter * 0.66;
 
+// TODO: add this with 2x and offset which travels in the opposite direction
+// // ── 3. Metal tilt holo (mask-driven, pure-white only) ─
+//     float metalMask = smoothstep(uMetalMaskThreshold - 0.05, uMetalMaskThreshold + 0.05, mask);
+//     if (metalMask > 0.01) {
+//         // Tilt-driven sweep: band position tracks head movement
+//         float tiltY = (bgY - 0.5) * uMetalTiltSensitivity;
+//         float tiltX = (uBackground.x - 0.5) * uMetalTiltSensitivity * 0.7;
+//         float sweepPos = uv.y + tiltY + uv.x * tiltX;
+
+//         // Bright metallic band that sweeps across the surface
+//         float band = smoothstep(0.0, uMetalBandWidth, sweepPos)
+//                    * (1.0 - smoothstep(uMetalBandWidth, uMetalBandWidth * 2.0, sweepPos));
+
+//         // Rainbow color from sweep position
+//         vec3 metalRainbow = sunpillarGradient(sweepPos * uMetalRainbowScale + tiltY * 2.0);
+//         metalRainbow = adjustBrightness(metalRainbow, uMetalBrightness);
+
+//         // Screen blend for bright metallic highlights
+//         result = mix(result, blendScreen(result, metalRainbow), band * metalMask * uMetalIntensity * uCardOpacity);
+//     }
+
     // ── Compose layers ───────────────────────────────
     vec3 base = cardColor.rgb;
     vec3 result = base;

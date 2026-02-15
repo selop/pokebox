@@ -39,12 +39,19 @@ uniform float uEtchStampHoloScale;
 uniform float uEtchStampMaskThreshold;
 uniform float uBaseBrightness;
 uniform float uBaseContrast;
+// Mosaic effect
+uniform float uMosaicScale;
+uniform float uMosaicIntensity;
+uniform float uMosaicSaturation;
+uniform float uMosaicContrast;
+uniform float uMosaicFoilThreshold;
 
 varying vec2 vUv;
 
 #include "common/blend.glsl"
 #include "common/filters.glsl"
 #include "common/rainbow.glsl"
+#include "common/voronoi.glsl"
 
 void main() {
     vec2 uv = vUv;
@@ -76,11 +83,28 @@ void main() {
         result = mix(result, result + vec3(foil), uEtchOpacity * uCardOpacity * 0.2);
     }
 
-    // ── 2. Rainbow holo (mask-driven) ────────────────
+    // ── 2. Rainbow holo (mask-driven, with mosaic) ───
     if (mask > 0.01) {
         float tiltOffset = (0.5 - bgY) * uRainbowShift;
-        float rainbowT = uv.y * uRainbowScale + tiltOffset + sin(uTime * 0.3) * 0.5;
+        float rainbowT_base = uv.y * uRainbowScale + tiltOffset + sin(uTime * 0.3) * 0.5;
+
+        // Mosaic only on darker mask areas, gated by foil threshold
+        float mosaicMask = 1.0 - smoothstep(0.8, 1.0, mask);
+        float foilGate = smoothstep(uMosaicFoilThreshold - 0.05, uMosaicFoilThreshold + 0.05, foil);
+        float effectiveMosaic = uMosaicIntensity * mosaicMask * foilGate;
+
+        // Voronoi mosaic: per-cell random phase offset
+        vec2 vr = voronoiCell(uv * uMosaicScale);
+        float cellPhaseOffset = cellHash(vr.x) * 6.0;
+        float rainbowT_mosaic = rainbowT_base + cellPhaseOffset;
+
+        float rainbowT = mix(rainbowT_base, rainbowT_mosaic, effectiveMosaic);
         vec3 rainbow = sunpillarGradient(rainbowT);
+
+        // Mosaic saturation and contrast
+        rainbow = adjustSaturate(rainbow, uMosaicSaturation);
+        rainbow = adjustContrast(rainbow, uMosaicContrast);
+        rainbow = clamp(rainbow, 0.0, 1.0);
 
         result = mix(result, blendOverlay(result, rainbow), mask * uCardOpacity * uRainbowOpacity);
     }

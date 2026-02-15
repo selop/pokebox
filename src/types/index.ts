@@ -158,6 +158,11 @@ export interface MasterBallConfig {
   etchStampHoloScale: number
   etchStampMaskThreshold: number
   rainbowOpacity: number
+  mosaicScale: number
+  mosaicIntensity: number
+  mosaicSaturation: number
+  mosaicContrast: number
+  mosaicFoilThreshold: number
   glareOpacity: number
   glareContrast: number
   glareSaturation: number
@@ -211,10 +216,19 @@ export interface ShinyRareConfig {
   shine2Opacity: number
 }
 
+export interface TeraShinyRareConfig extends TeraRainbowRareConfig {
+  mosaicScale: number
+  mosaicIntensity: number
+  mosaicSaturation: number
+  mosaicContrast: number
+  mosaicFoilThreshold: number
+}
+
 export interface ShaderConfigs {
   illustrationRare: IllustrationRareConfig
   specialIllustrationRare: SpecialIllustrationRareConfig
   teraRainbowRare: TeraRainbowRareConfig
+  teraShinyRare: TeraShinyRareConfig
   ultraRare: UltraRareConfig
   rainbowRare: RainbowRareConfig
   reverseHolo: ReverseHoloConfig
@@ -260,6 +274,7 @@ export type ShaderStyle =
   | 'regular-holo'
   | 'special-illustration-rare'
   | 'tera-rainbow-rare'
+  | 'tera-shiny-rare'
   | 'double-rare'
   | 'ultra-rare'
   | 'rainbow-rare'
@@ -271,6 +286,7 @@ export type HoloType =
   | 'regular-holo'
   | 'special-illustration-rare'
   | 'tera-rainbow-rare'
+  | 'tera-shiny-rare'
   | 'double-rare'
   | 'ultra-rare'
   | 'rainbow-rare'

@@ -28,7 +28,12 @@ export function mapHoloType(
     case 'SHINY_ULTRA_RARE':
       return 'ultra-rare'
     case 'SPECIAL_ILLUSTRATION_RARE':
-      if (tags?.includes('TERA')) return 'tera-rainbow-rare'
+      if (tags?.includes('TERA') && tags?.includes('SHINY')) {
+        return 'tera-shiny-rare'
+      }
+      if (tags?.includes('TERA')) {
+        return 'tera-rainbow-rare'
+      }
       return 'special-illustration-rare'
     case 'ULTRA_RARE':
       return 'ultra-rare'

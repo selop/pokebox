@@ -21,6 +21,7 @@ import rainbowRareFrag from '@/shaders/rainbow-rare.frag'
 import reverseHoloFrag from '@/shaders/reverse-holo.frag'
 import teraRainbowRareFrag from '@/shaders/tera-rainbow-rare.frag'
 import masterBallFrag from '@/shaders/master-ball.frag'
+import teraShinyRareFrag from '@/shaders/tera-shiny-rare.frag'
 import shinyRareFrag from '@/shaders/shiny-rare.frag'
 
 export const CARD_ASPECT = 733 / 1024 // width / height
@@ -43,6 +44,7 @@ const FRAGMENT_SHADERS: Record<ShaderStyle, string> = {
   'rainbow-rare': rainbowRareFrag,
   'reverse-holo': reverseHoloFrag,
   'tera-rainbow-rare': teraRainbowRareFrag,
+  'tera-shiny-rare': teraShinyRareFrag,
   'master-ball': masterBallFrag,
   'shiny-rare': shinyRareFrag,
 }
@@ -112,6 +114,32 @@ const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
     ['uBaseBrightness', (c) => c.shaders.teraRainbowRare.baseBrightness],
     ['uBaseContrast', (c) => c.shaders.teraRainbowRare.baseContrast],
     ['uBaseSaturation', (c) => c.shaders.teraRainbowRare.baseSaturation],
+  ],
+  'tera-shiny-rare': [
+    ['uHoloOpacity', (c) => c.shaders.teraShinyRare.holoOpacity],
+    ['uRainbowScale', (c) => c.shaders.teraShinyRare.rainbowScale],
+    ['uRainbowShift', (c) => c.shaders.teraShinyRare.rainbowShift],
+    ['uMaskThreshold', (c) => c.shaders.teraShinyRare.maskThreshold],
+    ['uSparkleIntensity', (c) => c.shaders.teraShinyRare.sparkleIntensity],
+    ['uSparkleRadius', (c) => c.shaders.teraShinyRare.sparkleRadius],
+    ['uSparkleContrast', (c) => c.shaders.teraShinyRare.sparkleContrast],
+    ['uSparkleColorShift', (c) => c.shaders.teraShinyRare.sparkleColorShift],
+    ['uEtchSparkleScale', (c) => c.shaders.teraShinyRare.etchSparkleScale],
+    ['uEtchSparkleIntensity', (c) => c.shaders.teraShinyRare.etchSparkleIntensity],
+    ['uEtchSparkleTiltSensitivity', (c) => c.shaders.teraShinyRare.etchSparkleTiltSensitivity],
+    ['uEtchSparkleTexMix', (c) => c.shaders.teraShinyRare.etchSparkleTexMix],
+    ['uEtchSparkle2Scale', (c) => c.shaders.teraShinyRare.etchSparkle2Scale],
+    ['uEtchSparkle2Intensity', (c) => c.shaders.teraShinyRare.etchSparkle2Intensity],
+    ['uEtchSparkle2TiltSensitivity', (c) => c.shaders.teraShinyRare.etchSparkle2TiltSensitivity],
+    ['uEtchSparkle2TexMix', (c) => c.shaders.teraShinyRare.etchSparkle2TexMix],
+    ['uBaseBrightness', (c) => c.shaders.teraShinyRare.baseBrightness],
+    ['uBaseContrast', (c) => c.shaders.teraShinyRare.baseContrast],
+    ['uBaseSaturation', (c) => c.shaders.teraShinyRare.baseSaturation],
+    ['uMosaicScale', (c) => c.shaders.teraShinyRare.mosaicScale],
+    ['uMosaicIntensity', (c) => c.shaders.teraShinyRare.mosaicIntensity],
+    ['uMosaicSaturation', (c) => c.shaders.teraShinyRare.mosaicSaturation],
+    ['uMosaicContrast', (c) => c.shaders.teraShinyRare.mosaicContrast],
+    ['uMosaicFoilThreshold', (c) => c.shaders.teraShinyRare.mosaicFoilThreshold],
   ],
   'ultra-rare': [
     ['uBaseBrightness', (c) => c.shaders.ultraRare.baseBrightness],
@@ -189,6 +217,11 @@ const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
     ['uEtchStampHoloScale', (c) => c.shaders.masterBall.etchStampHoloScale],
     ['uEtchStampMaskThreshold', (c) => c.shaders.masterBall.etchStampMaskThreshold],
     ['uRainbowOpacity', (c) => c.shaders.masterBall.rainbowOpacity],
+    ['uMosaicScale', (c) => c.shaders.masterBall.mosaicScale],
+    ['uMosaicIntensity', (c) => c.shaders.masterBall.mosaicIntensity],
+    ['uMosaicSaturation', (c) => c.shaders.masterBall.mosaicSaturation],
+    ['uMosaicContrast', (c) => c.shaders.masterBall.mosaicContrast],
+    ['uMosaicFoilThreshold', (c) => c.shaders.masterBall.mosaicFoilThreshold],
     ['uGlareOpacity', (c) => c.shaders.masterBall.glareOpacity],
     ['uGlareContrast', (c) => c.shaders.masterBall.glareContrast],
     ['uGlareSaturation', (c) => c.shaders.masterBall.glareSaturation],

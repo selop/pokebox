@@ -10,6 +10,7 @@ import rainbowRareFrag from '../rainbow-rare.frag'
 import reverseHoloFrag from '../reverse-holo.frag'
 import teraRainbowRareFrag from '../tera-rainbow-rare.frag'
 import masterBallFrag from '../master-ball.frag'
+import teraShinyRareFrag from '../tera-shiny-rare.frag'
 import shinyRareFrag from '../shiny-rare.frag'
 
 describe('Shader Compilation', () => {
@@ -210,6 +211,35 @@ describe('Shader Compilation', () => {
     'uBaseSaturation',
   ])
 
+  testShaderCompilation('tera-shiny-rare', teraShinyRareFrag, [
+    'uHasFoil',
+    'uPointerFromCenter',
+    'uHoloOpacity',
+    'uRainbowScale',
+    'uRainbowShift',
+    'uMaskThreshold',
+    'uSparkleIntensity',
+    'uSparkleRadius',
+    'uSparkleContrast',
+    'uSparkleColorShift',
+    'uEtchSparkleScale',
+    'uEtchSparkleIntensity',
+    'uEtchSparkleTiltSensitivity',
+    'uEtchSparkleTexMix',
+    'uEtchSparkle2Scale',
+    'uEtchSparkle2Intensity',
+    'uEtchSparkle2TiltSensitivity',
+    'uEtchSparkle2TexMix',
+    'uMosaicScale',
+    'uMosaicIntensity',
+    'uMosaicSaturation',
+    'uMosaicContrast',
+    'uMosaicFoilThreshold',
+    'uBaseBrightness',
+    'uBaseContrast',
+    'uBaseSaturation',
+  ])
+
   testShaderCompilation('master-ball', masterBallFrag, [
     'uHasFoil',
     'uHasGlitter',
@@ -220,6 +250,11 @@ describe('Shader Compilation', () => {
     'uSparkleScale',
     'uSparkleIntensity',
     'uSparkleTiltSensitivity',
+    'uMosaicScale',
+    'uMosaicIntensity',
+    'uMosaicSaturation',
+    'uMosaicContrast',
+    'uMosaicFoilThreshold',
     'uGlareOpacity',
     'uBaseBrightness',
     'uBaseContrast',

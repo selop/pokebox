@@ -11,7 +11,7 @@ import type {
   SceneMode,
   ShaderConfigs,
 } from '@/types'
-import { CARD_DEFAULTS, DEFAULT_CARD, DEFAULT_CONFIG } from '@/data/defaults'
+import { CARD_DEFAULTS, DEFAULT_CARD, DEFAULT_CONFIG, STARTUP_CARD_ID } from '@/data/defaults'
 import { CARD_CATALOG, loadSetCatalog, SET_REGISTRY } from '@/data/cardCatalog'
 
 export const useAppStore = defineStore('app', () => {
@@ -33,7 +33,7 @@ export const useAppStore = defineStore('app', () => {
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
-  const currentCardId = ref('112')
+  const currentCardId = ref(STARTUP_CARD_ID)
   const cardDisplayMode = ref<CardDisplayMode>('single')
   const sceneSeed = ref(Date.now())
 
@@ -121,7 +121,7 @@ export const useAppStore = defineStore('app', () => {
     config.holoIntensity = CARD_DEFAULTS.holoIntensity / 100
     config.cardSpinSpeed = CARD_DEFAULTS.cardSpinSpeed
     const catalog = CARD_CATALOG.value
-    currentCardId.value = catalog.length > 0 ? catalog[0]!.id : '109'
+    currentCardId.value = catalog.length > 0 ? catalog[0]!.id : STARTUP_CARD_ID
   }
 
   /** Callback for clearing card texture cache — set by useCardLoader. */
@@ -143,7 +143,7 @@ export const useAppStore = defineStore('app', () => {
       // Preserve existing card ID if it exists in the new catalog (e.g. initial load).
       const keepCurrent = catalog.some((c) => c.id === currentCardId.value)
       if (!keepCurrent) {
-        currentCardId.value = catalog.length > 0 ? catalog[0]!.id : '112'
+        currentCardId.value = catalog.length > 0 ? catalog[0]!.id : STARTUP_CARD_ID
       }
       CARD_CATALOG.value = catalog
     } finally {

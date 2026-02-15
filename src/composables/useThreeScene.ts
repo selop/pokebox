@@ -567,6 +567,37 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     watchUniform(getter, uniformName)
   }
 
+  // Tera-shiny-rare shader parameters
+  const tsrUniformMap: [() => number, string][] = [
+    [() => store.config.shaders.teraShinyRare.holoOpacity, 'uHoloOpacity'],
+    [() => store.config.shaders.teraShinyRare.rainbowScale, 'uRainbowScale'],
+    [() => store.config.shaders.teraShinyRare.rainbowShift, 'uRainbowShift'],
+    [() => store.config.shaders.teraShinyRare.maskThreshold, 'uMaskThreshold'],
+    [() => store.config.shaders.teraShinyRare.sparkleIntensity, 'uSparkleIntensity'],
+    [() => store.config.shaders.teraShinyRare.sparkleRadius, 'uSparkleRadius'],
+    [() => store.config.shaders.teraShinyRare.sparkleContrast, 'uSparkleContrast'],
+    [() => store.config.shaders.teraShinyRare.sparkleColorShift, 'uSparkleColorShift'],
+    [() => store.config.shaders.teraShinyRare.etchSparkleScale, 'uEtchSparkleScale'],
+    [() => store.config.shaders.teraShinyRare.etchSparkleIntensity, 'uEtchSparkleIntensity'],
+    [() => store.config.shaders.teraShinyRare.etchSparkleTiltSensitivity, 'uEtchSparkleTiltSensitivity'],
+    [() => store.config.shaders.teraShinyRare.etchSparkleTexMix, 'uEtchSparkleTexMix'],
+    [() => store.config.shaders.teraShinyRare.etchSparkle2Scale, 'uEtchSparkle2Scale'],
+    [() => store.config.shaders.teraShinyRare.etchSparkle2Intensity, 'uEtchSparkle2Intensity'],
+    [() => store.config.shaders.teraShinyRare.etchSparkle2TiltSensitivity, 'uEtchSparkle2TiltSensitivity'],
+    [() => store.config.shaders.teraShinyRare.etchSparkle2TexMix, 'uEtchSparkle2TexMix'],
+    [() => store.config.shaders.teraShinyRare.baseBrightness, 'uBaseBrightness'],
+    [() => store.config.shaders.teraShinyRare.baseContrast, 'uBaseContrast'],
+    [() => store.config.shaders.teraShinyRare.baseSaturation, 'uBaseSaturation'],
+    [() => store.config.shaders.teraShinyRare.mosaicScale, 'uMosaicScale'],
+    [() => store.config.shaders.teraShinyRare.mosaicIntensity, 'uMosaicIntensity'],
+    [() => store.config.shaders.teraShinyRare.mosaicSaturation, 'uMosaicSaturation'],
+    [() => store.config.shaders.teraShinyRare.mosaicContrast, 'uMosaicContrast'],
+    [() => store.config.shaders.teraShinyRare.mosaicFoilThreshold, 'uMosaicFoilThreshold'],
+  ]
+  for (const [getter, uniformName] of tsrUniformMap) {
+    watchUniform(getter, uniformName)
+  }
+
   // Reverse-holo shader parameters
   const reverseHoloUniformMap: [() => number, string][] = [
     [() => store.config.shaders.reverseHolo.shineIntensity, 'uShineIntensity'],
@@ -623,6 +654,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.shaders.masterBall.sparkle2Intensity, 'uSparkle2Intensity'],
     [() => store.config.shaders.masterBall.sparkle2TiltSensitivity, 'uSparkle2TiltSensitivity'],
     [() => store.config.shaders.masterBall.sparkle2TexMix, 'uSparkle2TexMix'],
+    [() => store.config.shaders.masterBall.mosaicScale, 'uMosaicScale'],
+    [() => store.config.shaders.masterBall.mosaicIntensity, 'uMosaicIntensity'],
+    [() => store.config.shaders.masterBall.mosaicSaturation, 'uMosaicSaturation'],
+    [() => store.config.shaders.masterBall.mosaicContrast, 'uMosaicContrast'],
+    [() => store.config.shaders.masterBall.mosaicFoilThreshold, 'uMosaicFoilThreshold'],
     [() => store.config.shaders.masterBall.glareOpacity, 'uGlareOpacity'],
     [() => store.config.shaders.masterBall.glareContrast, 'uGlareContrast'],
     [() => store.config.shaders.masterBall.glareSaturation, 'uGlareSaturation'],
