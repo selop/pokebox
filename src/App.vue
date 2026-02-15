@@ -8,6 +8,7 @@ import ToolbarButtons from './components/ToolbarButtons.vue'
 import CalibrationPanel from './components/CalibrationPanel.vue'
 import ShaderControlsPanel from './components/ShaderControlsPanel.vue'
 import InstructionsModal from './components/InstructionsModal.vue'
+import BoosterPackModal from './components/BoosterPackModal.vue'
 import CardSearch from './components/CardSearch.vue'
 import PerfOverlay from './components/PerfOverlay.vue'
 import { useFaceTracking } from './composables/useFaceTracking'
@@ -54,14 +55,15 @@ async function onEnableGyroscope() {
 
 <template>
   <ThreeCanvas ref="threeCanvasRef" />
-  <VideoFeed ref="videoFeedRef" />
-  <StatusIndicator />
-  <TrackingData />
+  <VideoFeed v-show="store.isPanelOpen" ref="videoFeedRef" />
+  <StatusIndicator v-if="store.isPanelOpen" />
+  <TrackingData v-if="store.isPanelOpen" />
   <ToolbarButtons />
   <CalibrationPanel />
   <ShaderControlsPanel />
   <CardSearch />
   <PerfOverlay />
+  <BoosterPackModal />
   <InstructionsModal
     :is-mobile="isMobile"
     @enable-camera="onEnableCamera"

@@ -54,6 +54,7 @@ export const useAppStore = defineStore('app', () => {
   const isPerfOverlayOpen = ref(false)
   const statusText = ref('Waiting for camera')
   const showInstructions = ref(true)
+  const showBoosterModal = ref(false)
 
   // --- Viewport dimensions (updated on resize) ---
   const viewportWidth = ref(window.innerWidth)
@@ -183,6 +184,10 @@ export const useAppStore = defineStore('app', () => {
     isPerfOverlayOpen.value = !isPerfOverlayOpen.value
   }
 
+  function toggleBoosterModal() {
+    showBoosterModal.value = !showBoosterModal.value
+  }
+
   function setSceneMode(mode: SceneMode) {
     sceneMode.value = mode
   }
@@ -209,6 +214,7 @@ export const useAppStore = defineStore('app', () => {
     isPerfOverlayOpen,
     statusText,
     showInstructions,
+    showBoosterModal,
     viewportWidth,
     viewportHeight,
     dimensions,
@@ -228,6 +234,7 @@ export const useAppStore = defineStore('app', () => {
     requestFlip,
     toggleDimLights,
     togglePerfOverlay,
+    toggleBoosterModal,
     setSceneMode,
   }
 })

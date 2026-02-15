@@ -27,6 +27,7 @@ function onCardChange(e: Event) {
         <option v-for="card in CARD_CATALOG" :key="card.id" :value="card.id">{{ card.label }}</option>
       </select>
       <span v-if="store.setLoading" class="toolbar-loading">Loading...</span>
+      <button class="toolbar-btn" @click="store.toggleBoosterModal()">&#x1F4E6; Packs</button>
     </div>
 
     <span class="toolbar-sep" />

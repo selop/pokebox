@@ -196,7 +196,7 @@ export function buildBoxShell(
   // always win — prevents z-fighting flicker with off-axis camera updates
   const polyOffset = !isSolid
   const backWallMat = new MeshStandardMaterial({
-    map: wallTexture || undefined,
+    ...(wallTexture ? { map: wallTexture } : {}),
     color: wallTexture ? 0xffffff : isSolid ? 0xdde4f0 : 0x112244,
     emissive: isSolid ? 0x334455 : 0x000000,
     emissiveIntensity: isSolid ? 0.3 : 0,
@@ -209,7 +209,7 @@ export function buildBoxShell(
   })
 
   const sideWallMat = new MeshStandardMaterial({
-    map: wallTexture || undefined,
+    ...(wallTexture ? { map: wallTexture } : {}),
     color: wallTexture ? 0xffffff : isSolid ? 0x5b7faa : 0x112244,
     roughness: 1,
     transparent: !isSolid,
@@ -220,7 +220,7 @@ export function buildBoxShell(
   })
 
   const floorMat = new MeshStandardMaterial({
-    map: wallTexture || undefined,
+    ...(wallTexture ? { map: wallTexture } : {}),
     color: wallTexture ? 0xffffff : isSolid ? 0x4a6a8a : 0x112244,
     roughness: isSolid ? 0.7 : 0.95,
     transparent: !isSolid,
@@ -231,7 +231,7 @@ export function buildBoxShell(
   })
 
   const ceilingMat = new MeshStandardMaterial({
-    map: wallTexture || undefined,
+    ...(wallTexture ? { map: wallTexture } : {}),
     color: wallTexture ? 0xffffff : isSolid ? 0xd0d8e8 : 0x112244,
     roughness: 0.9,
     transparent: true,
