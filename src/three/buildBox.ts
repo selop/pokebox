@@ -9,6 +9,7 @@ import {
   PlaneGeometry,
   PointLight,
   Scene,
+  SpotLight,
   Vector2,
   Vector3,
 } from 'three'
@@ -311,4 +312,18 @@ export function buildBoxShell(
   } else {
     scene.add(new AmbientLight(0xffffff, 0.05))
   }
+
+  // Head-tracked spotlight for dynamic shadows
+  const spotlight = new SpotLight(0xffffff, 0.6, boxD * 3, Math.PI / 5, 0.4, 1.5)
+  spotlight.name = 'headSpotlight'
+  spotlight.castShadow = true
+  spotlight.shadow.mapSize.width = 1024
+  spotlight.shadow.mapSize.height = 1024
+  spotlight.shadow.camera.near = 5
+  spotlight.shadow.camera.far = boxD * 3
+  spotlight.shadow.bias = -0.001
+  spotlight.position.set(0, 0, dims.eyeDefaultZ * 0.5)
+  spotlight.target.position.set(0, 0, -boxD / 2)
+  scene.add(spotlight)
+  scene.add(spotlight.target)
 }

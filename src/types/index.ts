@@ -268,7 +268,7 @@ export interface EyePosition {
 export type InputMode = 'camera' | 'gyroscope' | 'keyboard'
 export type SceneMode = 'furniture' | 'cards'
 export type RenderMode = 'xray' | 'solid'
-export type CardDisplayMode = 'single' | 'triple'
+export type CardDisplayMode = 'single' | 'triple' | 'fan'
 export type ShaderStyle =
   | 'illustration-rare'
   | 'regular-holo'

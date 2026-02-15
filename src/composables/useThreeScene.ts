@@ -7,8 +7,10 @@ import {
   PCFSoftShadowMap,
   PerspectiveCamera,
   PointLight,
+  Raycaster,
   Scene,
   ShaderMaterial,
+  SpotLight,
   TextureLoader,
   Vector2,
   Vector3,
@@ -45,6 +47,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   const mouseTilt = useMouseTilt()
   const gyroscope = useGyroscope()
 
+  // Fan raycasting state
+  const raycaster = new Raycaster()
+  const mouseNDC = new Vector2()
+  let lastHoveredFanIndex: number | null = null
+
   const FLIP_DURATION = 1.5
   let flipStartTime = -1
 
@@ -63,6 +70,39 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     () => mergeAnimator.reset(),
   )
   const cardSceneBuilder = new CardSceneBuilder(store, () => cardLoader)
+
+  function onFanMouseMove(e: MouseEvent) {
+    if (store.cardDisplayMode !== 'fan' || !camera) return
+    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
+    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
+    raycaster.setFromCamera(mouseNDC, camera)
+    const intersects = raycaster.intersectObjects(cardMeshes.value)
+    const hit =
+      intersects.length > 0 ? (intersects[0]!.object.userData.fanIndex as number) : null
+    if (hit !== lastHoveredFanIndex) {
+      lastHoveredFanIndex = hit
+      store.setHoveredFanCard(hit ?? null)
+      // Upgrade shader on the newly hovered card (lazy, no rebuild)
+      if (hit != null) {
+        const mesh = cardMeshes.value.find((m) => m.userData.fanIndex === hit)
+        if (mesh) cardSceneBuilder.upgradeFanCardShader(mesh)
+      }
+    }
+  }
+
+  function onFanClick(e: MouseEvent) {
+    if (store.cardDisplayMode !== 'fan' || !camera) return
+    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
+    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
+    raycaster.setFromCamera(mouseNDC, camera)
+    const intersects = raycaster.intersectObjects(cardMeshes.value)
+    if (intersects.length > 0) {
+      const fanIndex = intersects[0]!.object.userData.fanIndex as number
+      if (fanIndex != null) {
+        store.selectFanCard(fanIndex)
+      }
+    }
+  }
 
   function init() {
     const container = containerRef.value
@@ -144,6 +184,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Resize handler
     window.addEventListener('resize', onResize)
     window.addEventListener('keydown', onKeydown)
+    renderer.domElement.addEventListener('mousemove', onFanMouseMove)
+    renderer.domElement.addEventListener('click', onFanClick)
   }
 
   function rebuildScene() {
@@ -219,6 +261,18 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Update off-axis camera
     updateOffAxisCamera(store.eyePos.x, store.eyePos.y, store.eyePos.z)
 
+    // Update head-tracked spotlight position
+    const spotlight = scene.getObjectByName('headSpotlight') as SpotLight | undefined
+    if (spotlight) {
+      spotlight.position.set(
+        store.eyePos.x * 0.8,
+        store.eyePos.y * 0.8,
+        store.eyePos.z * 0.6,
+      )
+      spotlight.target.position.set(0, 0, -store.dimensions.boxD * 0.5)
+      spotlight.target.updateMatrixWorld()
+    }
+
     // Update tilt springs (gyroscope or mouse)
     const tilt = gyroscope.isActive.value ? gyroscope : mouseTilt
     tilt.update(dt)
@@ -239,10 +293,49 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
 
     const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
-    for (const mesh of meshes) {
-      mesh.rotation.x = tilt.state.rotateX
-      const explodeRotY = mesh.userData.explodeRotationY || 0
-      mesh.rotation.y = baseRotY + tilt.state.rotateY + explodeRotY + flipAngle
+    if (store.cardDisplayMode === 'fan') {
+      // Fan mode: smooth peek animation — lerp each card toward rest or hover target
+      const peekSpeed = 1 - Math.pow(0.001, dt) // ~0.12 per frame at 60fps, frame-rate independent
+      const hoveredIdx = store.hoveredFanCard
+      for (const mesh of meshes) {
+        const rest = mesh.userData.fanRest as
+          | { x: number; y: number; z: number; rotZ: number; scale: number }
+          | undefined
+        const hover = mesh.userData.fanHover as
+          | { x: number; y: number; z: number; rotZ: number; scale: number }
+          | undefined
+        if (!rest || !hover) continue
+
+        const isHovered = mesh.userData.fanIndex === hoveredIdx
+        const target = isHovered ? hover : rest
+        const n = meshes.length
+
+        // Lerp position
+        mesh.position.x += (target.x - mesh.position.x) * peekSpeed
+        mesh.position.y += (target.y - mesh.position.y) * peekSpeed
+        mesh.position.z += (target.z - mesh.position.z) * peekSpeed
+
+        // Lerp rotation.z (fan tilt)
+        mesh.rotation.z += (target.rotZ - mesh.rotation.z) * peekSpeed
+
+        // Lerp scale
+        const s = mesh.scale.x + (target.scale - mesh.scale.x) * peekSpeed
+        mesh.scale.setScalar(s)
+
+        // Gentle head-tracking tilt on x/y axes
+        mesh.rotation.x = tilt.state.rotateX * 0.5
+        mesh.rotation.y = tilt.state.rotateY * 0.3
+
+        // Dynamic renderOrder: hovered card always on top
+        const baseOrder = (mesh.userData.fanBaseRenderOrder as number) ?? n
+        mesh.renderOrder = isHovered ? 100 : baseOrder
+      }
+    } else {
+      for (const mesh of meshes) {
+        mesh.rotation.x = tilt.state.rotateX
+        const explodeRotY = mesh.userData.explodeRotationY || 0
+        mesh.rotation.y = baseRotY + tilt.state.rotateY + explodeRotY + flipAngle
+      }
     }
 
     // Update holo shader uniforms for all cards
@@ -264,7 +357,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
       const dims = store.dimensions
       const effectiveSize =
-        store.cardDisplayMode === 'single' ? store.singleCardSize : store.config.cardSize
+        store.cardDisplayMode === 'single'
+          ? store.singleCardSize
+          : store.cardDisplayMode === 'fan'
+            ? store.config.cardSize * 0.85
+            : store.config.cardSize
       const cardH = dims.screenH * effectiveSize
       const cardW = cardH * CARD_ASPECT
 
@@ -370,6 +467,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       store.cardTransform.rotY,
     ],
     () => {
+      if (store.cardDisplayMode === 'fan') return
       const meshes = cardMeshes.value
       if (!meshes.length) return
       const dims = store.dimensions
@@ -724,6 +822,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     if (slideshowInterval) clearInterval(slideshowInterval)
     window.removeEventListener('resize', onResize)
     window.removeEventListener('keydown', onKeydown)
+    renderer?.domElement.removeEventListener('mousemove', onFanMouseMove)
+    renderer?.domElement.removeEventListener('click', onFanClick)
     mouseTilt.detach()
     gyroscope.stop()
     renderer?.dispose()

@@ -14,6 +14,18 @@ function onSetChange(e: Event) {
 function onCardChange(e: Event) {
   store.currentCardId = (e.target as HTMLSelectElement).value
 }
+
+function cycleDisplayMode() {
+  const modes = ['single', 'triple', 'fan'] as const
+  const idx = modes.indexOf(store.cardDisplayMode)
+  store.cardDisplayMode = modes[(idx + 1) % modes.length]!
+}
+
+const displayModeLabel: Record<string, string> = {
+  single: '&#x2630; Triple',
+  triple: '&#x1F0CF; Fan',
+  fan: '&#x25A3; Single',
+}
 </script>
 
 <template>
@@ -70,10 +82,9 @@ function onCardChange(e: Event) {
       <div class="toolbar-group">
         <button
           class="toolbar-btn"
-          @click="store.cardDisplayMode = store.cardDisplayMode === 'single' ? 'triple' : 'single'"
-        >
-          {{ store.cardDisplayMode === 'single' ? '&#x2630; Triple' : '&#x25A3; Single' }}
-        </button>
+          @click="cycleDisplayMode"
+          v-html="displayModeLabel[store.cardDisplayMode]"
+        />
         <Transition name="btn-fade">
           <button
             v-if="store.cardDisplayMode === 'single'"
@@ -107,10 +118,16 @@ function onCardChange(e: Event) {
   </div>
 
   <div v-show="store.sceneMode === 'cards'" class="nav-hint">
-    <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
-    <span v-show="store.cardDisplayMode === 'single'">&middot; <kbd>M</kbd> merge</span>
-    &middot; <kbd>F</kbd> flip
-    &middot; <kbd>P</kbd> perf
+    <template v-if="store.cardDisplayMode === 'fan'">
+      hover to preview &middot; click to inspect
+      &middot; <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
+    </template>
+    <template v-else>
+      <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
+      <span v-show="store.cardDisplayMode === 'single'">&middot; <kbd>M</kbd> merge</span>
+      &middot; <kbd>F</kbd> flip
+      &middot; <kbd>P</kbd> perf
+    </template>
   </div>
 </template>
 

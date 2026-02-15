@@ -34,8 +34,11 @@ export const useAppStore = defineStore('app', () => {
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
   const currentCardId = ref(STARTUP_CARD_ID)
-  const cardDisplayMode = ref<CardDisplayMode>('single')
+  const cardDisplayMode = ref<CardDisplayMode>('fan')
   const sceneSeed = ref(Date.now())
+
+  // --- Fan state ---
+  const hoveredFanCard = ref<number | null>(null)
 
   // --- Set state ---
   const currentSetId = ref(SET_REGISTRY[2]!.id)
@@ -79,10 +82,33 @@ export const useAppStore = defineStore('app', () => {
     return Math.min(0.85, maxByWidth)
   })
 
-  // --- Display card IDs (single = just center, triple = center + neighbors) ---
+  // --- Fan card IDs (7 cards centered on current, wrapping) ---
+  const FAN_COUNT = 7
+  const fanCardIds = computed(() => {
+    const catalog = CARD_CATALOG.value
+    if (catalog.length === 0) return []
+    const idx = catalog.findIndex((c) => c.id === currentCardId.value)
+    const validIdx = idx >= 0 ? idx : 0
+    const half = Math.floor(FAN_COUNT / 2)
+    const count = Math.min(FAN_COUNT, catalog.length)
+    const ids: string[] = []
+    for (let i = 0; i < count; i++) {
+      const offset = i - half
+      const ci = (validIdx + offset + catalog.length) % catalog.length
+      ids.push(catalog[ci]!.id)
+    }
+    return ids
+  })
+
+  // --- Display card IDs (single = just center, triple = center + neighbors, fan = 7-card hand) ---
   const displayCardIds = computed(() => {
     const catalog = CARD_CATALOG.value
     if (catalog.length === 0) return []
+
+    if (cardDisplayMode.value === 'fan') {
+      return fanCardIds.value
+    }
+
     // Resolve current card — must exist in catalog
     const idx = catalog.findIndex((c) => c.id === currentCardId.value)
     const validIdx = idx >= 0 ? idx : 0
@@ -192,6 +218,18 @@ export const useAppStore = defineStore('app', () => {
     sceneMode.value = mode
   }
 
+  function setHoveredFanCard(index: number | null) {
+    hoveredFanCard.value = index
+  }
+
+  function selectFanCard(fanIndex: number) {
+    const ids = fanCardIds.value
+    if (fanIndex >= 0 && fanIndex < ids.length) {
+      currentCardId.value = ids[fanIndex]!
+      cardDisplayMode.value = 'single'
+    }
+  }
+
   return {
     config,
     cardTransform,
@@ -201,6 +239,8 @@ export const useAppStore = defineStore('app', () => {
     renderMode,
     currentCardId,
     cardDisplayMode,
+    hoveredFanCard,
+    fanCardIds,
     sceneSeed,
     inputMode,
     currentSetId,
@@ -236,5 +276,7 @@ export const useAppStore = defineStore('app', () => {
     togglePerfOverlay,
     toggleBoosterModal,
     setSceneMode,
+    setHoveredFanCard,
+    selectFanCard,
   }
 })
