@@ -35,9 +35,9 @@ export const DEFAULT_CONFIG: AppConfig = {
       barMediumLightness2: 0.43,
       barBrightSaturation2: 0.21,
       barBrightLightness2: 0.89,
-      shine1Contrast: 2.5,
-      shine1Saturation: 0.55,
-      shine2Opacity: 0.6,
+      shine1Contrast: 1.55,
+      shine1Saturation: 0.75,
+      shine2Opacity: 0.8,
       glareOpacity: 0.65,
     },
     specialIllustrationRare: {
