@@ -12,6 +12,7 @@ import {
 import type { Texture } from 'three'
 import type { AppConfig, CardTransform, DerivedDimensions, ShaderStyle } from '@/types'
 import holoVert from '@/shaders/holo.vert'
+import activationFrag from '@/shaders/activation.frag'
 import illustrationRareFrag from '@/shaders/illustration-rare.frag'
 import regularHoloFrag from '@/shaders/regular-holo.frag'
 import specialIllustrationRareFrag from '@/shaders/special-illustration-rare.frag'
@@ -371,6 +372,25 @@ export function buildCardMesh(
       transparent: true,
     }),
   )
+}
+
+export function buildActivationMaterial(
+  cardTexture: Texture,
+  noiseTexture: Texture | null,
+): ShaderMaterial {
+  return new ShaderMaterial({
+    uniforms: {
+      uCardTex: { value: cardTexture },
+      uNoiseTex: { value: noiseTexture || blackPixel },
+      uProgress: { value: 0 },
+      uTime: { value: 0 },
+      uPointer: { value: new Vector2(0.5, 0.5) },
+    },
+    vertexShader: holoVert,
+    fragmentShader: activationFrag,
+    side: DoubleSide,
+    transparent: true,
+  })
 }
 
 export function applyCardTransform(

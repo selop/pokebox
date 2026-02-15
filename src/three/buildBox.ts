@@ -17,7 +17,7 @@ import { Line2 } from 'three/examples/jsm/lines/Line2.js'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import type { Texture } from 'three'
-import type { DerivedDimensions, RenderMode } from '@/types'
+import type { DerivedDimensions, LightConfig, RenderMode } from '@/types'
 
 export function buildBoxShell(
   scene: Scene,
@@ -25,6 +25,7 @@ export function buildBoxShell(
   renderMode: RenderMode,
   wallTexture?: Texture | null,
   isDimmed = false,
+  lights?: LightConfig,
 ): void {
   const { screenW, screenH, boxD } = dims
   const hw = screenW / 2
@@ -296,16 +297,20 @@ export function buildBoxShell(
   })
 
   if (isSolid) {
-    const ambient = new AmbientLight(0xffffff, isDimmed ? 0.005 : 0.3)
+    const ambientI = lights?.ambientIntensity ?? 1.6
+    const dirI = lights?.directionalIntensity ?? 1.0
+    const backI = lights?.backlightIntensity ?? 2.08
+
+    const ambient = new AmbientLight(0xffffff, isDimmed ? 0.02 : ambientI)
     ambient.name = 'solidAmbient'
     scene.add(ambient)
 
-    const dirLight = new DirectionalLight(0xffffff, isDimmed ? 0.0 : 0.125)
+    const dirLight = new DirectionalLight(0xffffff, isDimmed ? 0.0 : dirI)
     dirLight.name = 'solidDir'
     dirLight.position.set(0, hh * 0.8, boxD * 0.5)
     scene.add(dirLight)
 
-    const backLight = new PointLight(0xdde8ff, isDimmed ? 0.025 : 0.08, boxD * 2)
+    const backLight = new PointLight(0xdde8ff, isDimmed ? 3.5 : 0.08, boxD * 2)
     backLight.name = 'solidBack'
     backLight.position.set(0, 0, -boxD * 0.7)
     scene.add(backLight)
@@ -314,7 +319,8 @@ export function buildBoxShell(
   }
 
   // Head-tracked spotlight for dynamic shadows
-  const spotlight = new SpotLight(0xffffff, 0.6, boxD * 3, Math.PI / 5, 0.4, 1.5)
+  const spotI = lights?.spotlightIntensity ?? 0.6
+  const spotlight = new SpotLight(0xffffff, spotI, boxD * 3, Math.PI / 5, 0.4, 1.5)
   spotlight.name = 'headSpotlight'
   spotlight.castShadow = true
   spotlight.shadow.mapSize.width = 1024

@@ -13,6 +13,12 @@ export const DEFAULT_CONFIG: AppConfig = {
   cardSpinSpeed: 0,
   nearPlane: 5,
   farPlane: 100000,
+  lights: {
+    ambientIntensity: 1.6,
+    directionalIntensity: 1.0,
+    backlightIntensity: 2.08,
+    spotlightIntensity: 0.6,
+  },
   shaders: {
     illustrationRare: {
       rainbowScale: 0.5,
