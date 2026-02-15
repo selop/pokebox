@@ -33,7 +33,6 @@ type ShaderSection = {
   items: SectionItem[]
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getShaderObj(section: ShaderSection): Record<string, number> {
   return store.config.shaders[section.shaderKey] as any
 }
@@ -71,7 +70,14 @@ const sections: ShaderSection[] = [
       { label: 'Med sat', prop: 'barMediumSaturation', min: 0, max: 1, step: 0.01, suffix: '%' },
       { label: 'Med light', prop: 'barMediumLightness', min: 0, max: 1, step: 0.01, suffix: '%' },
       { label: 'Bright sat', prop: 'barBrightSaturation', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Bright light', prop: 'barBrightLightness', min: 0, max: 1, step: 0.01, suffix: '%' },
+      {
+        label: 'Bright light',
+        prop: 'barBrightLightness',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
       { subsection: 'Layer 2 Bars' },
       { label: 'Density', prop: 'barDensity2', min: 0.5, max: 10, step: 0.1 },
       { label: 'Offset Y', prop: 'bar2OffsetBgYMult', min: -5, max: 5, step: 0.05 },
@@ -80,8 +86,22 @@ const sections: ShaderSection[] = [
       { label: 'Hue', prop: 'barHue2', min: 0, max: 360, step: 1, suffix: '°' },
       { label: 'Med sat', prop: 'barMediumSaturation2', min: 0, max: 1, step: 0.01, suffix: '%' },
       { label: 'Med light', prop: 'barMediumLightness2', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Bright sat', prop: 'barBrightSaturation2', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Bright light', prop: 'barBrightLightness2', min: 0, max: 1, step: 0.01, suffix: '%' },
+      {
+        label: 'Bright sat',
+        prop: 'barBrightSaturation2',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Bright light',
+        prop: 'barBrightLightness2',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
       { subsection: 'Shine & Glare' },
       { label: 'Shine contrast', prop: 'shine1Contrast', min: 1, max: 5, step: 0.05 },
       { label: 'Shine saturate', prop: 'shine1Saturation', min: 0, max: 2, step: 0.05 },
@@ -134,12 +154,24 @@ const sections: ShaderSection[] = [
       { subsection: 'Etch Sparkle (T/B)' },
       { label: 'Scale', prop: 'etchSparkleScale', min: 0.5, max: 10, step: 0.1 },
       { label: 'Intensity', prop: 'etchSparkleIntensity', min: 0, max: 2, step: 0.05 },
-      { label: 'Tilt sensitivity', prop: 'etchSparkleTiltSensitivity', min: 0.0, max: 1.0, step: 0.01 },
+      {
+        label: 'Tilt sensitivity',
+        prop: 'etchSparkleTiltSensitivity',
+        min: 0.0,
+        max: 1.0,
+        step: 0.01,
+      },
       { label: 'Tex mix', prop: 'etchSparkleTexMix', min: 0, max: 1, step: 0.05 },
       { subsection: 'Etch Sparkle (L/R)' },
       { label: 'Scale', prop: 'etchSparkle2Scale', min: 0.5, max: 10, step: 0.1 },
       { label: 'Intensity', prop: 'etchSparkle2Intensity', min: 0, max: 2, step: 0.05 },
-      { label: 'Tilt sensitivity', prop: 'etchSparkle2TiltSensitivity', min: 0, max: 1, step: 0.01 },
+      {
+        label: 'Tilt sensitivity',
+        prop: 'etchSparkle2TiltSensitivity',
+        min: 0,
+        max: 1,
+        step: 0.01,
+      },
       { label: 'Tex mix', prop: 'etchSparkle2TexMix', min: 0, max: 1, step: 0.05 },
       { subsection: 'Base' },
       { label: 'Brightness', prop: 'baseBrightness', min: 0, max: 3, step: 0.05 },
@@ -159,7 +191,7 @@ const sections: ShaderSection[] = [
       { label: 'Rainbow shift', prop: 'rainbowShift', min: 0, max: 10, step: 0.1 },
       { label: 'Mask threshold', prop: 'maskThreshold', min: 0, max: 1, step: 0.01 },
       { subsection: 'Mosaic Effect' },
-      { label: 'Cell size', prop: 'mosaicScale', min: 0.5, max: 20, step: 0.5 },
+      { label: 'Cell size', prop: 'mosaicScale', min: 0.5, max: 50, step: 0.5 },
       { label: 'Intensity', prop: 'mosaicIntensity', min: 0, max: 1, step: 0.05, suffix: '%' },
       { label: 'Saturation', prop: 'mosaicSaturation', min: 0, max: 5, step: 0.05 },
       { label: 'Contrast', prop: 'mosaicContrast', min: 0, max: 3, step: 0.05 },
@@ -172,12 +204,24 @@ const sections: ShaderSection[] = [
       { subsection: 'Etch Sparkle (T/B)' },
       { label: 'Scale', prop: 'etchSparkleScale', min: 0.5, max: 10, step: 0.1 },
       { label: 'Intensity', prop: 'etchSparkleIntensity', min: 0, max: 2, step: 0.05 },
-      { label: 'Tilt sensitivity', prop: 'etchSparkleTiltSensitivity', min: 0.0, max: 1.0, step: 0.01 },
+      {
+        label: 'Tilt sensitivity',
+        prop: 'etchSparkleTiltSensitivity',
+        min: 0.0,
+        max: 1.0,
+        step: 0.01,
+      },
       { label: 'Tex mix', prop: 'etchSparkleTexMix', min: 0, max: 1, step: 0.05 },
       { subsection: 'Etch Sparkle (L/R)' },
       { label: 'Scale', prop: 'etchSparkle2Scale', min: 0.5, max: 10, step: 0.1 },
       { label: 'Intensity', prop: 'etchSparkle2Intensity', min: 0, max: 2, step: 0.05 },
-      { label: 'Tilt sensitivity', prop: 'etchSparkle2TiltSensitivity', min: 0, max: 1, step: 0.01 },
+      {
+        label: 'Tilt sensitivity',
+        prop: 'etchSparkle2TiltSensitivity',
+        min: 0,
+        max: 1,
+        step: 0.01,
+      },
       { label: 'Tex mix', prop: 'etchSparkle2TexMix', min: 0, max: 1, step: 0.05 },
       { subsection: 'Base' },
       { label: 'Brightness', prop: 'baseBrightness', min: 0, max: 3, step: 0.05 },
@@ -274,7 +318,14 @@ const sections: ShaderSection[] = [
       { label: 'Opacity', prop: 'etchOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
       { label: 'Contrast', prop: 'etchContrast', min: 0.1, max: 5, step: 0.1 },
       { label: 'Stamp', prop: 'etchStampOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
-      { label: 'Stamp holo', prop: 'etchStampHoloOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      {
+        label: 'Stamp holo',
+        prop: 'etchStampHoloOpacity',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        suffix: '%',
+      },
       { label: 'Stamp holo scale', prop: 'etchStampHoloScale', min: 0.1, max: 5, step: 0.1 },
       { label: 'Stamp mask threshold', prop: 'etchStampMaskThreshold', min: 0, max: 1, step: 0.01 },
       { subsection: 'Sparkle (T/B)' },
@@ -324,7 +375,14 @@ const sections: ShaderSection[] = [
       { label: 'Med sat', prop: 'barMediumSaturation', min: 0, max: 1, step: 0.01, suffix: '%' },
       { label: 'Med light', prop: 'barMediumLightness', min: 0, max: 1, step: 0.01, suffix: '%' },
       { label: 'Bright sat', prop: 'barBrightSaturation', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Bright light', prop: 'barBrightLightness', min: 0, max: 1, step: 0.01, suffix: '%' },
+      {
+        label: 'Bright light',
+        prop: 'barBrightLightness',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
       { subsection: 'Layer 2 Bars' },
       { label: 'Density', prop: 'barDensity2', min: 0.5, max: 10, step: 0.1 },
       { label: 'Offset Y', prop: 'bar2OffsetBgYMult', min: -5, max: 5, step: 0.05 },
@@ -333,8 +391,22 @@ const sections: ShaderSection[] = [
       { label: 'Hue', prop: 'barHue2', min: 0, max: 360, step: 1, suffix: '°' },
       { label: 'Med sat', prop: 'barMediumSaturation2', min: 0, max: 1, step: 0.01, suffix: '%' },
       { label: 'Med light', prop: 'barMediumLightness2', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Bright sat', prop: 'barBrightSaturation2', min: 0, max: 1, step: 0.01, suffix: '%' },
-      { label: 'Bright light', prop: 'barBrightLightness2', min: 0, max: 1, step: 0.01, suffix: '%' },
+      {
+        label: 'Bright sat',
+        prop: 'barBrightSaturation2',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
+      {
+        label: 'Bright light',
+        prop: 'barBrightLightness2',
+        min: 0,
+        max: 1,
+        step: 0.01,
+        suffix: '%',
+      },
       { subsection: 'Shine & Glare' },
       { label: 'Shine contrast', prop: 'shine1Contrast', min: 1, max: 5, step: 0.05 },
       { label: 'Shine saturate', prop: 'shine1Saturation', min: 0, max: 2, step: 0.05 },
@@ -343,7 +415,14 @@ const sections: ShaderSection[] = [
       { label: 'Opacity', prop: 'etchOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
       { label: 'Contrast', prop: 'etchContrast', min: 0.1, max: 5, step: 0.1 },
       { label: 'Stamp', prop: 'etchStampOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
-      { label: 'Stamp holo', prop: 'etchStampHoloOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      {
+        label: 'Stamp holo',
+        prop: 'etchStampHoloOpacity',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        suffix: '%',
+      },
       { label: 'Stamp holo scale', prop: 'etchStampHoloScale', min: 0.1, max: 5, step: 0.1 },
       { label: 'Stamp mask threshold', prop: 'etchStampMaskThreshold', min: 0, max: 1, step: 0.01 },
       { subsection: 'Glare' },
@@ -436,7 +515,9 @@ watch(
               :max="item.max"
               :step="item.step"
               :value="getSliderValue(activeSection, item)"
-              @input="onShaderSlider(activeSection, item.prop, ($event.target as HTMLInputElement).value)"
+              @input="
+                onShaderSlider(activeSection, item.prop, ($event.target as HTMLInputElement).value)
+              "
             />
             <span class="shader-value">{{ displayValue(activeSection, item) }}</span>
           </div>
