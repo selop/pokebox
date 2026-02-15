@@ -2,9 +2,10 @@ import { shallowRef } from 'vue'
 import type { CardCatalogEntry, HoloType, SetCardJson, SetDefinition } from '@/types'
 
 export const SET_REGISTRY: SetDefinition[] = [
-  { id: 'sv3-5_en', label: 'SV 151', jsonFile: 'sv3-5_en/sv3-5.en-US.json' },
-  { id: 'sv8-5_en', label: 'SV Prismatic', jsonFile: 'sv8-5_en/sv8-5.en-US.json' },
-  { id: 'sv4-5_en', label: 'SV Paldean Fates', jsonFile: 'sv4-5_en/sv-4-5.en-US.json' },
+  { id: 'sv3-5_en', label: 'MEW 151', jsonFile: 'sv3-5_en/sv3-5.en-US.json' },
+  { id: 'sv8-5_en', label: 'PRE Prismatic', jsonFile: 'sv8-5_en/sv8-5.en-US.json' },
+  { id: 'sv4-5_en', label: 'PAF Paldean Fates', jsonFile: 'sv4-5_en/sv-4-5.en-US.json' },
+  { id: 'sv5_en', label: 'TEF Temporal Forces', jsonFile: 'sv5_en/sv5.en-US.json' },
 ]
 
 /** Reactive catalog — updated on set switch. */
