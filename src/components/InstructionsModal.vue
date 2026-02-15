@@ -22,10 +22,6 @@ const emit = defineEmits<{
   enableGyroscope: []
 }>()
 
-function onSceneChange(value: string) {
-  store.setSceneMode(value as 'furniture' | 'cards')
-}
-
 function onStart() {
   if (props.isMobile) {
     emit('enableGyroscope')
@@ -52,17 +48,6 @@ function onClose() {
       renders a 3D box behind the screen. Move your head to peek around the edges — like looking
       through a window into a real box.
     </p>
-    <div class="scene-select-wrapper">
-      <label>Scene</label>
-      <select
-        class="cal-select scene-select"
-        :value="store.sceneMode"
-        @change="onSceneChange(($event.target as HTMLSelectElement).value)"
-      >
-        <option value="furniture">Furnished Room</option>
-        <option value="cards">Pokemon Cards</option>
-      </select>
-    </div>
     <button class="start-btn" @click="onStart">
       {{ isMobile ? 'Enable Gyroscope' : 'Enable Camera' }}
     </button>
@@ -106,45 +91,6 @@ function onClose() {
   color: #999;
   line-height: 1.6;
   margin-bottom: 24px;
-}
-
-.scene-select-wrapper {
-  margin-bottom: 20px;
-}
-
-.scene-select-wrapper label {
-  font-size: 0.75rem;
-  color: #aaa;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.scene-select {
-  width: 100%;
-  padding: 10px 12px;
-  font-size: 0.8rem;
-  border-radius: 10px;
-}
-
-.cal-select {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  padding: 5px 8px;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.65rem;
-  color: #fff;
-  cursor: pointer;
-  outline: none;
-}
-
-.cal-select:hover {
-  border-color: #00f5d4;
-}
-
-.cal-select option {
-  background: #111;
-  color: #fff;
 }
 
 .start-btn {
