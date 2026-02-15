@@ -25,70 +25,32 @@ coverage
 *.sw?
 
 *.tsbuildinfo
-
 .eslintcache
-
 .claude/skills/
 
-# Cypress
+# Testing
 /cypress/videos/
 /cypress/screenshots/
-
-# Vitest
 __screenshots__/
+test-results/
+playwright-report/
 
 # Vite
 *.timestamp-*-*.mjs
 
-test-results/
-playwright-report/
-
-public/cards/foils/
-
-public/cards/masks/
-
-public/cards/fronts/
-
-public/img/151/
-
-public/img/
-
+# Docs (generated)
 DEPLOYMENT.md
-
 NPM-CONFIG.md
 
-public/cards/etch-foils/
-
-public/cards/holo-masks/
-
+# Asset directories
 refs/
+public/img/
+public/cards/
 
-public/sv3-5_en/etch-foils/
-
-public/sv3-5_en/fronts/
-
-public/sv3-5_en/holo-masks/
-
-public/sv8-5_en/fronts/
-
-public/sv8-5_en/holo-masks/
-
-public/sv8-5_en/etch-foils/
-
-public/sv3-5_en/sv3-5.en-US.json
-
-public/sv8-5_en/sv8-5.en-US.json
-
-public/sv-4-5_en/
-
-public/sv4-5_en/.staging/etches/
-
-public/sv4-5_en/.staging/foils/
-
-public/sv4-5_en/.staging/fronts/
-
-public/sv4-5_en/.staging/fronts_up/
-
-public/sv4-5_en/fronts/
-
+# Card set assets — covers all sets (fronts, holo-masks, etch-foils, .staging, JSON)
+public/sv3-5_en/
 public/sv4-5_en/
+public/sv-4-5_en/
+public/sv5_en/
+public/sv8-5_en/
+public/me2_en/
