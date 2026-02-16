@@ -46,10 +46,14 @@ export class CardSceneBuilder {
         : null
     const birthdayTextures =
       effectiveShader === 'double-rare' ? loader.getBirthdayTextures() : null
+    const sparkleIriTextures =
+      effectiveShader === 'special-illustration-rare'
+        ? loader.getSparkleIriTextures()
+        : null
     const glitterTexture = loader.getGlitterTexture()
     const noiseTexture = loader.getNoiseTexture()
     const cardBackTexture = loader.getCardBackTexture()
-    return { iriTextures, birthdayTextures, glitterTexture, noiseTexture, cardBackTexture }
+    return { iriTextures, birthdayTextures, sparkleIriTextures, glitterTexture, noiseTexture, cardBackTexture }
   }
 
   cardLayout() {
@@ -90,7 +94,7 @@ export class CardSceneBuilder {
     if (hasEffect) {
       // Layer 0 (front-left): full composited result (card + holo shader)
       const effectiveShader = this.getEffectiveShader(id)
-      const { iriTextures, birthdayTextures, glitterTexture, noiseTexture, cardBackTexture } =
+      const { iriTextures, birthdayTextures, sparkleIriTextures, glitterTexture, noiseTexture, cardBackTexture } =
         this.resolveExtraTextures(loader, effectiveShader)
       const compositeMesh = buildCardMesh(
         dims,
@@ -107,6 +111,7 @@ export class CardSceneBuilder {
         glitterTexture,
         noiseTexture,
         cardBackTexture,
+        sparkleIriTextures,
       )
       compositeMesh.geometry.dispose()
       compositeMesh.geometry = new PlaneGeometry(cardW, cardH)
@@ -177,7 +182,7 @@ export class CardSceneBuilder {
       const tex = loader.get(id)
       if (!tex) return
       const effectiveShader = this.getEffectiveShader(id)
-      const { iriTextures, birthdayTextures, glitterTexture, noiseTexture, cardBackTexture } =
+      const { iriTextures, birthdayTextures, sparkleIriTextures, glitterTexture, noiseTexture, cardBackTexture } =
         this.resolveExtraTextures(loader, effectiveShader)
       const mesh = buildCardMesh(
         dims,
@@ -191,6 +196,7 @@ export class CardSceneBuilder {
         glitterTexture,
         noiseTexture,
         cardBackTexture,
+        sparkleIriTextures,
       )
       const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
       mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
@@ -332,7 +338,7 @@ export class CardSceneBuilder {
 
     const dims = this.store.dimensions
     const effectiveShader = this.getEffectiveShader(id)
-    const { iriTextures, birthdayTextures, glitterTexture, noiseTexture, cardBackTexture } =
+    const { iriTextures, birthdayTextures, sparkleIriTextures, glitterTexture, noiseTexture, cardBackTexture } =
       this.resolveExtraTextures(loader, effectiveShader)
     const tempMesh = buildCardMesh(
       dims,
@@ -346,6 +352,7 @@ export class CardSceneBuilder {
       glitterTexture,
       noiseTexture,
       cardBackTexture,
+      sparkleIriTextures,
     )
 
     // Swap material only — keep mesh position/rotation/scale intact

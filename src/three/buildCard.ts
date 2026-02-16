@@ -92,6 +92,12 @@ const STYLE_UNIFORMS: Partial<Record<ShaderStyle, UniformMapping[]>> = {
     ['uSirWashSaturation', (c) => c.shaders.specialIllustrationRare.washSaturation],
     ['uSirWashContrast', (c) => c.shaders.specialIllustrationRare.washContrast],
     ['uSirWashOpacity', (c) => c.shaders.specialIllustrationRare.washOpacity],
+    ['uSirTiltSparkleScale', (c) => c.shaders.specialIllustrationRare.tiltSparkleScale],
+    ['uSirTiltSparkleIntensity', (c) => c.shaders.specialIllustrationRare.tiltSparkleIntensity],
+    ['uSirTiltSparkleTiltSensitivity', (c) => c.shaders.specialIllustrationRare.tiltSparkleTiltSensitivity],
+    ['uSirTiltSparkle2Scale', (c) => c.shaders.specialIllustrationRare.tiltSparkle2Scale],
+    ['uSirTiltSparkle2Intensity', (c) => c.shaders.specialIllustrationRare.tiltSparkle2Intensity],
+    ['uSirTiltSparkle2TiltSensitivity', (c) => c.shaders.specialIllustrationRare.tiltSparkle2TiltSensitivity],
     ['uSirBaseBrightness', (c) => c.shaders.specialIllustrationRare.baseBrightness],
     ['uSirBaseContrast', (c) => c.shaders.specialIllustrationRare.baseContrast],
   ],
@@ -314,6 +320,7 @@ export function buildCardMesh(
   glitterTexture?: Texture | null,
   noiseTexture?: Texture | null,
   cardBackTexture?: Texture | null,
+  sparkleIriTextures?: { iri1: Texture; iri2: Texture } | null,
 ): Mesh {
   const cardH = dims.screenH * config.cardSize
   const cardW = cardH * CARD_ASPECT
@@ -353,6 +360,8 @@ export function buildCardMesh(
 
   if (shaderStyle === 'special-illustration-rare') {
     addIriUniforms(uniforms, iriTextures)
+    uniforms.uIri1Tex = { value: sparkleIriTextures?.iri1 ?? blackPixel }
+    uniforms.uIri2Tex = { value: sparkleIriTextures?.iri2 ?? blackPixel }
   } else if (shaderStyle === 'ultra-rare' || shaderStyle === 'rainbow-rare') {
     addIriUniforms(uniforms, iriTextures, true)
   }

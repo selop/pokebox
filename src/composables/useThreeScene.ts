@@ -190,6 +190,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
     // Load iridescent textures for special illustration rare cards
     cardLoader.loadIriTextures()
+    cardLoader.loadSparkleIriTextures()
 
     // Load birthday textures for double rare cards
     cardLoader.loadBirthdayTextures()
@@ -801,24 +802,28 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   )
 
   // Special-illustration-rare shader parameters
+  const sir = () => store.config.shaders.specialIllustrationRare
   const sirUniformMap: [() => number, string][] = [
-    [() => store.config.shaders.specialIllustrationRare.shineAngle, 'uSirShineAngle'],
-    [() => store.config.shaders.specialIllustrationRare.shineFrequency, 'uSirShineFrequency'],
-    [() => store.config.shaders.specialIllustrationRare.shineBrightness, 'uSirShineBrightness'],
-    [() => store.config.shaders.specialIllustrationRare.shineContrast, 'uSirShineContrast'],
-    [() => store.config.shaders.specialIllustrationRare.shineSaturation, 'uSirShineSaturation'],
-    [() => store.config.shaders.specialIllustrationRare.glitterContrast, 'uSirGlitterContrast'],
-    [() => store.config.shaders.specialIllustrationRare.glitterSaturation, 'uSirGlitterSaturation'],
-    [() => store.config.shaders.specialIllustrationRare.washScale, 'uSirWashScale'],
-    [
-      () => store.config.shaders.specialIllustrationRare.washTiltSensitivity,
-      'uSirWashTiltSensitivity',
-    ],
-    [() => store.config.shaders.specialIllustrationRare.washSaturation, 'uSirWashSaturation'],
-    [() => store.config.shaders.specialIllustrationRare.washContrast, 'uSirWashContrast'],
-    [() => store.config.shaders.specialIllustrationRare.washOpacity, 'uSirWashOpacity'],
-    [() => store.config.shaders.specialIllustrationRare.baseBrightness, 'uSirBaseBrightness'],
-    [() => store.config.shaders.specialIllustrationRare.baseContrast, 'uSirBaseContrast'],
+    [() => sir().shineAngle, 'uSirShineAngle'],
+    [() => sir().shineFrequency, 'uSirShineFrequency'],
+    [() => sir().shineBrightness, 'uSirShineBrightness'],
+    [() => sir().shineContrast, 'uSirShineContrast'],
+    [() => sir().shineSaturation, 'uSirShineSaturation'],
+    [() => sir().glitterContrast, 'uSirGlitterContrast'],
+    [() => sir().glitterSaturation, 'uSirGlitterSaturation'],
+    [() => sir().washScale, 'uSirWashScale'],
+    [() => sir().washTiltSensitivity, 'uSirWashTiltSensitivity'],
+    [() => sir().washSaturation, 'uSirWashSaturation'],
+    [() => sir().washContrast, 'uSirWashContrast'],
+    [() => sir().washOpacity, 'uSirWashOpacity'],
+    [() => sir().tiltSparkleScale, 'uSirTiltSparkleScale'],
+    [() => sir().tiltSparkleIntensity, 'uSirTiltSparkleIntensity'],
+    [() => sir().tiltSparkleTiltSensitivity, 'uSirTiltSparkleTiltSensitivity'],
+    [() => sir().tiltSparkle2Scale, 'uSirTiltSparkle2Scale'],
+    [() => sir().tiltSparkle2Intensity, 'uSirTiltSparkle2Intensity'],
+    [() => sir().tiltSparkle2TiltSensitivity, 'uSirTiltSparkle2TiltSensitivity'],
+    [() => sir().baseBrightness, 'uSirBaseBrightness'],
+    [() => sir().baseContrast, 'uSirBaseContrast'],
   ]
   for (const [getter, uniformName] of sirUniformMap) {
     watchUniform(getter, uniformName)

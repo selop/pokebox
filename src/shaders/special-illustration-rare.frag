@@ -7,6 +7,8 @@ uniform sampler2D uFoilTex;
 uniform sampler2D uIri7Tex;  // Iridescent texture layer 7
 uniform sampler2D uIri8Tex;  // Iridescent texture layer 8
 uniform sampler2D uIri9Tex;  // Iridescent texture layer 9
+uniform sampler2D uIri1Tex;  // Sparkle texture layer 1 (tilt sparkle vertical)
+uniform sampler2D uIri2Tex;  // Sparkle texture layer 2 (tilt sparkle horizontal)
 uniform float uHasFoil;
 uniform vec2 uPointer;       // eye projected onto card UV (0-1)
 uniform vec2 uBackground;    // constrained 0.37-0.63
@@ -28,6 +30,13 @@ uniform float uSirWashContrast;
 uniform float uSirWashOpacity;
 uniform float uSirBaseBrightness;
 uniform float uSirBaseContrast;
+// Tilt sparkle parameters
+uniform float uSirTiltSparkleScale;
+uniform float uSirTiltSparkleIntensity;
+uniform float uSirTiltSparkleTiltSensitivity;
+uniform float uSirTiltSparkle2Scale;
+uniform float uSirTiltSparkle2Intensity;
+uniform float uSirTiltSparkle2TiltSensitivity;
 
 varying vec2 vUv;
 
@@ -169,6 +178,63 @@ void main() {
         if (foil > 0.01) {
             result = mix(result, blendOverlay(result, vec3(1.0)), foil * uCardOpacity * 0.4);
         }
+
+        
+    }
+
+    if (foil > 0.01) {
+        // ── TILT SPARKLE — contour-following sweep on etch relief ──────
+        // Use the foil texture gradient (dFdx/dFdy) as a pseudo surface
+        // normal so the sparkle band follows embossed contours (the bubble,
+        // stars, etc.) instead of sweeping in a straight line.
+        float etchMask = smoothstep(0.5, 0.9, foil);
+
+        // Etch surface gradient — approximates which direction each etched
+        // region "faces". Where the bubble curves, the gradient points
+        // radially outward, so the band wraps around the contour.
+        vec2 etchGrad = vec2(dFdx(foil), dFdy(foil));
+
+        // Tilt direction in UV space (centered at 0)
+        vec2 tiltDir = vec2(bgX - 0.5, bgY - 0.5);
+
+        // Dot product: etch regions whose gradient aligns with tilt catch light.
+        // Scale sensitivity controls how much tilt is needed to sweep fully.
+        float catchAngle = dot(normalize(etchGrad + 0.001), normalize(tiltDir + 0.001));
+
+        // Gradient magnitude gates the effect — flat etch areas (no contour)
+        // don't sparkle, only edges/curves with strong relief do
+        float gradStrength = length(etchGrad) * 80.0;
+        gradStrength = clamp(gradStrength, 0.0, 1.0);
+
+        // Iri textures add per-texel variation so it's not perfectly smooth
+        float iri1Val = sampleIriTexture(uIri1Tex, uv, uSirTiltSparkleScale).r;
+        float iri2Val = sampleIriTexture(uIri2Tex, uv, uSirTiltSparkle2Scale).r;
+
+        // Layer 1: contour-following sparkle
+        float band1 = smoothstep(1.0 - uSirTiltSparkleTiltSensitivity, 1.0, catchAngle);
+        band1 *= gradStrength;
+
+        vec3 sparkle1 = sampleIriTexture(uIri1Tex, uv, uSirTiltSparkleScale);
+        sparkle1 = adjustContrast(sparkle1, 2.5);
+        sparkle1 = adjustSaturate(sparkle1, 2.0);
+        sparkle1 = clamp(sparkle1, 0.0, 1.0);
+
+        float rainbowT1 = foil * 3.0 + uv.y * 1.5 + (0.5 - bgY) * 3.0;
+        vec3 sparkleRgb1 = sunpillarGradient(rainbowT1) * sparkle1;
+        result += sparkleRgb1 * band1 * etchMask * uSirTiltSparkleIntensity * uCardOpacity;
+
+        // Layer 2: opposite-facing contours (catch light from the other side)
+        float band2 = smoothstep(1.0 - uSirTiltSparkle2TiltSensitivity, 1.0, -catchAngle);
+        band2 *= gradStrength;
+
+        vec3 sparkle2 = sampleIriTexture(uIri2Tex, uv, uSirTiltSparkle2Scale);
+        sparkle2 = adjustContrast(sparkle2, 2.5);
+        sparkle2 = adjustSaturate(sparkle2, 2.0);
+        sparkle2 = clamp(sparkle2, 0.0, 1.0);
+
+        float rainbowT2 = foil * 3.0 + uv.x * 1.5 + (0.5 - bgX) * 3.0;
+        vec3 sparkleRgb2 = sunpillarGradient(rainbowT2) * sparkle2;
+        result += sparkleRgb2 * band2 * etchMask * uSirTiltSparkle2Intensity * uCardOpacity;
     }
 
     // Overall brighter filter for silvery holographic effect

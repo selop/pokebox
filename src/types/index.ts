@@ -61,6 +61,12 @@ export interface SpecialIllustrationRareConfig {
   washSaturation: number
   washContrast: number
   washOpacity: number
+  tiltSparkleScale: number
+  tiltSparkleIntensity: number
+  tiltSparkleTiltSensitivity: number
+  tiltSparkle2Scale: number
+  tiltSparkle2Intensity: number
+  tiltSparkle2TiltSensitivity: number
   baseBrightness: number
   baseContrast: number
 }

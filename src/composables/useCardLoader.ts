@@ -15,6 +15,11 @@ export interface IriTextures {
   iri9: Texture
 }
 
+export interface SparkleIriTextures {
+  iri1: Texture
+  iri2: Texture
+}
+
 export interface BirthdayTextures {
   dank: Texture
   dank2: Texture
@@ -24,6 +29,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
   const loaded = new Map<string, CardTextures>()
   const loader = new TextureLoader()
   let iriTextures: IriTextures | null = null
+  let sparkleIriTextures: SparkleIriTextures | null = null
   let birthdayTextures: BirthdayTextures | null = null
   let glitterTexture: Texture | null = null
   let noiseTexture: Texture | null = null
@@ -152,6 +158,39 @@ export function useCardLoader(renderer: WebGLRenderer) {
     return iriTextures
   }
 
+  function loadSparkleIriTextures(): Promise<SparkleIriTextures> {
+    if (sparkleIriTextures) return Promise.resolve(sparkleIriTextures)
+
+    return new Promise<SparkleIriTextures>((resolve) => {
+      let count = 0
+      let iri1: Texture | null = null
+      let iri2: Texture | null = null
+
+      const onReady = () => {
+        if (++count >= 2) {
+          sparkleIriTextures = { iri1: iri1!, iri2: iri2! }
+          resolve(sparkleIriTextures)
+        }
+      }
+
+      loader.load('img/151/iri-1.webp', (tex) => {
+        applyFilters(tex)
+        iri1 = tex
+        onReady()
+      })
+
+      loader.load('img/151/iri-2.webp', (tex) => {
+        applyFilters(tex)
+        iri2 = tex
+        onReady()
+      })
+    })
+  }
+
+  function getSparkleIriTextures(): SparkleIriTextures | null {
+    return sparkleIriTextures
+  }
+
   function loadBirthdayTextures(): Promise<BirthdayTextures> {
     if (birthdayTextures) return Promise.resolve(birthdayTextures)
 
@@ -242,6 +281,8 @@ export function useCardLoader(renderer: WebGLRenderer) {
     clearCache,
     loadIriTextures,
     getIriTextures,
+    loadSparkleIriTextures,
+    getSparkleIriTextures,
     loadBirthdayTextures,
     getBirthdayTextures,
     loadGlitterTexture,
