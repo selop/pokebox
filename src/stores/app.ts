@@ -13,6 +13,7 @@ import type {
 } from '@/types'
 import { CARD_DEFAULTS, DEFAULT_CARD, DEFAULT_CONFIG, STARTUP_CARD_ID } from '@/data/defaults'
 import { CARD_CATALOG, loadSetCatalog, SET_REGISTRY } from '@/data/cardCatalog'
+import { mulberry32 } from '@/three/utils'
 
 export const useAppStore = defineStore('app', () => {
   // --- Config (reactive, slider-bound) ---
@@ -30,11 +31,16 @@ export const useAppStore = defineStore('app', () => {
   const eyePos = reactive<EyePosition>({ x: 0, y: 0, z: 1 })
   const targetEye = reactive<EyePosition>({ x: 0, y: 0, z: 1 })
 
+  // --- Mobile detection ---
+  const isMobile =
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && !matchMedia('(pointer: fine)').matches)
+
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
   const currentCardId = ref(STARTUP_CARD_ID)
-  const cardDisplayMode = ref<CardDisplayMode>('fan')
+  const cardDisplayMode = ref<CardDisplayMode>(isMobile ? 'single' : 'fan')
   const sceneSeed = ref(Date.now())
 
   // --- Fan state ---
@@ -82,22 +88,20 @@ export const useAppStore = defineStore('app', () => {
     return Math.min(0.85, maxByWidth)
   })
 
-  // --- Fan card IDs (7 cards centered on current, wrapping) ---
+  // --- Fan card IDs (7 random cards from catalog, seeded by sceneSeed) ---
   const FAN_COUNT = 7
   const fanCardIds = computed(() => {
     const catalog = CARD_CATALOG.value
     if (catalog.length === 0) return []
-    const idx = catalog.findIndex((c) => c.id === currentCardId.value)
-    const validIdx = idx >= 0 ? idx : 0
-    const half = Math.floor(FAN_COUNT / 2)
     const count = Math.min(FAN_COUNT, catalog.length)
-    const ids: string[] = []
-    for (let i = 0; i < count; i++) {
-      const offset = i - half
-      const ci = (validIdx + offset + catalog.length) % catalog.length
-      ids.push(catalog[ci]!.id)
+    // Fisher-Yates shuffle with seeded PRNG for reproducible random selection
+    const rng = mulberry32(sceneSeed.value)
+    const indices = catalog.map((_, i) => i)
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1))
+      ;[indices[i], indices[j]] = [indices[j]!, indices[i]!]
     }
-    return ids
+    return indices.slice(0, count).map((i) => catalog[i]!.id)
   })
 
   // --- Display card IDs (single = just center, triple = center + neighbors, fan = 7-card hand) ---
@@ -235,6 +239,7 @@ export const useAppStore = defineStore('app', () => {
     cardTransform,
     eyePos,
     targetEye,
+    isMobile,
     sceneMode,
     renderMode,
     currentCardId,

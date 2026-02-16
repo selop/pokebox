@@ -12,6 +12,7 @@ import teraRainbowRareFrag from '../tera-rainbow-rare.frag'
 import masterBallFrag from '../master-ball.frag'
 import teraShinyRareFrag from '../tera-shiny-rare.frag'
 import shinyRareFrag from '../shiny-rare.frag'
+import activationFrag from '../activation.frag'
 
 describe('Shader Compilation', () => {
   /**
@@ -301,5 +302,10 @@ describe('Shader Compilation', () => {
     'uShine1Contrast',
     'uShine1Saturation',
     'uShine2Opacity',
+  ])
+
+  testShaderCompilation('activation', activationFrag, [
+    'uNoiseTex',
+    'uProgress',
   ])
 })

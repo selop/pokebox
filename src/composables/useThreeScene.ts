@@ -20,7 +20,7 @@ import type { Texture } from 'three'
 import { useAppStore } from '@/stores/app'
 import { buildBoxShell } from '@/three/buildBox'
 import { populateFurniture } from '@/three/buildFurniture'
-import { CARD_ASPECT } from '@/three/buildCard'
+import { CARD_ASPECT, buildActivationMaterial } from '@/three/buildCard'
 import { mulberry32 } from '@/three/utils'
 import { CardNavigator } from '@/three/CardNavigator'
 import { MergeAnimator } from '@/three/MergeAnimator'
@@ -54,6 +54,19 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
   const FLIP_DURATION = 1.5
   let flipStartTime = -1
+  const ACTIVATION_DURATION = 1.0
+
+  // Fan-to-single zoom transition state
+  let fanZoomTransition: {
+    fanIndex: number
+    startTime: number
+    duration: number
+    // Snapshot of the clicked card's starting transform
+    startPos: { x: number; y: number; z: number }
+    startRotZ: number
+    startScale: number
+  } | null = null
+  const FAN_ZOOM_DURATION = 0.8
 
   function triggerFlip() {
     if (flipStartTime < 0) {
@@ -71,36 +84,79 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   )
   const cardSceneBuilder = new CardSceneBuilder(store, () => cardLoader)
 
-  function onFanMouseMove(e: MouseEvent) {
-    if (store.cardDisplayMode !== 'fan' || !camera) return
-    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
-    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
+  function startCardActivation(mesh: Mesh) {
+    if (mesh.userData.activationState !== 'pending') return
+    const cardTex = mesh.userData.cardTexture as Texture
+    const noiseTex = mesh.userData.noiseTexture as Texture | null
+    const actMat = buildActivationMaterial(cardTex, noiseTex)
+    if (Array.isArray(mesh.material)) {
+      mesh.material.forEach((m) => m.dispose())
+    } else {
+      mesh.material.dispose()
+    }
+    mesh.material = actMat
+    mesh.userData.activationState = 'activating'
+    mesh.userData.activationStartTime = performance.now() * 0.001
+  }
+
+  function fanRaycast(clientX: number, clientY: number): number | null {
+    if (store.cardDisplayMode !== 'fan' || !camera) return null
+    mouseNDC.x = (clientX / window.innerWidth) * 2 - 1
+    mouseNDC.y = -(clientY / window.innerHeight) * 2 + 1
     raycaster.setFromCamera(mouseNDC, camera)
     const intersects = raycaster.intersectObjects(cardMeshes.value)
-    const hit =
-      intersects.length > 0 ? (intersects[0]!.object.userData.fanIndex as number) : null
+    return intersects.length > 0 ? (intersects[0]!.object.userData.fanIndex as number) : null
+  }
+
+  function isFanIntroPlaying(): boolean {
+    return cardMeshes.value.some((m) => m.userData.fanIntro)
+  }
+
+  function onFanMouseMove(e: MouseEvent) {
+    if (isFanIntroPlaying()) return
+    const hit = fanRaycast(e.clientX, e.clientY)
     if (hit !== lastHoveredFanIndex) {
       lastHoveredFanIndex = hit
       store.setHoveredFanCard(hit ?? null)
-      // Upgrade shader on the newly hovered card (lazy, no rebuild)
       if (hit != null) {
         const mesh = cardMeshes.value.find((m) => m.userData.fanIndex === hit)
-        if (mesh) cardSceneBuilder.upgradeFanCardShader(mesh)
+        if (mesh) startCardActivation(mesh)
       }
     }
   }
 
+  function onFanTouchStart(e: TouchEvent) {
+    if (store.cardDisplayMode !== 'fan' || !camera || isFanIntroPlaying()) return
+    const touch = e.touches[0]
+    if (!touch) return
+    const hit = fanRaycast(touch.clientX, touch.clientY)
+    if (hit != null) {
+      store.setHoveredFanCard(hit)
+      const mesh = cardMeshes.value.find((m) => m.userData.fanIndex === hit)
+      if (mesh) startCardActivation(mesh)
+    }
+  }
+
   function onFanClick(e: MouseEvent) {
-    if (store.cardDisplayMode !== 'fan' || !camera) return
-    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
-    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
-    raycaster.setFromCamera(mouseNDC, camera)
-    const intersects = raycaster.intersectObjects(cardMeshes.value)
-    if (intersects.length > 0) {
-      const fanIndex = intersects[0]!.object.userData.fanIndex as number
-      if (fanIndex != null) {
-        store.selectFanCard(fanIndex)
-      }
+    if (store.cardDisplayMode !== 'fan' || !camera || fanZoomTransition) return
+    if (isFanIntroPlaying()) return
+    const hit = fanRaycast(e.clientX, e.clientY)
+    if (hit == null) return
+
+    const mesh = cardMeshes.value.find((m) => m.userData.fanIndex === hit)
+    if (!mesh) return
+
+    // Ensure card is activated before zoom
+    startCardActivation(mesh)
+
+    // Snapshot current transform and start the zoom transition
+    fanZoomTransition = {
+      fanIndex: hit,
+      startTime: performance.now() * 0.001,
+      duration: FAN_ZOOM_DURATION,
+      startPos: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z },
+      startRotZ: mesh.rotation.z,
+      startScale: mesh.scale.x,
     }
   }
 
@@ -186,6 +242,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     window.addEventListener('keydown', onKeydown)
     renderer.domElement.addEventListener('mousemove', onFanMouseMove)
     renderer.domElement.addEventListener('click', onFanClick)
+    renderer.domElement.addEventListener('touchstart', onFanTouchStart)
   }
 
   function rebuildScene() {
@@ -195,12 +252,13 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Clear scene
     while (scene.children.length) scene.remove(scene.children[0]!)
     cardMeshes.value = []
+    fanZoomTransition = null
 
     const dims = store.dimensions
     const renderMode = store.renderMode
 
     // Build box shell
-    buildBoxShell(scene, dims, renderMode, wallTexture, store.isDimmed)
+    buildBoxShell(scene, dims, renderMode, wallTexture, store.config.lights)
 
     // Furniture mode
     if (store.sceneMode === 'furniture') {
@@ -264,11 +322,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Update head-tracked spotlight position
     const spotlight = scene.getObjectByName('headSpotlight') as SpotLight | undefined
     if (spotlight) {
-      spotlight.position.set(
-        store.eyePos.x * 0.8,
-        store.eyePos.y * 0.8,
-        store.eyePos.z * 0.6,
-      )
+      spotlight.position.set(store.eyePos.x * 0.8, store.eyePos.y * 0.8, store.eyePos.z * 0.6)
       spotlight.target.position.set(0, 0, -store.dimensions.boxD * 0.5)
       spotlight.target.updateMatrixWorld()
     }
@@ -304,9 +358,52 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         const hover = mesh.userData.fanHover as
           | { x: number; y: number; z: number; rotZ: number; scale: number }
           | undefined
+        const intro = mesh.userData.fanIntro as
+          | {
+              x: number; y: number; z: number; rotZ: number; scale: number
+              delay: number; duration: number; startTime: number
+            }
+          | undefined
         if (!rest || !hover) continue
 
-        const isHovered = mesh.userData.fanIndex === hoveredIdx
+        // Staggered intro animation: ease from intro position to rest
+        if (intro) {
+          const elapsed = time - intro.startTime - intro.delay
+          if (elapsed < 0) {
+            // Not started yet — stay at intro position
+            mesh.position.set(intro.x, intro.y, intro.z)
+            mesh.rotation.z = intro.rotZ
+            mesh.scale.setScalar(intro.scale)
+            mesh.rotation.x = 0
+            mesh.rotation.y = 0
+            continue
+          }
+          const t = Math.min(elapsed / intro.duration, 1)
+          // Ease-out back: overshoots slightly then settles (pop feel)
+          const c1 = 1.70158
+          const c3 = c1 + 1
+          const ease = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
+
+          mesh.position.x = intro.x + (rest.x - intro.x) * ease
+          mesh.position.y = intro.y + (rest.y - intro.y) * ease
+          mesh.position.z = intro.z + (rest.z - intro.z) * ease
+          mesh.rotation.z = intro.rotZ + (rest.rotZ - intro.rotZ) * ease
+          const s = intro.scale + (rest.scale - intro.scale) * ease
+          mesh.scale.setScalar(s)
+          mesh.rotation.x = tilt.state.rotateX * 0.5 * ease
+          mesh.rotation.y = tilt.state.rotateY * 0.3 * ease
+
+          if (t >= 1) {
+            // Intro complete — remove intro data so normal hover takes over
+            delete mesh.userData.fanIntro
+          }
+          continue
+        }
+
+        // Skip normal peek if zoom transition is driving positions
+        if (fanZoomTransition) continue
+
+        const isHovered = mesh.userData.fanIndex === hoveredIdx && !isFanIntroPlaying()
         const target = isHovered ? hover : rest
         const n = meshes.length
 
@@ -329,6 +426,67 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         // Dynamic renderOrder: hovered card always on top
         const baseOrder = (mesh.userData.fanBaseRenderOrder as number) ?? n
         mesh.renderOrder = isHovered ? 100 : baseOrder
+      }
+
+      // ── Fan-to-single zoom transition ──────────────────
+      if (fanZoomTransition) {
+        const zt = fanZoomTransition
+        const elapsed = time - zt.startTime
+        const rawT = Math.min(elapsed / zt.duration, 1.0)
+        // Cubic ease-in-out
+        const ease = rawT < 0.5
+          ? 4 * rawT * rawT * rawT
+          : 1 - Math.pow(-2 * rawT + 2, 3) / 2
+
+        // Target: center of the scene, scaled up to single card size
+        const dims = store.dimensions
+        const targetX = (store.cardTransform.x / 100) * dims.screenW
+        const targetY = (store.cardTransform.y / 100) * dims.screenH
+        const targetZ = -(store.cardTransform.z / 100) * dims.boxD
+        const singleScale = store.singleCardSize / (store.config.cardSize * 0.85)
+
+        for (const mesh of meshes) {
+          const isFocused = mesh.userData.fanIndex === zt.fanIndex
+          if (isFocused) {
+            // Zoom + flip to center
+            mesh.position.x = zt.startPos.x + (targetX - zt.startPos.x) * ease
+            mesh.position.y = zt.startPos.y + (targetY - zt.startPos.y) * ease
+            mesh.position.z = zt.startPos.z + (targetZ - zt.startPos.z) * ease
+            mesh.rotation.z = zt.startRotZ * (1 - ease)
+            mesh.rotation.y = ease * Math.PI * 2 // full flip
+            const s = zt.startScale + (singleScale - zt.startScale) * ease
+            mesh.scale.setScalar(s)
+            mesh.renderOrder = 200
+          } else {
+            // Fade out other cards by scaling down and becoming transparent
+            const fadeScale = mesh.scale.x * (1 - ease * 0.5)
+            mesh.scale.setScalar(Math.max(fadeScale, 0.01))
+            if ((mesh.material as any).opacity !== undefined) {
+              ;(mesh.material as any).opacity = 1 - ease
+            }
+          }
+        }
+
+        if (rawT >= 1.0) {
+          // Transition complete — switch to single mode
+          store.selectFanCard(zt.fanIndex)
+          fanZoomTransition = null
+        }
+      }
+
+      // ── Drive activation progress for cards being activated ──
+      for (const mesh of meshes) {
+        if (mesh.userData.activationState !== 'activating') continue
+        const startTime = mesh.userData.activationStartTime as number
+        const progress = Math.min((time - startTime) / ACTIVATION_DURATION, 1.0)
+        const mat = mesh.material as ShaderMaterial
+        if (mat.isShaderMaterial && mat.uniforms['uProgress']) {
+          mat.uniforms['uProgress']!.value = progress
+        }
+        if (progress >= 1.0) {
+          cardSceneBuilder.upgradeFanCardShader(mesh)
+          mesh.userData.activationState = 'done'
+        }
       }
     } else {
       for (const mesh of meshes) {
@@ -370,15 +528,17 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
       const px = Math.max(0, Math.min(1, localX))
       const py = Math.max(0, Math.min(1, localY))
-      ;(u['uPointer']!.value as Vector2).set(px, py)
+      if (u['uPointer']) (u['uPointer']!.value as Vector2).set(px, py)
 
-      const bx = 0.37 + Math.max(0, Math.min(1, localX)) * 0.26
-      const by = 0.37 + Math.max(0, Math.min(1, localY)) * 0.26
-      ;(u['uBackground']!.value as Vector2).set(bx, by)
+      if (u['uBackground']) {
+        const bx = 0.37 + Math.max(0, Math.min(1, localX)) * 0.26
+        const by = 0.37 + Math.max(0, Math.min(1, localY)) * 0.26
+        ;(u['uBackground']!.value as Vector2).set(bx, by)
+      }
 
       const dx = px - 0.5,
         dy = py - 0.5
-      u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
+      if (u['uPointerFromCenter']) u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
 
       // Additional uniforms for ultra-rare shader
       if (u['uPointerFromLeft']) u['uPointerFromLeft']!.value = px
@@ -400,15 +560,20 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Smooth dim/brighten lights in solid mode
     const dimRate = 0.03
     const ambient = scene.getObjectByName('solidAmbient') as AmbientLight | undefined
-    const dir = scene.getObjectByName('solidDir') as DirectionalLight | undefined
+    const dirLight = scene.getObjectByName('solidDir') as DirectionalLight | undefined
     const back = scene.getObjectByName('solidBack') as PointLight | undefined
-    if (ambient && dir && back) {
-      const targetA = store.isDimmed ? 0.015 : 0.3
-      const targetD = store.isDimmed ? 0.025 : 0.5
-      const targetB = store.isDimmed ? 0.025 : 0.16
+    if (ambient && dirLight && back) {
+      const targetA = store.isDimmed ? 0.02 : store.config.lights.ambientIntensity
+      const targetD = store.isDimmed ? 0.0 : store.config.lights.directionalIntensity
+      const targetB = store.isDimmed ? 3.5 : store.config.lights.backlightIntensity
       ambient.intensity += (targetA - ambient.intensity) * dimRate
-      dir.intensity += (targetD - dir.intensity) * dimRate
+      dirLight.intensity += (targetD - dirLight.intensity) * dimRate
       back.intensity += (targetB - back.intensity) * dimRate
+    }
+
+    // Update spotlight intensity from config
+    if (spotlight) {
+      spotlight.intensity += (store.config.lights.spotlightIntensity - spotlight.intensity) * dimRate
     }
 
     renderer.render(scene, camera)
@@ -422,6 +587,13 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     if (store.sceneMode !== 'cards') return
     if (e.key === 'f') {
       triggerFlip()
+      return
+    }
+    // Fan mode: N/B shuffle to a new random hand
+    if (store.cardDisplayMode === 'fan') {
+      if (e.key === 'n' || e.key === 'b') {
+        store.randomizeSeed()
+      }
       return
     }
     if (cardNavigator.handleKeydown(e)) {
@@ -455,6 +627,16 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     ],
     () => {
       rebuildScene()
+    },
+  )
+
+  // Auto-dim lights when transitioning from fan to single mode (after rebuild so lights animate)
+  watch(
+    () => store.cardDisplayMode,
+    (mode, oldMode) => {
+      if (oldMode === 'fan' && mode === 'single') {
+        store.isDimmed = true
+      }
     },
   )
 
@@ -628,7 +810,10 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.shaders.specialIllustrationRare.glitterContrast, 'uSirGlitterContrast'],
     [() => store.config.shaders.specialIllustrationRare.glitterSaturation, 'uSirGlitterSaturation'],
     [() => store.config.shaders.specialIllustrationRare.washScale, 'uSirWashScale'],
-    [() => store.config.shaders.specialIllustrationRare.washTiltSensitivity, 'uSirWashTiltSensitivity'],
+    [
+      () => store.config.shaders.specialIllustrationRare.washTiltSensitivity,
+      'uSirWashTiltSensitivity',
+    ],
     [() => store.config.shaders.specialIllustrationRare.washSaturation, 'uSirWashSaturation'],
     [() => store.config.shaders.specialIllustrationRare.washContrast, 'uSirWashContrast'],
     [() => store.config.shaders.specialIllustrationRare.washOpacity, 'uSirWashOpacity'],
@@ -651,11 +836,17 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.shaders.teraRainbowRare.sparkleColorShift, 'uSparkleColorShift'],
     [() => store.config.shaders.teraRainbowRare.etchSparkleScale, 'uEtchSparkleScale'],
     [() => store.config.shaders.teraRainbowRare.etchSparkleIntensity, 'uEtchSparkleIntensity'],
-    [() => store.config.shaders.teraRainbowRare.etchSparkleTiltSensitivity, 'uEtchSparkleTiltSensitivity'],
+    [
+      () => store.config.shaders.teraRainbowRare.etchSparkleTiltSensitivity,
+      'uEtchSparkleTiltSensitivity',
+    ],
     [() => store.config.shaders.teraRainbowRare.etchSparkleTexMix, 'uEtchSparkleTexMix'],
     [() => store.config.shaders.teraRainbowRare.etchSparkle2Scale, 'uEtchSparkle2Scale'],
     [() => store.config.shaders.teraRainbowRare.etchSparkle2Intensity, 'uEtchSparkle2Intensity'],
-    [() => store.config.shaders.teraRainbowRare.etchSparkle2TiltSensitivity, 'uEtchSparkle2TiltSensitivity'],
+    [
+      () => store.config.shaders.teraRainbowRare.etchSparkle2TiltSensitivity,
+      'uEtchSparkle2TiltSensitivity',
+    ],
     [() => store.config.shaders.teraRainbowRare.etchSparkle2TexMix, 'uEtchSparkle2TexMix'],
     [() => store.config.shaders.teraRainbowRare.baseBrightness, 'uBaseBrightness'],
     [() => store.config.shaders.teraRainbowRare.baseContrast, 'uBaseContrast'],
@@ -677,11 +868,17 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     [() => store.config.shaders.teraShinyRare.sparkleColorShift, 'uSparkleColorShift'],
     [() => store.config.shaders.teraShinyRare.etchSparkleScale, 'uEtchSparkleScale'],
     [() => store.config.shaders.teraShinyRare.etchSparkleIntensity, 'uEtchSparkleIntensity'],
-    [() => store.config.shaders.teraShinyRare.etchSparkleTiltSensitivity, 'uEtchSparkleTiltSensitivity'],
+    [
+      () => store.config.shaders.teraShinyRare.etchSparkleTiltSensitivity,
+      'uEtchSparkleTiltSensitivity',
+    ],
     [() => store.config.shaders.teraShinyRare.etchSparkleTexMix, 'uEtchSparkleTexMix'],
     [() => store.config.shaders.teraShinyRare.etchSparkle2Scale, 'uEtchSparkle2Scale'],
     [() => store.config.shaders.teraShinyRare.etchSparkle2Intensity, 'uEtchSparkle2Intensity'],
-    [() => store.config.shaders.teraShinyRare.etchSparkle2TiltSensitivity, 'uEtchSparkle2TiltSensitivity'],
+    [
+      () => store.config.shaders.teraShinyRare.etchSparkle2TiltSensitivity,
+      'uEtchSparkle2TiltSensitivity',
+    ],
     [() => store.config.shaders.teraShinyRare.etchSparkle2TexMix, 'uEtchSparkle2TexMix'],
     [() => store.config.shaders.teraShinyRare.baseBrightness, 'uBaseBrightness'],
     [() => store.config.shaders.teraShinyRare.baseContrast, 'uBaseContrast'],
@@ -824,6 +1021,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     window.removeEventListener('keydown', onKeydown)
     renderer?.domElement.removeEventListener('mousemove', onFanMouseMove)
     renderer?.domElement.removeEventListener('click', onFanClick)
+    renderer?.domElement.removeEventListener('touchstart', onFanTouchStart)
     mouseTilt.detach()
     gyroscope.stop()
     renderer?.dispose()

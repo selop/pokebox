@@ -1,3 +1,10 @@
+export interface LightConfig {
+  ambientIntensity: number
+  directionalIntensity: number
+  backlightIntensity: number
+  spotlightIntensity: number
+}
+
 export interface SceneConfig {
   screenWidthCm: number
   screenHeightCm: number
@@ -11,6 +18,7 @@ export interface SceneConfig {
   cardSpinSpeed: number
   nearPlane: number
   farPlane: number
+  lights: LightConfig
 }
 
 export interface IllustrationRareConfig {

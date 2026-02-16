@@ -10,6 +10,7 @@ import teraRainbowRareFrag from '../tera-rainbow-rare.frag'
 import masterBallFrag from '../master-ball.frag'
 import teraShinyRareFrag from '../tera-shiny-rare.frag'
 import shinyRareFrag from '../shiny-rare.frag'
+import activationFrag from '../activation.frag'
 
 /**
  * Static analysis tests for shader code
@@ -28,6 +29,7 @@ describe('Shader Static Validation', () => {
     'tera-shiny-rare': teraShinyRareFrag,
     'master-ball': masterBallFrag,
     'shiny-rare': shinyRareFrag,
+    'activation': activationFrag,
   }
 
   Object.entries(shaders).forEach(([name, shaderCode]) => {

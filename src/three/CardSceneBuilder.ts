@@ -248,13 +248,13 @@ export class CardSceneBuilder {
       const arcX = pivotX + Math.sin(angleRad) * pivotRadius
       const arcY = pivotY + Math.cos(angleRad) * pivotRadius
 
-      // Z-stagger: left-to-right ordering (left cards behind, right cards in front)
-      const zStagger = i * dims.boxD * 0.012
+      // Z-spread: fan cards across the box depth (left=back wall, right=front)
+      const zSpread = n > 1 ? (i / (n - 1)) * dims.boxD * 0.55 : 0
 
       // Rest state (no hover)
       const restX = arcX
       const restY = arcY
-      const restZ = baseZ + zStagger
+      const restZ = baseZ + zSpread
       const restRotZ = -angleRad
       const restScale = 1.0
 
@@ -265,24 +265,41 @@ export class CardSceneBuilder {
       const hoverRotZ = -angleRad * 0.2
       const hoverScale = 1.08
 
-      // Build mesh — always basic material initially (shader upgraded lazily)
-      const mat = new MeshBasicMaterial({
-        map: tex.card,
-        transparent: true,
-        side: DoubleSide,
-      })
-      const mesh = new Mesh(new PlaneGeometry(cardW, cardH), mat)
+      // Build mesh with lightweight MeshBasicMaterial placeholder
+      // (real ShaderMaterial is applied later during gold activation animation)
+      const cardMat = new MeshBasicMaterial({ map: tex.card, transparent: true, side: DoubleSide })
+      const mesh = new Mesh(new PlaneGeometry(cardW, cardH), cardMat)
 
-      // Start at rest position
-      mesh.position.set(restX, restY, restZ)
-      mesh.rotation.z = restRotZ
-      mesh.scale.setScalar(restScale)
+      // Intro start position: below the pivot, collapsed at center
+      const introX = pivotX
+      const introY = pivotY - cardH * 0.5
+      const introZ = baseZ
+      const introRotZ = 0
+      const introScale = 0.4
+
+      // Start at intro position (hidden below)
+      mesh.position.set(introX, introY, introZ)
+      mesh.rotation.z = introRotZ
+      mesh.scale.setScalar(introScale)
       mesh.castShadow = true
       mesh.renderOrder = i
+
+      // Staggered intro: back card (i=0) pops first, front card last
+      const introDelay = i * 0.07 // seconds between each card
+      const introDuration = 0.45 // seconds for each card's pop-up
 
       // Store animation targets in userData
       mesh.userData.fanIndex = i
       mesh.userData.cardId = id
+      mesh.userData.activationState = 'pending' // 'pending' | 'activating' | 'done'
+      mesh.userData.activationProgress = 0
+      mesh.userData.cardTexture = tex.card
+      mesh.userData.noiseTexture = loader.getNoiseTexture()
+      mesh.userData.fanIntro = {
+        x: introX, y: introY, z: introZ, rotZ: introRotZ, scale: introScale,
+        delay: introDelay, duration: introDuration,
+        startTime: performance.now() * 0.001,
+      }
       mesh.userData.fanRest = { x: restX, y: restY, z: restZ, rotZ: restRotZ, scale: restScale }
       mesh.userData.fanHover = {
         x: hoverX,
@@ -292,7 +309,6 @@ export class CardSceneBuilder {
         scale: hoverScale,
       }
       mesh.userData.fanBaseRenderOrder = i
-      mesh.userData.hasShaderMaterial = false
 
       scene.add(mesh)
       meshes.push(mesh)

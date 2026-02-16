@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
-import type { SceneConfig } from '@/types'
+import type { LightConfig, SceneConfig } from '@/types'
 
 const store = useAppStore()
 
@@ -9,16 +9,16 @@ function onConfigSlider(key: keyof SceneConfig, value: string, rebuild: boolean)
   if (rebuild) store.triggerRebuild()
 }
 
+function onLightSlider(key: keyof LightConfig, value: string) {
+  store.config.lights[key] = parseFloat(value)
+}
+
 function onCardSlider(key: keyof typeof store.cardTransform, value: string) {
   ;(store.cardTransform as Record<string, number>)[key] = parseFloat(value)
 }
 
 function onHoloIntensity(value: string) {
   store.config.holoIntensity = parseFloat(value) / 100
-}
-
-function onSpinSpeed(value: string) {
-  store.config.cardSpinSpeed = parseFloat(value)
 }
 
 function onSceneMode(value: string) {
@@ -115,18 +115,50 @@ function formatValue(v: number): string {
       </div>
     </div>
 
+    <!-- Lighting -->
+    <div class="cal-section">
+      <div class="cal-section-title">Lighting</div>
+      <div class="cal-row">
+        <span class="cal-label">Ambient</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="0" max="5" step="0.1"
+            :value="store.config.lights.ambientIntensity"
+            @input="onLightSlider('ambientIntensity', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ formatValue(store.config.lights.ambientIntensity) }}</span>
+        </div>
+      </div>
+      <div class="cal-row">
+        <span class="cal-label">Directional</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="0" max="3" step="0.1"
+            :value="store.config.lights.directionalIntensity"
+            @input="onLightSlider('directionalIntensity', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ formatValue(store.config.lights.directionalIntensity) }}</span>
+        </div>
+      </div>
+      <div class="cal-row">
+        <span class="cal-label">Backlight</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="0" max="5" step="0.1"
+            :value="store.config.lights.backlightIntensity"
+            @input="onLightSlider('backlightIntensity', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ formatValue(store.config.lights.backlightIntensity) }}</span>
+        </div>
+      </div>
+      <div class="cal-row">
+        <span class="cal-label">Spotlight</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="0" max="2" step="0.1"
+            :value="store.config.lights.spotlightIntensity"
+            @input="onLightSlider('spotlightIntensity', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ formatValue(store.config.lights.spotlightIntensity) }}</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Card -->
     <div v-show="store.sceneMode === 'cards'" class="cal-section">
       <div class="cal-section-title">Card</div>
-      <div class="cal-row">
-        <span class="cal-label">Size</span>
-        <div class="cal-slider-wrap">
-          <input type="range" class="cal-slider" min="10" max="100" step="1"
-            :value="Math.round(store.config.cardSize * 100)"
-            @input="store.config.cardSize = parseFloat(($event.target as HTMLInputElement).value) / 100; store.triggerRebuild()" />
-          <span class="cal-value">{{ Math.round(store.config.cardSize * 100) }}%</span>
-        </div>
-      </div>
       <div class="cal-row">
         <span class="cal-label">X pos</span>
         <div class="cal-slider-wrap">
@@ -170,15 +202,6 @@ function formatValue(v: number): string {
             :value="Math.round(store.config.holoIntensity * 100)"
             @input="onHoloIntensity(($event.target as HTMLInputElement).value)" />
           <span class="cal-value">{{ Math.round(store.config.holoIntensity * 100) }}</span>
-        </div>
-      </div>
-      <div class="cal-row">
-        <span class="cal-label">Spin speed</span>
-        <div class="cal-slider-wrap">
-          <input type="range" class="cal-slider" min="0" max="120" step="1"
-            :value="store.config.cardSpinSpeed"
-            @input="onSpinSpeed(($event.target as HTMLInputElement).value)" />
-          <span class="cal-value">{{ store.config.cardSpinSpeed }}</span>
         </div>
       </div>
     </div>
