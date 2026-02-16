@@ -30,7 +30,7 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 4. **Card shaders** — Each card uses one of several holo shader types, automatically selected based on card type:
    - **Illustration Rare** (`illustration-rare.frag`): Multiple vertical rainbow bands with diagonal bars + glare, matching Pokémon illustration rare holo cards
    - **Regular Holo** (`regular-holo.frag`): Diagonal rainbow gradient with rotating bar patterns + layered radial glare, matching standard holo cards
-   - **Special Illustration Rare** (`special-illustration-rare.frag`): Diagonal rainbow + fine line texture + three iridescent texture layers (iri-7, iri-8, iri-9) with pointer-responsive shifts, matching special illustration rare cards with silvery holographic finish
+   - **Special Illustration Rare** (`special-illustration-rare.frag`): Diagonal rainbow + fine line texture + three iridescent texture layers (iri-7, iri-8, iri-9) with pointer-responsive shifts + contour-following tilt sparkle on etch relief using iri-1/iri-2 textures and foil gradient (dFdx/dFdy), matching special illustration rare cards with silvery holographic finish
    - **Double Rare** (`double-rare.frag`): Birthday holo with grain texture, dual dank textures, and tilt-revealed sparkles
    - **Ultra Rare** (`ultra-rare.frag`): Metallic sparkle with fully parameterized brightness/contrast/bar controls
    - **Rainbow Rare** (`rainbow-rare.frag`): Metallic sparkle spotlight + iridescent glitter from iri-7 texture, for etched SV_ULTRA double rares
@@ -44,6 +44,7 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
      - `common/holo-shine.glsl` — classic TCG holo shine with mask-driven rainbow overlay at configurable angles
    - All holo types use the same base uniforms and are masked by grayscale textures (`uMaskTex`, `uFoilTex`)
    - Special illustration rare, ultra rare, and rainbow rare use iridescent textures loaded from `public/img/151/iri-{7,8,9}.webp`
+   - Special illustration rare additionally loads sparkle iri textures from `public/img/151/iri-{1,2}.webp` for the tilt sparkle effect (loaded via `useCardLoader.loadSparkleIriTextures()`)
 
 ### Shader selection logic
 
@@ -65,7 +66,7 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 
 | Directory           | Role                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode, set switching)                                                       |
+| `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode, set switching, mobile detection)                                      |
 | `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`     |
 | `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `CardSceneBuilder` (card scene orchestration), `CardNavigator` (card navigation), `MergeAnimator` (card transitions), `geometryHelpers`, `utils` |
 | `src/shaders/`      | GLSL fragment shaders; shared functions in `common/` subdir, included via `#include` (resolved by `vite-plugin-glsl`)                                        |
@@ -117,6 +118,7 @@ The scene watches store properties and rebuilds accordingly:
 - Card assets live under `public/<setId>/{fronts,holo-masks,etch-foils}/` (one directory per set)
 - Seeded PRNG (`mulberry32`) for reproducible procedural layouts
 - MediaPipe is dynamically imported to avoid bundling the full library
+- Mobile detection (`store.isMobile`) is evaluated once in the Pinia store; on mobile, `cardDisplayMode` defaults to `'single'` and the display mode toggle button is hidden
 
 ## Testing
 
