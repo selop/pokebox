@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import ThreeCanvas from './components/ThreeCanvas.vue'
 import VideoFeed from './components/VideoFeed.vue'
 import StatusIndicator from './components/StatusIndicator.vue'
@@ -19,12 +19,6 @@ const store = useAppStore()
 const videoFeedRef = ref<InstanceType<typeof VideoFeed> | null>(null)
 const videoElRef = ref<HTMLVideoElement | null>(null)
 const threeCanvasRef = ref<InstanceType<typeof ThreeCanvas> | null>(null)
-
-const isMobile = computed(
-  () =>
-    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-    (navigator.maxTouchPoints > 1 && !matchMedia('(pointer: fine)').matches),
-)
 
 // Lazy-init face tracking when camera is requested
 let faceTrackingStarted = false
@@ -65,7 +59,7 @@ async function onEnableGyroscope() {
   <PerfOverlay />
   <BoosterPackModal />
   <InstructionsModal
-    :is-mobile="isMobile"
+    :is-mobile="store.isMobile"
     @enable-camera="onEnableCamera"
     @enable-gyroscope="onEnableGyroscope"
   />

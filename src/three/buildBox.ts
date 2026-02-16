@@ -24,7 +24,6 @@ export function buildBoxShell(
   dims: DerivedDimensions,
   renderMode: RenderMode,
   wallTexture?: Texture | null,
-  isDimmed = false,
   lights?: LightConfig,
 ): void {
   const { screenW, screenH, boxD } = dims
@@ -301,16 +300,16 @@ export function buildBoxShell(
     const dirI = lights?.directionalIntensity ?? 1.0
     const backI = lights?.backlightIntensity ?? 2.08
 
-    const ambient = new AmbientLight(0xffffff, isDimmed ? 0.02 : ambientI)
+    const ambient = new AmbientLight(0xffffff, ambientI)
     ambient.name = 'solidAmbient'
     scene.add(ambient)
 
-    const dirLight = new DirectionalLight(0xffffff, isDimmed ? 0.0 : dirI)
+    const dirLight = new DirectionalLight(0xffffff, dirI)
     dirLight.name = 'solidDir'
     dirLight.position.set(0, hh * 0.8, boxD * 0.5)
     scene.add(dirLight)
 
-    const backLight = new PointLight(0xdde8ff, isDimmed ? 3.5 : 0.08, boxD * 2)
+    const backLight = new PointLight(0xdde8ff, backI, boxD * 2)
     backLight.name = 'solidBack'
     backLight.position.set(0, 0, -boxD * 0.7)
     scene.add(backLight)

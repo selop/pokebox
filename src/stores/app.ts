@@ -31,11 +31,16 @@ export const useAppStore = defineStore('app', () => {
   const eyePos = reactive<EyePosition>({ x: 0, y: 0, z: 1 })
   const targetEye = reactive<EyePosition>({ x: 0, y: 0, z: 1 })
 
+  // --- Mobile detection ---
+  const isMobile =
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && !matchMedia('(pointer: fine)').matches)
+
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
   const currentCardId = ref(STARTUP_CARD_ID)
-  const cardDisplayMode = ref<CardDisplayMode>('fan')
+  const cardDisplayMode = ref<CardDisplayMode>(isMobile ? 'single' : 'fan')
   const sceneSeed = ref(Date.now())
 
   // --- Fan state ---
@@ -234,6 +239,7 @@ export const useAppStore = defineStore('app', () => {
     cardTransform,
     eyePos,
     targetEye,
+    isMobile,
     sceneMode,
     renderMode,
     currentCardId,

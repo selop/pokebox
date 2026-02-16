@@ -81,6 +81,7 @@ const displayModeLabel: Record<string, string> = {
 
       <div class="toolbar-group">
         <button
+          v-if="!store.isMobile"
           class="toolbar-btn"
           @click="cycleDisplayMode"
           v-html="displayModeLabel[store.cardDisplayMode]"

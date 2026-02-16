@@ -258,7 +258,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     const renderMode = store.renderMode
 
     // Build box shell
-    buildBoxShell(scene, dims, renderMode, wallTexture, store.isDimmed, store.config.lights)
+    buildBoxShell(scene, dims, renderMode, wallTexture, store.config.lights)
 
     // Furniture mode
     if (store.sceneMode === 'furniture') {
@@ -627,6 +627,16 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     ],
     () => {
       rebuildScene()
+    },
+  )
+
+  // Auto-dim lights when transitioning from fan to single mode (after rebuild so lights animate)
+  watch(
+    () => store.cardDisplayMode,
+    (mode, oldMode) => {
+      if (oldMode === 'fan' && mode === 'single') {
+        store.isDimmed = true
+      }
     },
   )
 
