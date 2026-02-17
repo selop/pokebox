@@ -44,22 +44,17 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # Tag with branch name
             type=ref,event=branch
-            # Tag with PR number
             type=ref,event=pr
-            # Tag with git tag (semantic versioning)
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            # Tag with 'latest' for main branch
             type=raw,value=latest,enable={{is_default_branch}}
-            # Tag with short commit SHA
             type=sha,prefix={{branch}}-
 
       - name: Build and push Docker image
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -69,4 +64,4 @@ jobs:
             VITE_ASSET_BASE_URL=${{ secrets.VITE_ASSET_BASE_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
