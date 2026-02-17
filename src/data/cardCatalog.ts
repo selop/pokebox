@@ -1,5 +1,6 @@
 import { shallowRef } from 'vue'
 import type { CardCatalogEntry, HoloType, SetCardJson, SetDefinition } from '@/types'
+import { assetUrl } from '@/utils/assetUrl'
 
 export const SET_REGISTRY: SetDefinition[] = [
   { id: 'sv3-5_en', label: 'MEW 151', jsonFile: 'sv3-5_en/sv3-5.en-US.json' },
@@ -89,7 +90,7 @@ export async function loadSetCatalog(setId: string): Promise<CardCatalogEntry[]>
   // Fetch JSON (cached)
   let allCards = jsonCache.get(setId)
   if (!allCards) {
-    const resp = await fetch(setDef.jsonFile)
+    const resp = await fetch(assetUrl(setDef.jsonFile))
     allCards = (await resp.json()) as SetCardJson[]
     jsonCache.set(setId, allCards)
   }
@@ -125,13 +126,13 @@ export async function loadSetCatalog(setId: string): Promise<CardCatalogEntry[]>
     const maskPrefix = jsonPrefix === 'sph' ? 'mph' : jsonPrefix
     const label = `#${cardNum} ${name}`
 
-    // Build texture paths
-    const front = `${setId}/fronts/${cardNum}_front_2x.webp`
-    const mask = `${setId}/holo-masks/${setId}_${cardNum}_${maskPrefix}.foil_up.webp`
+    // Build texture paths (prefixed with asset base URL for CDN support)
+    const front = assetUrl(`${setId}/fronts/${cardNum}_front_2x.webp`)
+    const mask = assetUrl(`${setId}/holo-masks/${setId}_${cardNum}_${maskPrefix}.foil_up.webp`)
 
     // Etch foil (only for etched types)
     const foil = isEtched
-      ? `${setId}/etch-foils/${setId}_${cardNum}_${maskPrefix}.etch_up.webp`
+      ? assetUrl(`${setId}/etch-foils/${setId}_${cardNum}_${maskPrefix}.etch_up.webp`)
       : ''
 
     const entry: CardCatalogEntry = { id: cardNum, label, front, mask, foil, holoType }
