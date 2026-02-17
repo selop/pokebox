@@ -277,6 +277,28 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     perfTracker.markRebuildEnd()
   }
 
+  /** Remove only card meshes and rebuild them, preserving lights/box/furniture. */
+  function rebuildCardsOnly() {
+    if (!scene || store.sceneMode !== 'cards') return
+
+    // Remove existing card meshes from scene
+    for (const mesh of cardMeshes.value) {
+      scene.remove(mesh)
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((m) => m.dispose())
+      } else {
+        mesh.material.dispose()
+      }
+      mesh.geometry.dispose()
+    }
+    cardMeshes.value = []
+    fanZoomTransition = null
+
+    // Rebuild card meshes only
+    cardMeshes.value = cardSceneBuilder.build(scene, cardAngle)
+    cardNavigator.onSceneRebuilt()
+  }
+
   function updateOffAxisCamera(ex: number, ey: number, ez: number) {
     if (!camera || ez <= 0) return
 
@@ -687,8 +709,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     (ids) => {
       if (!cardLoader || ids.length === 0) return
       cardLoader.loadCards(ids).then(() => {
-        rebuildScene()
-        cardNavigator.onSceneRebuilt()
+        rebuildCardsOnly()
       })
     },
   )
