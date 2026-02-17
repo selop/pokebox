@@ -45,7 +45,6 @@ NPM-CONFIG.md
 
 # Asset directories
 refs/
-public/img/
 public/cards/
 
 # Card set assets — covers all sets (fronts, holo-masks, etch-foils, .staging, JSON)
