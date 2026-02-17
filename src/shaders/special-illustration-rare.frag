@@ -196,9 +196,9 @@ void main() {
 
         // Tilt direction in UV space (centered at 0)
         vec2 tiltDir = vec2(bgX - 0.5, bgY - 0.5);
+        float tiltMag = length(tiltDir) * 2.0; // 0 at center, ~1 at full tilt
 
         // Dot product: etch regions whose gradient aligns with tilt catch light.
-        // Scale sensitivity controls how much tilt is needed to sweep fully.
         float catchAngle = dot(normalize(etchGrad + 0.001), normalize(tiltDir + 0.001));
 
         // Gradient magnitude gates the effect — flat etch areas (no contour)
@@ -210,8 +210,12 @@ void main() {
         float iri1Val = sampleIriTexture(uIri1Tex, uv, uSirTiltSparkleScale).r;
         float iri2Val = sampleIriTexture(uIri2Tex, uv, uSirTiltSparkle2Scale).r;
 
-        // Layer 1: contour-following sparkle
-        float band1 = smoothstep(1.0 - uSirTiltSparkleTiltSensitivity, 1.0, catchAngle);
+        // Layer 1: contour-following sparkle with repeating wave
+        // sin produces a periodic band that sweeps repeatedly as tilt increases;
+        // catchAngle preserves dFdx/dFdy contour-following, tiltMag drives repetition
+        float repeatPhase1 = tiltMag * uSirTiltSparkleTiltSensitivity * 25.0;
+        float wave1 = sin(catchAngle * 3.14159 + repeatPhase1);
+        float band1 = pow(max(0.0, wave1), 4.0);
         band1 *= gradStrength;
 
         vec3 sparkle1 = sampleIriTexture(uIri1Tex, uv, uSirTiltSparkleScale);
@@ -224,7 +228,10 @@ void main() {
         result += sparkleRgb1 * band1 * etchMask * uSirTiltSparkleIntensity * uCardOpacity;
 
         // Layer 2: opposite-facing contours (catch light from the other side)
-        float band2 = smoothstep(1.0 - uSirTiltSparkle2TiltSensitivity, 1.0, -catchAngle);
+        // Negated catchAngle so this layer lights up contours facing away from tilt
+        float repeatPhase2 = tiltMag * uSirTiltSparkle2TiltSensitivity * 25.0;
+        float wave2 = sin(-catchAngle * 3.14159 + repeatPhase2);
+        float band2 = pow(max(0.0, wave2), 4.0);
         band2 *= gradStrength;
 
         vec3 sparkle2 = sampleIriTexture(uIri2Tex, uv, uSirTiltSparkle2Scale);
