@@ -8,7 +8,6 @@ const store = useAppStore()
 const copied = ref(false)
 
 type ShaderKey = keyof ShaderConfigs
-type PropKey<K extends ShaderKey> = keyof ShaderConfigs[K] & string
 
 type SliderDef = {
   label: string
@@ -34,6 +33,7 @@ type ShaderSection = {
 }
 
 function getShaderObj(section: ShaderSection): Record<string, number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return store.config.shaders[section.shaderKey] as any
 }
 

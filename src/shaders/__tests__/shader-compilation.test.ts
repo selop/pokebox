@@ -26,6 +26,7 @@ describe('Shader Compilation', () => {
   ) {
     it(`should create ${name} shader material without errors`, () => {
       // Create basic uniforms that all shaders need
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const uniforms: any = {
         uCardTex: { value: null },
         uCardBackTex: { value: null },

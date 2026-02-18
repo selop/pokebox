@@ -484,7 +484,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
             // Fade out other cards by scaling down and becoming transparent
             const fadeScale = mesh.scale.x * (1 - ease * 0.5)
             mesh.scale.setScalar(Math.max(fadeScale, 0.01))
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             if ((mesh.material as any).opacity !== undefined) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ;(mesh.material as any).opacity = 1 - ease
             }
           }
