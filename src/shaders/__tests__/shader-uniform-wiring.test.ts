@@ -78,7 +78,7 @@ function parseThreeSceneWatchers(): Record<string, string[]> {
   // Use "\n  \]" (closing bracket on its own line) to avoid stopping at
   // the ] inside sub-array entries like [() => ..., 'uFoo'].
   const mapBlockRe =
-    /\/\/\s*([\w-]+)\s+shader parameters\s*\n\s*const\s+\w+UniformMap.*=\s*\[([\s\S]*?)\n\s*\]/g
+    /\/\/\s*([\w-]+)\s+shader parameters\s*\n\s*const\s+\w+UniformMap.*=\s*\[([\s\S]*?)\n\s*\](?!,)/g
 
   let m: RegExpExecArray | null
   while ((m = mapBlockRe.exec(threeSceneSrc)) !== null) {

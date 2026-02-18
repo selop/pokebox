@@ -63,7 +63,7 @@ const m = perfTracker.metrics
 <style scoped>
 .perf-overlay {
   position: fixed;
-  bottom: 52px;
+  bottom: 55px;
   right: 20px;
   z-index: 60;
   background: rgba(0, 0, 0, 0.6);
@@ -112,7 +112,9 @@ const m = perfTracker.metrics
 
 .perf-fade-enter-active,
 .perf-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .perf-fade-enter-from,

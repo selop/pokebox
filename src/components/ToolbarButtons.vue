@@ -174,6 +174,7 @@ const displayModeLabel: Record<string, string> = {
 }
 
 .toolbar-select {
+  display: none;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
@@ -286,6 +287,10 @@ const displayModeLabel: Record<string, string> = {
   .toolbar-select {
     padding: 6px 8px;
     font-size: 0.58rem;
+  }
+
+  .toolbar-select {
+    display: initial;
   }
 
   .nav-hint {

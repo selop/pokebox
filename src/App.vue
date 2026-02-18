@@ -49,9 +49,9 @@ async function onEnableGyroscope() {
 
 <template>
   <ThreeCanvas ref="threeCanvasRef" />
-  <VideoFeed v-show="store.isPanelOpen" ref="videoFeedRef" />
+  <VideoFeed v-show="store.isPanelOpen && store.isTrackingActive" ref="videoFeedRef" />
   <StatusIndicator v-if="store.isPanelOpen" />
-  <TrackingData v-if="store.isPanelOpen" />
+  <TrackingData v-if="store.isPanelOpen && store.isTrackingActive" />
   <ToolbarButtons />
   <CalibrationPanel />
   <ShaderControlsPanel />

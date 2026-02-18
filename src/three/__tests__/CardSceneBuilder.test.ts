@@ -64,6 +64,7 @@ function makeLoader(cards: Record<string, { card: ReturnType<typeof makeTex>; ma
   return {
     get: vi.fn((id: string) => cards[id] ?? null),
     getIriTextures: vi.fn(() => ({ iri7: makeTex(), iri8: makeTex(), iri9: makeTex() })),
+    getSparkleIriTextures: vi.fn(() => ({ iri1: makeTex(), iri2: makeTex() })),
     getBirthdayTextures: vi.fn(() => ({ dank: makeTex(), dank2: makeTex() })),
     getGlitterTexture: vi.fn(() => makeTex()),
     getNoiseTexture: vi.fn(() => makeTex()),
