@@ -85,6 +85,7 @@ if (typeof HTMLCanvasElement !== 'undefined') {
 // Suppress Three.js warnings during tests
 if (typeof console !== 'undefined') {
   const originalWarn = console.warn
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   console.warn = (...args: any[]) => {
     // Filter out Three.js WebGL context warnings
     if (

@@ -2,10 +2,10 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { SET_REGISTRY } from '@/data/cardCatalog'
-import mewPack from '@/assets/MEW-booster-pack.png'
-import prePack from '@/assets/PRE-booster-pack.png'
-import pafPack from '@/assets/PAF-booster-pack.png'
-import tefPack from '@/assets/TEF-booster-pack.png'
+import mewPack from '@/assets/MEW-booster-pack.webp'
+import prePack from '@/assets/PRE-booster-pack.webp'
+import pafPack from '@/assets/PAF-booster-pack.webp'
+import tefPack from '@/assets/TEF-booster-pack.webp'
 
 const store = useAppStore()
 
@@ -13,7 +13,7 @@ const packImages: Record<string, string> = {
   'sv3-5_en': mewPack,
   'sv8-5_en': prePack,
   'sv4-5_en': pafPack,
-  'sv5_en': tefPack,
+  sv5_en: tefPack,
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -54,7 +54,6 @@ async function selectSet(setId: string) {
             :alt="set.label"
             class="pack-image"
           />
-          <span class="pack-label">{{ set.label }}</span>
           <span v-if="set.id === store.currentSetId" class="pack-badge">Selected</span>
         </button>
       </div>
@@ -91,7 +90,9 @@ async function selectSet(setId: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s, transform 0.2s;
+  transition:
+    color 0.2s,
+    transform 0.2s;
 }
 
 .close-btn:hover {
@@ -105,25 +106,21 @@ async function selectSet(setId: string) {
   gap: 24px;
   justify-content: center;
   padding: 24px;
-  max-width: 720px;
+  max-width: 1280px;
 }
 
 .booster-pack {
   position: relative;
-  width: 160px;
-  border-radius: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  background: rgba(0, 0, 0, 0.4);
+  width: 280px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0;
-  padding-bottom: 12px;
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
+  padding: 0;
+  transition: transform 0.25s ease;
 }
 
 .pack-image {
@@ -132,12 +129,18 @@ async function selectSet(setId: string) {
   display: block;
   object-fit: contain;
   pointer-events: none;
+  border-radius: 8px;
+  transition:
+    filter 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .booster-pack:hover:not(:disabled) {
   transform: scale(1.08);
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 255, 255, 0.08);
+}
+
+.booster-pack:hover:not(:disabled):not(.active) .pack-image {
+  filter: drop-shadow(0 0 12px hsl(43, 100%, 65%)) drop-shadow(0 0 30px hsl(43, 100%, 55%));
 }
 
 .booster-pack:active:not(:disabled) {
@@ -149,28 +152,13 @@ async function selectSet(setId: string) {
   opacity: 0.6;
 }
 
-.booster-pack.active {
-  border-color: #00f5d4;
-  box-shadow: 0 0 24px rgba(0, 245, 212, 0.25), 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.pack-label {
-  font-family: 'Syne', sans-serif;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.8);
-  text-align: center;
-  padding: 6px 8px 0;
-  line-height: 1.3;
-}
-
 .pack-badge {
   font-family: 'Space Mono', monospace;
-  font-size: 0.5rem;
+  font-size: 1.5rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #00f5d4;
-  margin-top: 4px;
+  color: hsl(47, 100%, 78%);
+  margin-top: 10px;
 }
 
 /* Transitions */
@@ -178,7 +166,9 @@ async function selectSet(setId: string) {
   transition: opacity 0.3s ease;
 }
 .booster-modal-enter-active .booster-pack {
-  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    opacity 0.3s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .booster-modal-leave-active {
   transition: opacity 0.25s ease;
@@ -202,11 +192,7 @@ async function selectSet(setId: string) {
   }
 
   .booster-pack {
-    width: 130px;
-  }
-
-  .pack-label {
-    font-size: 0.75rem;
+    width: 200px;
   }
 }
 </style>

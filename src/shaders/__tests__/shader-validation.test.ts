@@ -94,6 +94,9 @@ describe('Shader Static Validation', () => {
           'distance',
           'radians',
           'degrees',
+          'dFdx',
+          'dFdy',
+          'fwidth',
         ]
 
         // Check each function call is either defined or built-in
