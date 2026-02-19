@@ -119,15 +119,14 @@ The app is containerized and includes a Prometheus + Grafana monitoring stack.
 - The app container joins an external `monitoring` Docker network so Prometheus can reach it
 - Watchtower label enabled for automatic image updates
 
-**Monitoring stack** (`monitoring/docker-compose.yml`):
+**Monitoring stack** (separate repo: `pokebox-observability`):
 - **Prometheus** — scrapes nginx-exporter, blackbox-exporter, and cAdvisor every 15 s, 30-day retention
 - **nginx-exporter** — converts Nginx stub_status into Prometheus metrics (connections, requests)
 - **blackbox-exporter** — HTTP probes against `/health` and `/` for uptime and response-time tracking
 - **cAdvisor** — container resource metrics (CPU, memory, network I/O, filesystem per container)
-- **Grafana** (port 3001) — auto-provisioned with two dashboards:
+- **Grafana** (port 3001) — auto-provisioned with two dashboards (`dashboards/*.json`):
   - "Pokebox - Nginx & Uptime" — uptime, response time, active connections, request rate, connection breakdown, DNS lookup time
   - "Pokebox - Container Resources" — CPU/memory usage, network I/O, and filesystem usage per container
-- All configs (Prometheus scrape targets, Blackbox modules, Grafana datasource/dashboard) are inline Docker configs — no external config files needed
 
 | Service | Port | Purpose |
 |---------|------|---------|
