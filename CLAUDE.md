@@ -109,6 +109,32 @@ The scene watches store properties and rebuilds accordingly:
 - **Transform update** (no rebuild): card position/rotation changes
 - **Uniform update** (no rebuild): holo intensity, eye position, time
 
+### Deployment & monitoring
+
+The app is containerized and includes a Prometheus + Grafana monitoring stack.
+
+**Docker** (`Dockerfile` + `docker-compose.yml`):
+- Multi-stage build: Node 22 builder → Nginx Alpine serving the Vite production bundle
+- Nginx exposes `/health` (healthcheck) and `/nginx_status` (Prometheus scraping, Docker-internal only)
+- The app container joins an external `monitoring` Docker network so Prometheus can reach it
+- Watchtower label enabled for automatic image updates
+
+**Monitoring stack** (`monitoring/docker-compose.yml`):
+- **Prometheus** — scrapes nginx-exporter, blackbox-exporter, and cAdvisor every 15 s, 30-day retention
+- **nginx-exporter** — converts Nginx stub_status into Prometheus metrics (connections, requests)
+- **blackbox-exporter** — HTTP probes against `/health` and `/` for uptime and response-time tracking
+- **cAdvisor** — container resource metrics (CPU, memory, network I/O, filesystem per container)
+- **Grafana** (port 3001) — auto-provisioned with two dashboards:
+  - "Pokebox - Nginx & Uptime" — uptime, response time, active connections, request rate, connection breakdown, DNS lookup time
+  - "Pokebox - Container Resources" — CPU/memory usage, network I/O, and filesystem usage per container
+- All configs (Prometheus scrape targets, Blackbox modules, Grafana datasource/dashboard) are inline Docker configs — no external config files needed
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| pokebox (nginx) | 3000 | App |
+| prometheus | 9090 | Metrics store |
+| grafana | 3001 | Dashboards |
+
 ## Conventions
 
 - Path alias `@/` → `src/`

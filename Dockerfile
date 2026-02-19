@@ -49,6 +49,12 @@ server {
         return 200 "healthy\n";
         add_header Content-Type text/plain;
     }
+
+    # Nginx metrics for Prometheus scraping
+    location /nginx_status {
+        stub_status;
+        access_log off;
+    }
 }
 EOF
 
