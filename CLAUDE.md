@@ -93,13 +93,35 @@ Each `CardCatalogEntry` defines texture paths and shader type (relative to `publ
 
 See `docs/CARD-SETS.md` for detailed documentation on the set system, JSON format, and how to add new sets.
 
+### Cross-origin asset loading (CORS)
+
+In production, card assets are served from Hetzner Object Storage (`pokebox-assets.fsn1.your-objectstorage.com`) while the app runs on `pokebox.lopatkin.net`. The `VITE_ASSET_BASE_URL` env var (set in CI) prefixes all asset paths via `assetUrl()` in `src/utils/assetUrl.ts`.
+
+**CORS bucket policy** is configured on the S3 bucket to allow `GET`/`HEAD` from the app origin. To update:
+
+```bash
+rclone backend setxml hetzner:pokebox-assets/?cors - <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<CORSConfiguration>
+  <CORSRule>
+    <AllowedOrigin>https://pokebox.lopatkin.net</AllowedOrigin>
+    <AllowedMethod>GET</AllowedMethod>
+    <AllowedMethod>HEAD</AllowedMethod>
+    <AllowedHeader>*</AllowedHeader>
+    <MaxAgeSeconds>86400</MaxAgeSeconds>
+  </CORSRule>
+</CORSConfiguration>
+EOF
+```
+
+**Client-side CORS requirements:**
+
+- Three.js v0.182+ `TextureLoader` defaults to `crossOrigin: 'anonymous'`, so WebGL texture loads automatically send the `Origin` header
+- **Any `<img>` tag that loads an asset URL MUST include `crossorigin="anonymous"`** — without it, the browser caches the response from a no-cors request (no `Access-Control-Allow-Origin` header), and when Three.js later requests the same URL with CORS, the browser serves the stale cached response and fails. This cache-poisoning bug is subtle: it only manifests when an `<img>` loads an asset before the TextureLoader does (e.g., search thumbnails in `CardSearch.vue`)
+
 ### Asset processing scripts
 
-Shell scripts for downloading and processing card set assets:
-
 - **`process-set.sh`** — Main unified pipeline: downloads card images, upscales with Real-ESRGAN, and produces the `public/<setId>/` directory structure (fronts, holo-masks, etch-foils) expected by `cardCatalog.ts`
-- **`scrape-cards.sh`** — Downloads foil/etch images from JSON metadata (legacy, superseded by `process-set.sh`)
-- **`scrape-fronts.sh`** — Downloads front card images from JSON metadata (legacy, superseded by `process-set.sh`)
 
 ### State-driven rebuilds
 
@@ -109,30 +131,14 @@ The scene watches store properties and rebuilds accordingly:
 - **Transform update** (no rebuild): card position/rotation changes
 - **Uniform update** (no rebuild): holo intensity, eye position, time
 
-### Deployment & monitoring
+### Deployment
 
-The app is containerized and includes a Prometheus + Grafana monitoring stack.
-
-**Docker** (`Dockerfile` + `docker-compose.yml`):
+The app is containerized with Docker (`Dockerfile` + `docker-compose.yml`):
 - Multi-stage build: Node 22 builder → Nginx Alpine serving the Vite production bundle
-- Nginx exposes `/health` (healthcheck) and `/nginx_status` (Prometheus scraping, Docker-internal only)
-- The app container joins an external `monitoring` Docker network so Prometheus can reach it
+- Nginx exposes `/health` (healthcheck) and `/nginx_status` (metrics scraping, Docker-internal only)
+- The app container joins an external `monitoring` Docker network
 - Watchtower label enabled for automatic image updates
-
-**Monitoring stack** (separate repo: `pokebox-observability`):
-- **Prometheus** — scrapes nginx-exporter, blackbox-exporter, and cAdvisor every 15 s, 30-day retention
-- **nginx-exporter** — converts Nginx stub_status into Prometheus metrics (connections, requests)
-- **blackbox-exporter** — HTTP probes against `/health` and `/` for uptime and response-time tracking
-- **cAdvisor** — container resource metrics (CPU, memory, network I/O, filesystem per container)
-- **Grafana** (port 3001) — auto-provisioned with two dashboards (`dashboards/*.json`):
-  - "Pokebox - Nginx & Uptime" — uptime, response time, active connections, request rate, connection breakdown, DNS lookup time
-  - "Pokebox - Container Resources" — CPU/memory usage, network I/O, and filesystem usage per container
-
-| Service | Port | Purpose |
-|---------|------|---------|
-| pokebox (nginx) | 3000 | App |
-| prometheus | 9090 | Metrics store |
-| grafana | 3001 | Dashboards |
+- Monitoring stack (Prometheus + Grafana) lives in a separate repo (`pokebox-observability`)
 
 ## Conventions
 
