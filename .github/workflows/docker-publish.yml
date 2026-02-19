@@ -57,6 +57,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VITE_ASSET_BASE_URL=${{ secrets.VITE_ASSET_BASE_URL }}
+            VITE_OTEL_COLLECTOR_URL=${{ secrets.VITE_OTEL_COLLECTOR_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64

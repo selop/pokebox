@@ -12,9 +12,11 @@ RUN npm install --frozen-lockfile || npm install
 # Copy source code
 COPY . .
 
-# Accept asset base URL at build time (baked into Vite bundle)
+# Accept build-time env vars (baked into Vite bundle)
 ARG VITE_ASSET_BASE_URL
 ENV VITE_ASSET_BASE_URL=${VITE_ASSET_BASE_URL}
+ARG VITE_OTEL_COLLECTOR_URL
+ENV VITE_OTEL_COLLECTOR_URL=${VITE_OTEL_COLLECTOR_URL}
 
 # Build the application
 RUN npm run build
