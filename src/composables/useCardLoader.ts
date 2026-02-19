@@ -30,6 +30,7 @@ export interface BirthdayTextures {
 export function useCardLoader(renderer: WebGLRenderer) {
   const loaded = new Map<string, CardTextures>()
   const loader = new TextureLoader()
+  loader.setCrossOrigin('anonymous')
   let iriTextures: IriTextures | null = null
   let sparkleIriTextures: SparkleIriTextures | null = null
   let birthdayTextures: BirthdayTextures | null = null

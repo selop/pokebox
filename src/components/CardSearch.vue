@@ -62,7 +62,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
         class="search-result"
         @click="selectCard(card.id)"
       >
-        <img :src="card.front" :alt="card.label" class="search-thumb" loading="lazy" />
+        <img :src="card.front" :alt="card.label" class="search-thumb" loading="lazy" crossorigin="anonymous" />
         <span class="search-label">{{ card.label }}</span>
       </div>
       <div v-if="filtered.length === 0" class="search-empty">No cards found</div>

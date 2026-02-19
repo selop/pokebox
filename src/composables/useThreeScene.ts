@@ -206,6 +206,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
     // Load wall texture for box interior
     const textureLoader = new TextureLoader()
+    textureLoader.setCrossOrigin('anonymous')
     textureLoader.load('151-pattern-default.webp', (texture) => {
       wallTexture = texture
       rebuildScene()
