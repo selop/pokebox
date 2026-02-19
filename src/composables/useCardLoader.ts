@@ -2,6 +2,8 @@ import { LinearFilter, LinearMipmapLinearFilter, TextureLoader } from 'three'
 import type { Texture, WebGLRenderer } from 'three'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 import { perfTracker } from '@/utils/perfTracker'
+import { tracer } from '@/telemetry'
+import { SpanStatusCode, context, trace } from '@opentelemetry/api'
 
 export interface CardTextures {
   card: Texture
@@ -50,6 +52,29 @@ export function useCardLoader(renderer: WebGLRenderer) {
     if (aniso) tex.anisotropy = renderer.capabilities.getMaxAnisotropy()
   }
 
+  function tracedLoad(
+    url: string,
+    spanName: string,
+    onLoad: (tex: Texture) => void,
+    onProgress?: undefined,
+    onError?: () => void,
+  ): void {
+    const span = tracer.startSpan(spanName, { attributes: { 'http.url': url } })
+    loader.load(
+      url,
+      (tex) => {
+        span.end()
+        onLoad(tex)
+      },
+      onProgress,
+      (err) => {
+        span.setStatus({ code: SpanStatusCode.ERROR, message: String(err) })
+        span.end()
+        onError?.()
+      },
+    )
+  }
+
   function loadCard(id: string): Promise<void> {
     if (loaded.has(id)) return Promise.resolve()
 
@@ -73,15 +98,16 @@ export function useCardLoader(renderer: WebGLRenderer) {
         }
       }
 
-      loader.load(entry.front, (tex) => {
+      tracedLoad(entry.front, `load-texture card-front ${id}`, (tex) => {
         applyFilters(tex, true)
         cardTex = tex
         onReady()
       })
 
       if (hasMask) {
-        loader.load(
+        tracedLoad(
           entry.mask,
+          `load-texture holo-mask ${id}`,
           (tex) => {
             applyFilters(tex)
             maskTex = tex
@@ -93,8 +119,9 @@ export function useCardLoader(renderer: WebGLRenderer) {
       }
 
       if (hasFoil) {
-        loader.load(
+        tracedLoad(
           entry.foil,
+          `load-texture etch-foil ${id}`,
           (tex) => {
             applyFilters(tex, true)
             foilTex = tex
@@ -109,8 +136,12 @@ export function useCardLoader(renderer: WebGLRenderer) {
 
   function loadCards(ids: string[]): Promise<void> {
     perfTracker.markAssetLoadStart()
-    return Promise.all(ids.map(loadCard)).then(() => {
-      perfTracker.markAssetLoadEnd()
+    return tracer.startActiveSpan('load-card-set', (span) => {
+      span.setAttribute('card.count', ids.length)
+      return Promise.all(ids.map((id) => context.with(trace.setSpan(context.active(), span), () => loadCard(id)))).then(() => {
+        perfTracker.markAssetLoadEnd()
+        span.end()
+      })
     })
   }
 

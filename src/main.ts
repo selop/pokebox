@@ -1,3 +1,4 @@
+import './telemetry'
 import './assets/app.css'
 
 import { createApp } from 'vue'
