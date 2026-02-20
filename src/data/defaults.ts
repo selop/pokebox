@@ -6,7 +6,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   viewingDistanceCm: 60,
   worldScale: 1.0,
   movementScale: 1.5,
-  boxDepthRatio: 0.6,
+  boxDepthRatio: 0.8,
   smoothing: 0.06,
   holoIntensity: 0.82,
   cardSize: 0.5,
@@ -14,10 +14,10 @@ export const DEFAULT_CONFIG: AppConfig = {
   nearPlane: 5,
   farPlane: 100000,
   lights: {
-    ambientIntensity: 1.6,
-    directionalIntensity: 1.0,
-    backlightIntensity: 2.08,
-    spotlightIntensity: 0.6,
+    ambientIntensity: 0.4,
+    directionalIntensity: 2.4,
+    backlightIntensity: 1.6,
+    spotlightIntensity: 1.4,
   },
   shaders: {
     illustrationRare: {

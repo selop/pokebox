@@ -296,9 +296,9 @@ export function buildBoxShell(
   })
 
   if (isSolid) {
-    const ambientI = lights?.ambientIntensity ?? 1.6
-    const dirI = lights?.directionalIntensity ?? 1.0
-    const backI = lights?.backlightIntensity ?? 2.08
+    const ambientI = lights?.ambientIntensity ?? 0.4
+    const dirI = lights?.directionalIntensity ?? 2.4
+    const backI = lights?.backlightIntensity ?? 1.6
 
     const ambient = new AmbientLight(0xffffff, ambientI)
     ambient.name = 'solidAmbient'
