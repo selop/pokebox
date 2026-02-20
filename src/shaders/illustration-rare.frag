@@ -82,7 +82,7 @@ vec3 computeShine(
     float barT = fract((barCoord + barOffset) * density);
     float e1 = 0.028 * width;
     float e2 = 0.035 * width;
-    float e3 = 0.042 * width;
+    float e3 = 0.063 * width;
     float barInt = smoothstep(0.0, e1, barT) * (1.0 - smoothstep(e2, e3, barT));
 
     vec3 barMed = hslToRgb(hue, medSat, medLight);
