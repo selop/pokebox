@@ -30,24 +30,25 @@ const displayModeLabel: Record<string, string> = {
 
 <template>
   <div class="toolbar">
+    <div class="mobile-row-break" />
     <!-- Set & card selector -->
     <div class="toolbar-group">
-      <select class="toolbar-select" :disabled="store.setLoading" :value="store.currentSetId" @change="onSetChange">
+      <select class="toolbar-select set-select" :disabled="store.setLoading" :value="store.currentSetId" @change="onSetChange">
         <option v-for="set in SET_REGISTRY" :key="set.id" :value="set.id">{{ set.label }}</option>
       </select>
-      <select class="toolbar-select" :disabled="store.setLoading" :value="store.currentCardId" @change="onCardChange">
+      <select class="toolbar-select card-select" :disabled="store.setLoading" :value="store.currentCardId" @change="onCardChange">
         <option v-for="card in CARD_CATALOG" :key="card.id" :value="card.id">{{ card.label }}</option>
       </select>
       <span v-if="store.setLoading" class="toolbar-loading">Loading...</span>
-      <button class="toolbar-btn" @click="store.toggleBoosterModal()">&#x1F4E6; Packs</button>
+      <button class="toolbar-btn mobile-order-5" @click="store.toggleBoosterModal()">&#x1F4E6; Packs</button>
     </div>
 
     <span class="toolbar-sep" />
 
     <!-- Global controls — always visible -->
     <div class="toolbar-group">
-      <button class="toolbar-btn" @click="store.togglePanel()">&#x2699; Settings</button>
-      <button class="toolbar-btn" @click="toggleFullscreen">
+      <button class="toolbar-btn mobile-order-1" @click="store.togglePanel()">&#x2699; Settings</button>
+      <button v-if="!store.isMobile" class="toolbar-btn" @click="toggleFullscreen">
         &#x26F6; {{ isFullscreen ? 'Exit FS' : 'Fullscreen' }}
       </button>
     </div>
@@ -57,7 +58,7 @@ const displayModeLabel: Record<string, string> = {
     <!-- Render controls -->
     <div class="toolbar-group">
       <button
-        class="toolbar-btn"
+        class="toolbar-btn mobile-order-3"
         :class="{ accent: store.renderMode === 'solid' }"
         @click="store.toggleRenderMode()"
       >
@@ -66,7 +67,7 @@ const displayModeLabel: Record<string, string> = {
       <Transition name="btn-fade">
         <button
           v-if="store.renderMode === 'solid'"
-          class="toolbar-btn"
+          class="toolbar-btn mobile-order-4"
           :class="{ active: store.isDimmed }"
           @click="store.toggleDimLights()"
         >
@@ -89,20 +90,20 @@ const displayModeLabel: Record<string, string> = {
         <Transition name="btn-fade">
           <button
             v-if="store.cardDisplayMode === 'single'"
-            class="toolbar-btn"
+            class="toolbar-btn mobile-order-2"
             @click="store.toggleShaderPanel()"
           >
             &#x2699; Shader
           </button>
         </Transition>
         <button
-          class="toolbar-btn"
+          class="toolbar-btn mobile-order-6"
           :class="{ accent: store.isSlideshowActive }"
           @click="store.toggleSlideshow()"
         >
           {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
         </button>
-        <button class="toolbar-btn" @click="store.requestFlip()">&#x21BB; Flip</button>
+        <button class="toolbar-btn mobile-order-7" @click="store.requestFlip()">&#x21BB; Flip</button>
       </div>
     </template>
 
@@ -155,6 +156,10 @@ const displayModeLabel: Record<string, string> = {
   margin: 0 4px;
   background: rgba(255, 255, 255, 0.12);
   flex-shrink: 0;
+}
+
+.mobile-row-break {
+  display: none;
 }
 
 .toolbar-btn {
@@ -279,6 +284,10 @@ const displayModeLabel: Record<string, string> = {
     gap: 4px;
   }
 
+  .toolbar-group {
+    display: contents;
+  }
+
   .toolbar-sep {
     display: none;
   }
@@ -292,6 +301,20 @@ const displayModeLabel: Record<string, string> = {
   .toolbar-select {
     display: initial;
   }
+
+  .toolbar-select.card-select,
+  .toolbar-select.set-select {
+    display: none;
+  }
+
+  .mobile-order-1 { order: 1; }
+  .mobile-order-2 { order: 2; }
+  .mobile-order-3 { order: 3; }
+  .mobile-order-4 { order: 4; }
+  .mobile-row-break { display: block; order: 5; flex-basis: 100%; height: 0; }
+  .mobile-order-5 { order: 6; }
+  .mobile-order-6 { order: 7; }
+  .mobile-order-7 { order: 8; }
 
   .nav-hint {
     display: none;

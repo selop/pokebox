@@ -189,12 +189,19 @@ async function selectSet(setId: string) {
 
 @media (max-width: 768px) {
   .booster-grid {
-    gap: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
     padding: 16px;
+    max-width: 100vw;
   }
 
   .booster-pack {
-    width: 200px;
+    width: calc(33.33% - 8px);
+  }
+
+  .pack-badge {
+    font-size: 0.7rem;
+    margin-top: 4px;
   }
 }
 </style>

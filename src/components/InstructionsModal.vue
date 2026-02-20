@@ -43,6 +43,10 @@ function onClose() {
       This demonstrates off-axis perspective projection. Tilt your phone to move the parallax
       and see the holographic card effects respond to physical movement.
     </p>
+    <p v-if="isMobile" class="desktop-hint">
+      For the full experience, visit on a laptop with a webcam — head tracking makes the screen
+      feel like a real window into a 3D box.
+    </p>
     <p v-else>
       This demonstrates off-axis perspective projection. Your webcam tracks your head position and
       renders a 3D box behind the screen. Move your head to peek around the edges — like looking
@@ -112,6 +116,13 @@ function onClose() {
   box-shadow: 0 0 30px rgba(0, 245, 212, 0.4);
 }
 
+.desktop-hint {
+  font-size: 0.7rem;
+  color: #666;
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
 .keyboard-hint {
   margin-top: 16px;
   margin-bottom: 0;
@@ -147,7 +158,8 @@ function onClose() {
 @media (max-width: 768px) {
   .instructions {
     padding: 28px 24px;
-    max-width: calc(100vw - 32px);
+    width: calc(100vw - 32px);
+    max-width: none;
   }
 
   .instructions h2 {

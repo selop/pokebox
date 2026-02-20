@@ -14,6 +14,13 @@ body {
   min-height: 100vh;
 }
 
+@media (max-width: 768px) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
 #canvas-container {
   position: fixed;
   top: 0;
