@@ -6,6 +6,7 @@ import mewPack from '@/assets/MEW-booster-pack.webp'
 import prePack from '@/assets/PRE-booster-pack.webp'
 import pafPack from '@/assets/PAF-booster-pack.webp'
 import tefPack from '@/assets/TEF-booster-pack.webp'
+import driPack from '@/assets/DRI-booster-pack.webp'
 
 const store = useAppStore()
 
@@ -14,6 +15,7 @@ const packImages: Record<string, string> = {
   'sv8-5_en': prePack,
   'sv4-5_en': pafPack,
   sv5_en: tefPack,
+  sv10_en: driPack,
 }
 
 function onKeydown(e: KeyboardEvent) {

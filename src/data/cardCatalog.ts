@@ -7,6 +7,7 @@ export const SET_REGISTRY: SetDefinition[] = [
   { id: 'sv8-5_en', label: 'PRE Prismatic', jsonFile: 'sv8-5_en/sv8-5.en-US.json' },
   { id: 'sv4-5_en', label: 'PAF Paldean Fates', jsonFile: 'sv4-5_en/sv-4-5.en-US.json' },
   { id: 'sv5_en', label: 'TEF Temporal Forces', jsonFile: 'sv5_en/sv5.en-US.json' },
+  { id: 'sv10_en', label: 'DRI Destined Rivals', jsonFile: 'sv10_en/set.json' },
 ]
 
 /** Reactive catalog — updated on set switch. */
