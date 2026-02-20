@@ -1,6 +1,8 @@
 import { LinearFilter, LinearMipmapLinearFilter, TextureLoader } from 'three'
 import type { Texture, WebGLRenderer } from 'three'
 import { CARD_CATALOG } from '@/data/cardCatalog'
+import { HERO_ASSETS } from '@/data/heroAssets'
+import { useAppStore } from '@/stores/app'
 import { perfTracker } from '@/utils/perfTracker'
 import { tracer } from '@/telemetry'
 import { SpanStatusCode, context, trace } from '@opentelemetry/api'
@@ -82,6 +84,12 @@ export function useCardLoader(renderer: WebGLRenderer) {
     const entry = CARD_CATALOG.value.find((c) => c.id === id)
     if (!entry) return Promise.resolve()
 
+    // Use bundled hero textures when available (same-origin, SW-precached)
+    const store = useAppStore()
+    const hero = HERO_ASSETS[`${store.currentSetId}:${id}`]
+    const frontUrl = hero?.front ?? entry.front
+    const maskUrl = hero?.mask ?? entry.mask
+
     const hasMask = !!entry.mask
     const hasFoil = !!entry.foil
     const totalToLoad = 1 + (hasMask ? 1 : 0) + (hasFoil ? 1 : 0)
@@ -99,7 +107,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
         }
       }
 
-      tracedLoad(entry.front, `load-texture card-front ${id}`, (tex) => {
+      tracedLoad(frontUrl, `load-texture card-front ${id}`, (tex) => {
         applyFilters(tex, true)
         cardTex = tex
         onReady()
@@ -107,7 +115,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
 
       if (hasMask) {
         tracedLoad(
-          entry.mask,
+          maskUrl,
           `load-texture holo-mask ${id}`,
           (tex) => {
             applyFilters(tex)

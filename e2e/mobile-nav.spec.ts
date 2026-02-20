@@ -22,8 +22,8 @@ test.describe('Mobile card navigation', () => {
 
     await page.locator('button[aria-label="Next card"]').click()
 
-    const newCard = await cardSelect.inputValue()
-    expect(newCard).not.toBe(initialCard)
+    const newCard = cardSelect
+    await expect(newCard).not.toHaveValue(initialCard)
   })
 
   test('prev button goes to previous card', async ({ page }) => {
@@ -36,8 +36,8 @@ test.describe('Mobile card navigation', () => {
 
     await page.locator('button[aria-label="Previous card"]').click()
 
-    const afterPrev = await cardSelect.inputValue()
-    expect(afterPrev).not.toBe(afterNext)
+    const afterPrev = cardSelect
+    await expect(afterPrev).not.toHaveValue(afterNext)
   })
 
   test('prev from first card wraps to last', async ({ page }) => {

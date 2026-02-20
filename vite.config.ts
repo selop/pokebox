@@ -18,7 +18,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,woff,woff2}'],
+        globPatterns: ['**/*.{js,css,html,woff,woff2}', 'assets/*.webp'],
         navigateFallback: 'index.html',
       },
     }),
