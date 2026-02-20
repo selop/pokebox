@@ -104,7 +104,7 @@ async function selectSet(setId: string) {
 
 .booster-grid {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 24px;
   justify-content: center;
   padding: 24px;
@@ -113,7 +113,7 @@ async function selectSet(setId: string) {
 
 .booster-pack {
   position: relative;
-  width: 280px;
+  width: 220px;
   border-radius: 0;
   border: none;
   background: transparent;
