@@ -47,7 +47,7 @@ export const useAppStore = defineStore('app', () => {
   const hoveredFanCard = ref<number | null>(null)
 
   // --- Set state ---
-  const currentSetId = ref(SET_REGISTRY[2]!.id)
+  const currentSetId = ref(SET_REGISTRY[4]!.id)
   const setLoading = ref(false)
 
   // --- Input mode ---

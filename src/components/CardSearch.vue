@@ -9,6 +9,14 @@ const isOpen = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 const rootRef = ref<HTMLElement | null>(null)
 
+function navigateCard(dir: number) {
+  const catalog = CARD_CATALOG.value
+  const idx = catalog.findIndex((c) => c.id === store.currentCardId)
+  if (idx < 0) return
+  const newIdx = (idx + dir + catalog.length) % catalog.length
+  store.currentCardId = catalog[newIdx]!.id
+}
+
 const filtered = computed(() => {
   const catalog = CARD_CATALOG.value
   const q = query.value.toLowerCase().trim()
@@ -46,6 +54,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
 
 <template>
   <div ref="rootRef" class="card-search" @keydown="onKeydown">
+    <div class="mobile-nav">
+      <button class="nav-btn" @click="navigateCard(-1)" aria-label="Previous card">&larr;</button>
+      <button class="nav-btn" @click="navigateCard(1)" aria-label="Next card">&rarr;</button>
+    </div>
     <input
       ref="inputRef"
       v-model="query"
@@ -157,6 +169,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
   color: #666;
 }
 
+.mobile-nav {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .card-search {
     width: calc(100vw - 32px);
@@ -165,6 +181,30 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
 
   .search-dropdown {
     max-height: 240px;
+  }
+
+  .mobile-nav {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .nav-btn {
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(16px);
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem;
+    padding: 8px 24px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .nav-btn:active {
+    border-color: #00f5d4;
   }
 }
 </style>

@@ -41,6 +41,15 @@ bun dev
 bun run build
 ```
 
+### Run Unit & Shader Tests with [Vitest](https://vitest.dev)
+
+```sh
+bun test:unit        # All unit tests (includes shader tests)
+bun test:shader      # Shader compilation and validation tests only
+```
+
+> **Note:** Do not use bare `bun test` — it invokes Bun's built-in test runner which lacks Vite path aliases and plugin support. Always use the specific commands above.
+
 ### Run End-to-End Tests with [Playwright](https://playwright.dev)
 
 ```sh

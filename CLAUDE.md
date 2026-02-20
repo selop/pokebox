@@ -18,6 +18,8 @@ bun test:shader      # Run shader compilation and validation tests
 bun test:e2e         # Playwright end-to-end tests
 ```
 
+**Do NOT use bare `bun test`** — it invokes Bun's built-in test runner which lacks Vite's `@/` path aliases, `vite-plugin-glsl` imports, and Playwright's test harness. Always use the specific commands above (`bun test:unit`, `bun test:shader`, `bun test:e2e`).
+
 ## Architecture
 
 Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" effect using real-time face tracking. The webcam tracks the user's head position and adjusts an off-axis perspective camera so the screen appears as a physical window into a 3D scene containing holographic Pokémon cards.

@@ -257,7 +257,7 @@ export const DEFAULT_CARD: CardTransform = {
   rotY: 0,
 }
 
-export const STARTUP_CARD_ID = '234'
+export const STARTUP_CARD_ID = '225'
 
 export const CARD_DEFAULTS = {
   x: 0,
