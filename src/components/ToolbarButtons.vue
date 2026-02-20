@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useFullscreen } from '@/composables/useFullscreen'
 import { CARD_CATALOG, SET_REGISTRY } from '@/data/cardCatalog'
 
 const store = useAppStore()
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
+
+const shareToast = ref(false)
 
 function onSetChange(e: Event) {
   const value = (e.target as HTMLSelectElement).value
@@ -19,6 +22,21 @@ function cycleDisplayMode() {
   const modes = ['single', 'triple', 'fan'] as const
   const idx = modes.indexOf(store.cardDisplayMode)
   store.cardDisplayMode = modes[(idx + 1) % modes.length]!
+}
+
+async function shareCard() {
+  const url = store.shareUrl()
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Pokebox', url })
+    } catch {
+      /* user cancelled share sheet */
+    }
+  } else {
+    await navigator.clipboard.writeText(url)
+    shareToast.value = true
+    setTimeout(() => (shareToast.value = false), 2000)
+  }
 }
 
 const displayModeLabel: Record<string, string> = {
@@ -104,6 +122,15 @@ const displayModeLabel: Record<string, string> = {
           {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
         </button>
         <button class="toolbar-btn mobile-order-7" @click="store.requestFlip()">&#x21BB; Flip</button>
+        <Transition name="btn-fade">
+          <button
+            v-if="store.cardDisplayMode === 'single'"
+            class="toolbar-btn mobile-order-9"
+            @click="shareCard"
+          >
+            &#x1F517; Share
+          </button>
+        </Transition>
       </div>
     </template>
 
@@ -118,6 +145,10 @@ const displayModeLabel: Record<string, string> = {
       </div>
     </template>
   </div>
+
+  <Transition name="toast-fade">
+    <div v-if="shareToast" class="share-toast">Link copied!</div>
+  </Transition>
 
   <div v-show="store.sceneMode === 'cards'" class="nav-hint">
     <template v-if="store.cardDisplayMode === 'fan'">
@@ -277,6 +308,35 @@ const displayModeLabel: Record<string, string> = {
   color: rgba(255, 255, 255, 0.6);
 }
 
+.share-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid #00f5d4;
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  color: #00f5d4;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+}
+
 @media (max-width: 768px) {
   .toolbar {
     flex-wrap: wrap;
@@ -315,6 +375,7 @@ const displayModeLabel: Record<string, string> = {
   .mobile-order-5 { order: 6; }
   .mobile-order-6 { order: 7; }
   .mobile-order-7 { order: 8; }
+  .mobile-order-9 { order: 9; }
 
   .nav-hint {
     display: none;

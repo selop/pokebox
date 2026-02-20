@@ -1,4 +1,4 @@
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type {
   AppConfig,
@@ -14,6 +14,17 @@ import type {
 import { CARD_DEFAULTS, DEFAULT_CARD, DEFAULT_CONFIG, STARTUP_CARD_ID } from '@/data/defaults'
 import { CARD_CATALOG, loadSetCatalog, SET_REGISTRY } from '@/data/cardCatalog'
 import { mulberry32 } from '@/three/utils'
+
+/** Read URL search params to override initial set/card selection. */
+function readUrlParams() {
+  const params = new URLSearchParams(window.location.search)
+  const set = params.get('set')
+  const card = params.get('card')
+  return {
+    setId: set && SET_REGISTRY.some((s) => s.id === set) ? set : null,
+    cardId: card ?? null,
+  }
+}
 
 export const useAppStore = defineStore('app', () => {
   // --- Config (reactive, slider-bound) ---
@@ -36,10 +47,13 @@ export const useAppStore = defineStore('app', () => {
     /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 1 && !matchMedia('(pointer: fine)').matches)
 
+  // --- URL param overrides ---
+  const urlParams = readUrlParams()
+
   // --- Scene state ---
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
-  const currentCardId = ref(STARTUP_CARD_ID)
+  const currentCardId = ref(urlParams.cardId ?? STARTUP_CARD_ID)
   const cardDisplayMode = ref<CardDisplayMode>(isMobile ? 'single' : 'fan')
   const sceneSeed = ref(Date.now())
 
@@ -47,7 +61,7 @@ export const useAppStore = defineStore('app', () => {
   const hoveredFanCard = ref<number | null>(null)
 
   // --- Set state ---
-  const currentSetId = ref(SET_REGISTRY[4]!.id)
+  const currentSetId = ref(urlParams.setId ?? SET_REGISTRY[4]!.id)
   const setLoading = ref(false)
 
   // --- Input mode ---
@@ -234,6 +248,22 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  /** Build a shareable URL for the current card/set. */
+  function shareUrl() {
+    const url = new URL(window.location.origin + window.location.pathname)
+    url.searchParams.set('set', currentSetId.value)
+    url.searchParams.set('card', currentCardId.value)
+    return url.toString()
+  }
+
+  // --- Sync URL bar on card/set changes ---
+  watch([currentSetId, currentCardId], () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('set', currentSetId.value)
+    url.searchParams.set('card', currentCardId.value)
+    history.replaceState(null, '', url.toString())
+  })
+
   return {
     config,
     cardTransform,
@@ -283,5 +313,6 @@ export const useAppStore = defineStore('app', () => {
     setSceneMode,
     setHoveredFanCard,
     selectFanCard,
+    shareUrl,
   }
 })
