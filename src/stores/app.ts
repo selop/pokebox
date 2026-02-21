@@ -96,7 +96,6 @@ export const useAppStore = defineStore('app', () => {
   const isShaderPanelOpen = ref(false)
   const isTrackingActive = ref(false)
   const isSlideshowActive = ref(false)
-  const isFlipRequested = ref(false)
   const isDimmed = ref(false)
   const isIdleFloatActive = ref(true)
   const isPerfOverlayOpen = ref(false)
@@ -146,7 +145,7 @@ export const useAppStore = defineStore('app', () => {
     return indices.slice(0, count).map((i) => catalog[i]!.id)
   })
 
-  // --- Display card IDs (single = just center, triple = center + neighbors, fan = 7-card hand, carousel = 5-card coverflow) ---
+  // --- Display card IDs (single = just center, fan = 7-card hand, carousel = 5-card coverflow) ---
   const displayCardIds = computed(() => {
     if (cardDisplayMode.value === 'carousel') {
       return carouselAllIds.value
@@ -159,16 +158,10 @@ export const useAppStore = defineStore('app', () => {
       return fanCardIds.value
     }
 
-    // Resolve current card — must exist in catalog
+    // Single mode — just the current card
     const idx = catalog.findIndex((c) => c.id === currentCardId.value)
     const validIdx = idx >= 0 ? idx : 0
-    const centerId = catalog[validIdx]!.id
-    if (cardDisplayMode.value === 'single') {
-      return [centerId]
-    }
-    const prev = catalog[(validIdx - 1 + catalog.length) % catalog.length]!
-    const next = catalog[(validIdx + 1) % catalog.length]!
-    return [prev.id, centerId, next.id]
+    return [catalog[validIdx]!.id]
   })
 
   // --- Rebuild trigger (incremented to signal watchers) ---
@@ -290,10 +283,6 @@ export const useAppStore = defineStore('app', () => {
     isSlideshowActive.value = !isSlideshowActive.value
   }
 
-  function requestFlip() {
-    isFlipRequested.value = true
-  }
-
   function toggleDimLights() {
     isDimmed.value = !isDimmed.value
   }
@@ -369,7 +358,6 @@ export const useAppStore = defineStore('app', () => {
     isHeroShowcaseActive,
     stopHeroShowcase,
     isSlideshowActive,
-    isFlipRequested,
     isDimmed,
     isIdleFloatActive,
     isPerfOverlayOpen,
@@ -395,7 +383,6 @@ export const useAppStore = defineStore('app', () => {
     togglePanel,
     toggleShaderPanel,
     toggleSlideshow,
-    requestFlip,
     toggleDimLights,
     toggleIdleFloat,
     togglePerfOverlay,

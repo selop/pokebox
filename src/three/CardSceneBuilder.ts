@@ -7,10 +7,6 @@ import { buildCardMesh, CARD_ASPECT } from '@/three/buildCard'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 import type { HeroCardEntry } from '@/data/heroShowcase'
 
-// Per-card offsets for staggering (x = fraction of spacing, z = fraction of boxD)
-export const CARD_X_OFFSETS = [0.3, 0, -0.3]
-export const CARD_Z_OFFSETS = [0.2, 0, -0.2]
-
 type CardLoaderInstance = ReturnType<typeof useCardLoader>
 
 export class CardSceneBuilder {
@@ -35,7 +31,7 @@ export class CardSceneBuilder {
     } else if (this.store.cardDisplayMode === 'carousel') {
       return this.buildCarouselCards(scene, loader)
     } else {
-      return this.buildTripleCards(scene, loader, cardAngle)
+      return []
     }
   }
 
@@ -65,18 +61,6 @@ export class CardSceneBuilder {
       noiseTexture,
       cardBackTexture,
     }
-  }
-
-  cardLayout() {
-    const dims = this.store.dimensions
-    const cardH = dims.screenH * this.store.config.cardSize
-    const cardW = cardH * CARD_ASPECT
-    const gap = cardW * 0.08
-    const spacing = cardW + gap
-    const centerX = (this.store.cardTransform.x / 100) * dims.screenW
-    const y = (this.store.cardTransform.y / 100) * dims.screenH
-    const z = -(this.store.cardTransform.z / 100) * dims.boxD
-    return { spacing, centerX, y, z, boxD: dims.boxD }
   }
 
   private buildSingleCard(scene: Scene, loader: CardLoaderInstance, cardAngle: number): Mesh[] {
@@ -187,51 +171,6 @@ export class CardSceneBuilder {
     return meshes
   }
 
-  private buildTripleCards(scene: Scene, loader: CardLoaderInstance, cardAngle: number): Mesh[] {
-    const store = this.store
-    const dims = store.dimensions
-    const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
-    const meshes: Mesh[] = []
-    const centerX = (store.cardTransform.x / 100) * dims.screenW
-    const { spacing, y, z, boxD } = this.cardLayout()
-
-    store.displayCardIds.forEach((id: string, i: number) => {
-      const tex = loader.get(id)
-      if (!tex) return
-      const effectiveShader = this.getEffectiveShader(id)
-      const {
-        iriTextures,
-        birthdayTextures,
-        sparkleIriTextures,
-        glitterTexture,
-        noiseTexture,
-        cardBackTexture,
-      } = this.resolveExtraTextures(loader, effectiveShader)
-      const mesh = buildCardMesh(
-        dims,
-        tex.card,
-        tex.mask,
-        tex.foil,
-        store.config,
-        effectiveShader,
-        iriTextures,
-        birthdayTextures,
-        glitterTexture,
-        noiseTexture,
-        cardBackTexture,
-        sparkleIriTextures,
-      )
-      const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
-      mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
-      mesh.rotation.y = baseRotY
-      mesh.castShadow = true
-      scene.add(mesh)
-      meshes.push(mesh)
-    })
-
-    return meshes
-  }
-
   /**
    * Build a fanned poker-hand layout.
    * Cards arc around a pivot below the visible area, overlapping naturally.
@@ -254,7 +193,7 @@ export class CardSceneBuilder {
     const n = ids.length
     const centerIdx = Math.floor(n / 2)
 
-    // Card sizing — slightly smaller than triple mode
+    // Card sizing — slightly smaller than single mode
     const cardH = dims.screenH * store.config.cardSize * 0.85
     const cardW = cardH * CARD_ASPECT
 

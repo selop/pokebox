@@ -20,11 +20,9 @@ function onCardChange(e: Event) {
   store.currentCardId = (e.target as HTMLSelectElement).value
 }
 
-function cycleDisplayMode() {
+function onDisplayModeChange(e: Event) {
   store.stopHeroShowcase()
-  const modes = ['single', 'triple', 'fan', 'carousel'] as const
-  const idx = modes.indexOf(store.cardDisplayMode)
-  store.cardDisplayMode = modes[(idx + 1) % modes.length]!
+  store.cardDisplayMode = (e.target as HTMLSelectElement).value as 'single' | 'fan' | 'carousel'
 }
 
 async function shareCard() {
@@ -42,12 +40,11 @@ async function shareCard() {
   }
 }
 
-const displayModeLabel: Record<string, string> = {
-  single: '\u2630 Triple',
-  triple: '\u{1F0CF} Fan',
-  fan: '\u{1F3A0} Carousel',
-  carousel: '\u25A3 Single',
-}
+const displayModes = [
+  { value: 'single', label: '\u25A3 Single' },
+  { value: 'fan', label: '\u{1F0CF} Fan' },
+  { value: 'carousel', label: '\u{1F3A0} Carousel' },
+]
 </script>
 
 <template>
@@ -103,11 +100,14 @@ const displayModeLabel: Record<string, string> = {
       <span class="toolbar-sep" />
 
       <div class="toolbar-group">
-        <button
+        <select
           v-if="!store.isMobile"
-          class="toolbar-btn"
-          @click="cycleDisplayMode"
-        >{{ displayModeLabel[store.cardDisplayMode] }}</button>
+          class="toolbar-select"
+          :value="store.cardDisplayMode"
+          @change="onDisplayModeChange"
+        >
+          <option v-for="mode in displayModes" :key="mode.value" :value="mode.value">{{ mode.label }}</option>
+        </select>
         <Transition name="btn-fade">
           <button
             v-if="store.cardDisplayMode === 'single'"
@@ -134,7 +134,6 @@ const displayModeLabel: Record<string, string> = {
             {{ store.isIdleFloatActive ? '&#x2693; Anchor' : '&#x2601; Float' }}
           </button>
         </Transition>
-        <button class="toolbar-btn mobile-order-7" @click="store.requestFlip()">&#x21BB; Flip</button>
         <Transition name="btn-fade">
           <button
             v-if="store.cardDisplayMode === 'single'"
@@ -175,7 +174,6 @@ const displayModeLabel: Record<string, string> = {
     <template v-else>
       <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
       <span v-show="store.cardDisplayMode === 'single'">&middot; <kbd>M</kbd> merge</span>
-      &middot; <kbd>F</kbd> flip
       &middot; <kbd>P</kbd> perf
     </template>
   </div>

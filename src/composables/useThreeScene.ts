@@ -24,7 +24,7 @@ import { CARD_ASPECT, buildActivationMaterial } from '@/three/buildCard'
 import { mulberry32 } from '@/three/utils'
 import { CardNavigator } from '@/three/CardNavigator'
 import { MergeAnimator } from '@/three/MergeAnimator'
-import { CardSceneBuilder, CARD_X_OFFSETS, CARD_Z_OFFSETS } from '@/three/CardSceneBuilder'
+import { CardSceneBuilder } from '@/three/CardSceneBuilder'
 import { HERO_SHOWCASE, loadHeroCatalog } from '@/data/heroShowcase'
 import { loadSetCatalog } from '@/data/cardCatalog'
 import { useCardLoader } from './useCardLoader'
@@ -54,8 +54,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   const mouseNDC = new Vector2()
   let lastHoveredFanIndex: number | null = null
 
-  const FLIP_DURATION = 1.5
-  let flipStartTime = -1
   const ACTIVATION_DURATION = 1.0
 
   // Pack opening: custom intro origin for fan cards emerging from screen center
@@ -72,12 +70,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     startScale: number
   } | null = null
   const FAN_ZOOM_DURATION = 0.8
-
-  function triggerFlip() {
-    if (flipStartTime < 0) {
-      flipStartTime = performance.now() * 0.001
-    }
-  }
 
   // Delegates
   const mergeAnimator = new MergeAnimator(store)
@@ -392,15 +384,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       cardAngle += store.config.cardSpinSpeed * (Math.PI / 180) * dt
     }
 
-    let flipAngle = 0
-    if (flipStartTime >= 0) {
-      const t = Math.min((time - flipStartTime) / FLIP_DURATION, 1)
-      // Cubic ease-in-out: accelerates then decelerates like a figure skater spin
-      const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-      flipAngle = ease * Math.PI * 2
-      if (t >= 1) flipStartTime = -1
-    }
-
     const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
     if (store.cardDisplayMode === 'carousel') {
       // Carousel mode: smooth slide animation — lerp each card toward its target slot
@@ -581,7 +564,17 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       for (const mesh of meshes) {
         mesh.rotation.x = tilt.state.rotateX
         const explodeRotY = mesh.userData.explodeRotationY || 0
-        mesh.rotation.y = baseRotY + tilt.state.rotateY + explodeRotY + flipAngle
+        mesh.rotation.y = baseRotY + tilt.state.rotateY + explodeRotY
+      }
+    }
+
+    // Idle float rotation — applied before shader uniforms so the holo effect
+    // sees the card's actual tilted orientation (position offsets applied later,
+    // after merge animator which does absolute position.set())
+    if (store.cardDisplayMode === 'single' && store.isIdleFloatActive) {
+      for (const mesh of meshes) {
+        mesh.rotation.y += Math.sin(time * 0.7) * 0.14
+        mesh.rotation.x += Math.sin(time * 0.9 + 0.5) * 0.025
       }
     }
 
@@ -644,13 +637,13 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Animate merge/explode for single card layers
     mergeAnimator.tick(meshes)
 
-    // Idle floating animation — applied after merge animator so the offset isn't overwritten
+    // Idle float position offsets — applied after merge animator (which does absolute position.set())
     if (store.cardDisplayMode === 'single' && store.isIdleFloatActive) {
       const dims = store.dimensions
       const amp = dims.screenH * 0.012
       for (const mesh of meshes) {
         mesh.position.x += Math.sin(time * 1.9) * amp * 1.2
-        mesh.position.y += 2.0 + Math.sin(time * 1.4 + 1.0) * amp
+        mesh.position.y += 1.0 + Math.sin(time * 1.4 + 1.0) * amp
       }
     }
 
@@ -688,10 +681,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   function onKeydown(e: KeyboardEvent) {
     if ((e.target as HTMLElement).tagName === 'INPUT') return
     if (store.sceneMode !== 'cards') return
-    if (e.key === 'f') {
-      triggerFlip()
-      return
-    }
     // Carousel mode: N/B rotate the carousel
     if (store.cardDisplayMode === 'carousel') {
       if (e.key === 'n') {
@@ -748,7 +737,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     },
   )
 
-
   // Watch card transform changes (reposition all cards)
   watch(
     () => [
@@ -767,25 +755,16 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       const cy = (store.cardTransform.y / 100) * dims.screenH
       const cz = -(store.cardTransform.z / 100) * dims.boxD
 
-      if (store.cardDisplayMode === 'single') {
-        const cardH = dims.screenH * store.singleCardSize
-        const cardW = cardH * CARD_ASPECT
-        const zGap = dims.boxD * 0.08
-        const xGap = cardW * 0.35
-        const n = meshes.length
-        meshes.forEach((mesh, i) => {
-          const xOff = n > 1 ? (i - 1) * xGap : 0
-          mesh.position.set(centerX + xOff, cy, cz - i * zGap)
-          mesh.rotation.y = baseRotY
-        })
-      } else {
-        const { spacing, y, z, boxD } = cardSceneBuilder.cardLayout()
-        meshes.forEach((mesh, i) => {
-          const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
-          mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
-          mesh.rotation.y = baseRotY
-        })
-      }
+      const cardH = dims.screenH * store.singleCardSize
+      const cardW = cardH * CARD_ASPECT
+      const zGap = dims.boxD * 0.08
+      const xGap = cardW * 0.35
+      const n = meshes.length
+      meshes.forEach((mesh, i) => {
+        const xOff = n > 1 ? (i - 1) * xGap : 0
+        mesh.position.set(centerX + xOff, cy, cz - i * zGap)
+        mesh.rotation.y = baseRotY
+      })
     },
   )
 
@@ -797,9 +776,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       // During pack opening, the cascade phase handles the rebuild with intro origin
       const phase = store.packOpeningPhase
       if (phase === 'css-anim' || phase === 'waiting-load') return
-      cardLoader.loadCards(ids).then(() => {
-        rebuildCardsOnly()
-      })
       if (store.cardDisplayMode === 'carousel') {
         const entries = store.carouselHeroCatalog.filter((e) => ids.includes(e.id))
         cardLoader.loadHeroCards(entries).then(() => rebuildCardsOnly())
@@ -923,16 +899,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   for (const [getter, uniformName] of ultraRareUniformMap) {
     watchUniform(getter, uniformName)
   }
-
-  watch(
-    () => store.isFlipRequested,
-    (requested) => {
-      if (requested) {
-        triggerFlip()
-        store.isFlipRequested = false
-      }
-    },
-  )
 
   let slideshowInterval: ReturnType<typeof setInterval> | null = null
   watch(
