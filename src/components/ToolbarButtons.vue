@@ -10,16 +10,19 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 const shareToast = ref(false)
 
 function onSetChange(e: Event) {
+  store.stopHeroShowcase()
   const value = (e.target as HTMLSelectElement).value
   store.switchSet(value)
 }
 
 function onCardChange(e: Event) {
+  store.stopHeroShowcase()
   store.currentCardId = (e.target as HTMLSelectElement).value
 }
 
 function cycleDisplayMode() {
-  const modes = ['single', 'triple', 'fan'] as const
+  store.stopHeroShowcase()
+  const modes = ['single', 'triple', 'fan', 'carousel'] as const
   const idx = modes.indexOf(store.cardDisplayMode)
   store.cardDisplayMode = modes[(idx + 1) % modes.length]!
 }
@@ -42,7 +45,8 @@ async function shareCard() {
 const displayModeLabel: Record<string, string> = {
   single: '\u2630 Triple',
   triple: '\u{1F0CF} Fan',
-  fan: '\u25A3 Single',
+  fan: '\u{1F3A0} Carousel',
+  carousel: '\u25A3 Single',
 }
 </script>
 
@@ -120,6 +124,16 @@ const displayModeLabel: Record<string, string> = {
         >
           {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
         </button>
+        <Transition name="btn-fade">
+          <button
+            v-if="store.cardDisplayMode === 'single'"
+            class="toolbar-btn mobile-order-8"
+            :class="{ accent: store.isIdleFloatActive }"
+            @click="store.toggleIdleFloat()"
+          >
+            {{ store.isIdleFloatActive ? '&#x2693; Anchor' : '&#x2601; Float' }}
+          </button>
+        </Transition>
         <button class="toolbar-btn mobile-order-7" @click="store.requestFlip()">&#x21BB; Flip</button>
         <Transition name="btn-fade">
           <button
@@ -153,6 +167,10 @@ const displayModeLabel: Record<string, string> = {
     <template v-if="store.cardDisplayMode === 'fan'">
       hover to preview &middot; click to inspect
       &middot; <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
+    </template>
+    <template v-else-if="store.cardDisplayMode === 'carousel'">
+      <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
+      &middot; auto-rotates every 4s
     </template>
     <template v-else>
       <kbd>B</kbd> prev &middot; <kbd>N</kbd> next

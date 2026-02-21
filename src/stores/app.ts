@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, shallowRef, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type {
   AppConfig,
@@ -14,6 +14,7 @@ import type {
 import { CARD_DEFAULTS, DEFAULT_CARD, DEFAULT_CONFIG, STARTUP_CARD_ID } from '@/data/defaults'
 import { CARD_CATALOG, loadSetCatalog, SET_REGISTRY } from '@/data/cardCatalog'
 import { mulberry32 } from '@/three/utils'
+import type { HeroCardEntry } from '@/data/heroShowcase'
 
 /** Read URL search params to override initial set/card selection. */
 function readUrlParams() {
@@ -54,11 +55,24 @@ export const useAppStore = defineStore('app', () => {
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
   const currentCardId = ref(urlParams.cardId ?? STARTUP_CARD_ID)
-  const cardDisplayMode = ref<CardDisplayMode>(isMobile ? 'single' : 'fan')
+  const cardDisplayMode = ref<CardDisplayMode>('single')
   const sceneSeed = ref(Date.now())
 
   // --- Fan state ---
   const hoveredFanCard = ref<number | null>(null)
+
+  // --- Carousel state ---
+  const carouselHeroCatalog = shallowRef<HeroCardEntry[]>([])
+  const carouselIndex = ref(0)
+
+  /** All hero card IDs — used as displayCardIds so cards are built once, not rebuilt on each advance. */
+  const carouselAllIds = computed(() => carouselHeroCatalog.value.map((e) => e.id))
+
+  function advanceCarousel(dir: number) {
+    const n = carouselHeroCatalog.value.length
+    if (n === 0) return
+    carouselIndex.value = ((carouselIndex.value + dir) % n + n) % n
+  }
 
   // --- Set state ---
   const currentSetId = ref(urlParams.setId ?? SET_REGISTRY[0]!.id)
@@ -67,6 +81,16 @@ export const useAppStore = defineStore('app', () => {
   // --- Input mode ---
   const inputMode = ref<InputMode>('keyboard')
 
+  // --- Hero showcase (auto-cycling curated cards on desktop startup) ---
+  const isHeroShowcaseActive = ref(!isMobile && !urlParams.setId && !urlParams.cardId)
+
+  function stopHeroShowcase() {
+    isHeroShowcaseActive.value = false
+    if (cardDisplayMode.value === 'carousel') {
+      cardDisplayMode.value = 'single'
+    }
+  }
+
   // --- UI state ---
   const isPanelOpen = ref(false)
   const isShaderPanelOpen = ref(false)
@@ -74,6 +98,7 @@ export const useAppStore = defineStore('app', () => {
   const isSlideshowActive = ref(false)
   const isFlipRequested = ref(false)
   const isDimmed = ref(false)
+  const isIdleFloatActive = ref(true)
   const isPerfOverlayOpen = ref(false)
   const statusText = ref('Waiting for camera')
   const showInstructions = ref(true)
@@ -121,8 +146,12 @@ export const useAppStore = defineStore('app', () => {
     return indices.slice(0, count).map((i) => catalog[i]!.id)
   })
 
-  // --- Display card IDs (single = just center, triple = center + neighbors, fan = 7-card hand) ---
+  // --- Display card IDs (single = just center, triple = center + neighbors, fan = 7-card hand, carousel = 5-card coverflow) ---
   const displayCardIds = computed(() => {
+    if (cardDisplayMode.value === 'carousel') {
+      return carouselAllIds.value
+    }
+
     const catalog = CARD_CATALOG.value
     if (catalog.length === 0) return []
 
@@ -257,6 +286,7 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function toggleSlideshow() {
+    stopHeroShowcase()
     isSlideshowActive.value = !isSlideshowActive.value
   }
 
@@ -266,6 +296,10 @@ export const useAppStore = defineStore('app', () => {
 
   function toggleDimLights() {
     isDimmed.value = !isDimmed.value
+  }
+
+  function toggleIdleFloat() {
+    isIdleFloatActive.value = !isIdleFloatActive.value
   }
 
   function togglePerfOverlay() {
@@ -285,6 +319,7 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function selectFanCard(fanIndex: number) {
+    stopHeroShowcase()
     const ids = fanCardIds.value
     if (fanIndex >= 0 && fanIndex < ids.length) {
       currentCardId.value = ids[fanIndex]!
@@ -320,6 +355,10 @@ export const useAppStore = defineStore('app', () => {
     cardDisplayMode,
     hoveredFanCard,
     fanCardIds,
+    carouselHeroCatalog,
+    carouselIndex,
+    carouselAllIds,
+    advanceCarousel,
     sceneSeed,
     inputMode,
     currentSetId,
@@ -327,9 +366,12 @@ export const useAppStore = defineStore('app', () => {
     isPanelOpen,
     isShaderPanelOpen,
     isTrackingActive,
+    isHeroShowcaseActive,
+    stopHeroShowcase,
     isSlideshowActive,
     isFlipRequested,
     isDimmed,
+    isIdleFloatActive,
     isPerfOverlayOpen,
     statusText,
     showInstructions,
@@ -355,6 +397,7 @@ export const useAppStore = defineStore('app', () => {
     toggleSlideshow,
     requestFlip,
     toggleDimLights,
+    toggleIdleFloat,
     togglePerfOverlay,
     toggleBoosterModal,
     setSceneMode,

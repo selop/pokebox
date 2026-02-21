@@ -25,6 +25,8 @@ import { mulberry32 } from '@/three/utils'
 import { CardNavigator } from '@/three/CardNavigator'
 import { MergeAnimator } from '@/three/MergeAnimator'
 import { CardSceneBuilder, CARD_X_OFFSETS, CARD_Z_OFFSETS } from '@/three/CardSceneBuilder'
+import { HERO_SHOWCASE, loadHeroCatalog } from '@/data/heroShowcase'
+import { loadSetCatalog } from '@/data/cardCatalog'
 import { useCardLoader } from './useCardLoader'
 import { useMouseTilt } from './useMouseTilt'
 import { useGyroscope } from './useGyroscope'
@@ -245,6 +247,10 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // which triggers the displayCardIds watcher to load textures and rebuild.
     store.switchSet(store.currentSetId)
 
+    // Preload hero set JSONs (fire-and-forget) so cross-set transitions only need texture loads
+    const heroSetIds = [...new Set(HERO_SHOWCASE.map((h) => h.setId))]
+    for (const setId of heroSetIds) loadSetCatalog(setId).catch(() => {})
+
     // Also build immediately (without card textures if not ready yet)
     rebuildScene()
 
@@ -396,7 +402,30 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
 
     const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
-    if (store.cardDisplayMode === 'fan') {
+    if (store.cardDisplayMode === 'carousel') {
+      // Carousel mode: smooth slide animation — lerp each card toward its target slot
+      const peekSpeed = 1 - Math.pow(0.001, dt)
+      for (const mesh of meshes) {
+        const target = mesh.userData.carouselTarget as
+          | { x: number; y: number; z: number; rotY: number; scale: number }
+          | undefined
+        if (!target) continue
+        // Lerp position
+        mesh.position.x += (target.x - mesh.position.x) * peekSpeed
+        mesh.position.y += (target.y - mesh.position.y) * peekSpeed
+        mesh.position.z += (target.z - mesh.position.z) * peekSpeed
+        // Lerp scale
+        const s = mesh.scale.x + (target.scale - mesh.scale.x) * peekSpeed
+        mesh.scale.setScalar(s)
+        // Lerp Y rotation (shortest path)
+        let rotDiff = target.rotY - mesh.rotation.y
+        while (rotDiff > Math.PI) rotDiff -= Math.PI * 2
+        while (rotDiff < -Math.PI) rotDiff += Math.PI * 2
+        mesh.rotation.y += rotDiff * peekSpeed
+        // Gentle tilt from head tracking
+        mesh.rotation.x = tilt.state.rotateX * 0.3
+      }
+    } else if (store.cardDisplayMode === 'fan') {
       // Fan mode: smooth peek animation — lerp each card toward rest or hover target
       const peekSpeed = 1 - Math.pow(0.001, dt) // ~0.12 per frame at 60fps, frame-rate independent
       const hoveredIdx = store.hoveredFanCard
@@ -409,8 +438,14 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           | undefined
         const intro = mesh.userData.fanIntro as
           | {
-              x: number; y: number; z: number; rotZ: number; scale: number
-              delay: number; duration: number; startTime: number
+              x: number
+              y: number
+              z: number
+              rotZ: number
+              scale: number
+              delay: number
+              duration: number
+              startTime: number
             }
           | undefined
         if (!rest || !hover) continue
@@ -483,9 +518,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         const elapsed = time - zt.startTime
         const rawT = Math.min(elapsed / zt.duration, 1.0)
         // Cubic ease-in-out
-        const ease = rawT < 0.5
-          ? 4 * rawT * rawT * rawT
-          : 1 - Math.pow(-2 * rawT + 2, 3) / 2
+        const ease = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2
 
         // Target: center of the scene, scaled up to single card size
         const dims = store.dimensions
@@ -573,9 +606,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       const effectiveSize =
         store.cardDisplayMode === 'single'
           ? store.singleCardSize
-          : store.cardDisplayMode === 'fan'
-            ? store.config.cardSize * 0.85
-            : store.config.cardSize
+          : store.cardDisplayMode === 'carousel'
+            ? store.singleCardSize * 0.9
+            : store.cardDisplayMode === 'fan'
+              ? store.config.cardSize * 0.85
+              : store.config.cardSize
       const cardH = dims.screenH * effectiveSize
       const cardW = cardH * CARD_ASPECT
 
@@ -594,7 +629,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
       const dx = px - 0.5,
         dy = py - 0.5
-      if (u['uPointerFromCenter']) u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
+      if (u['uPointerFromCenter'])
+        u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
 
       // Additional uniforms for ultra-rare shader
       if (u['uPointerFromLeft']) u['uPointerFromLeft']!.value = px
@@ -607,6 +643,16 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
     // Animate merge/explode for single card layers
     mergeAnimator.tick(meshes)
+
+    // Idle floating animation — applied after merge animator so the offset isn't overwritten
+    if (store.cardDisplayMode === 'single' && store.isIdleFloatActive) {
+      const dims = store.dimensions
+      const amp = dims.screenH * 0.012
+      for (const mesh of meshes) {
+        mesh.position.x += Math.sin(time * 1.9) * amp * 1.2
+        mesh.position.y += 2.0 + Math.sin(time * 1.4 + 1.0) * amp
+      }
+    }
 
     // Animate scene objects
     scene.traverse((obj) => {
@@ -629,7 +675,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
     // Update spotlight intensity from config
     if (spotlight) {
-      spotlight.intensity += (store.config.lights.spotlightIntensity - spotlight.intensity) * dimRate
+      spotlight.intensity +=
+        (store.config.lights.spotlightIntensity - spotlight.intensity) * dimRate
     }
 
     renderer.render(scene, camera)
@@ -645,6 +692,17 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       triggerFlip()
       return
     }
+    // Carousel mode: N/B rotate the carousel
+    if (store.cardDisplayMode === 'carousel') {
+      if (e.key === 'n') {
+        store.advanceCarousel(1)
+        resetCarouselTimer()
+      } else if (e.key === 'b') {
+        store.advanceCarousel(-1)
+        resetCarouselTimer()
+      }
+      return
+    }
     // Fan mode: N/B shuffle to a new random hand
     if (store.cardDisplayMode === 'fan') {
       if (e.key === 'n' || e.key === 'b') {
@@ -654,6 +712,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
     if (cardNavigator.handleKeydown(e)) {
       store.isSlideshowActive = false
+      store.stopHeroShowcase()
     } else {
       mergeAnimator.handleKeydown(e, cardMeshes.value.length)
     }
@@ -699,7 +758,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       store.cardTransform.rotY,
     ],
     () => {
-      if (store.cardDisplayMode === 'fan') return
+      if (store.cardDisplayMode === 'fan' || store.cardDisplayMode === 'carousel') return
       const meshes = cardMeshes.value
       if (!meshes.length) return
       const dims = store.dimensions
@@ -741,6 +800,14 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       cardLoader.loadCards(ids).then(() => {
         rebuildCardsOnly()
       })
+      if (store.cardDisplayMode === 'carousel') {
+        const entries = store.carouselHeroCatalog.filter((e) => ids.includes(e.id))
+        cardLoader.loadHeroCards(entries).then(() => rebuildCardsOnly())
+      } else {
+        cardLoader.loadCards(ids).then(() => {
+          rebuildCardsOnly()
+        })
+      }
     },
   )
 
@@ -763,6 +830,15 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           })
         }
       }
+    },
+  )
+
+  // Watch carousel index — update slot targets on existing meshes (no rebuild)
+  watch(
+    () => store.carouselIndex,
+    () => {
+      if (store.cardDisplayMode !== 'carousel') return
+      cardSceneBuilder.updateCarouselTargets(cardMeshes.value)
     },
   )
 
@@ -870,6 +946,62 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         slideshowInterval = setInterval(() => {
           cardNavigator.navigate(1)
         }, 3000)
+      }
+    },
+  )
+
+  // Carousel auto-advance timer
+  let carouselInterval: ReturnType<typeof setInterval> | null = null
+
+  function resetCarouselTimer() {
+    if (carouselInterval) {
+      clearInterval(carouselInterval)
+      carouselInterval = null
+    }
+    if (store.cardDisplayMode === 'carousel') {
+      carouselInterval = setInterval(() => {
+        store.advanceCarousel(1)
+      }, 4000)
+    }
+  }
+
+  // Hero showcase: on desktop startup, load hero catalog and enter carousel mode
+  watch(
+    () => store.isHeroShowcaseActive,
+    async (active) => {
+      if (active) {
+        // Load hero catalog and enter carousel mode
+        const catalog = await loadHeroCatalog()
+        store.carouselHeroCatalog = catalog
+        store.cardDisplayMode = 'carousel'
+      } else {
+        // Stop carousel timer when hero showcase ends
+        if (carouselInterval) {
+          clearInterval(carouselInterval)
+          carouselInterval = null
+        }
+      }
+    },
+    { immediate: true },
+  )
+
+  // Watch carousel mode to manage auto-advance timer and ensure hero catalog is loaded
+  watch(
+    () => store.cardDisplayMode === 'carousel',
+    async (isCarousel) => {
+      if (carouselInterval) {
+        clearInterval(carouselInterval)
+        carouselInterval = null
+      }
+      if (isCarousel) {
+        // Ensure hero catalog is loaded (e.g. when entering via toolbar cycle)
+        if (store.carouselHeroCatalog.length === 0) {
+          const catalog = await loadHeroCatalog()
+          store.carouselHeroCatalog = catalog
+        }
+        carouselInterval = setInterval(() => {
+          store.advanceCarousel(1)
+        }, 4000)
       }
     },
   )
@@ -1095,6 +1227,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   function dispose() {
     if (animationId !== null) cancelAnimationFrame(animationId)
     if (slideshowInterval) clearInterval(slideshowInterval)
+    if (carouselInterval) clearInterval(carouselInterval)
     window.removeEventListener('resize', onResize)
     window.removeEventListener('keydown', onKeydown)
     renderer?.domElement.removeEventListener('mousemove', onFanMouseMove)
