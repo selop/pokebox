@@ -19,7 +19,7 @@ export class CardSceneBuilder {
   build(
     scene: Scene,
     cardAngle: number,
-    introOrigin?: { x: number; y: number; z: number } | null,
+    _introOrigin?: { x: number; y: number; z: number } | null,
   ): Mesh[] {
     const loader = this.cardLoader()
     if (!loader) return []
@@ -242,7 +242,7 @@ export class CardSceneBuilder {
 
       // Intro start position: custom origin (pack burst) or default (below pivot)
       const introX = introOrigin?.x ?? pivotX
-      const introY = introOrigin?.y ?? (pivotY - cardH * 0.5)
+      const introY = introOrigin?.y ?? pivotY - cardH * 0.5
       const introZ = introOrigin?.z ?? baseZ
       const introRotZ = 0
       const introScale = introOrigin ? 0.15 : 0.4
@@ -293,9 +293,7 @@ export class CardSceneBuilder {
   }
 
   private getEffectiveShaderForHero(compoundId: string): ShaderStyle {
-    const hero = this.store.carouselHeroCatalog.find(
-      (h: HeroCardEntry) => h.id === compoundId,
-    )
+    const hero = this.store.carouselHeroCatalog.find((h: HeroCardEntry) => h.id === compoundId)
     return hero?.holoType || 'illustration-rare'
   }
 
@@ -357,7 +355,16 @@ export class CardSceneBuilder {
       mesh.userData.cardId = id
 
       // Compute initial position based on current carouselIndex
-      const target = this.computeCarouselSlot(i, store.carouselIndex, ids.length, centerCardW, baseY, baseZ, dims.boxD, dims.screenW)
+      const target = this.computeCarouselSlot(
+        i,
+        store.carouselIndex,
+        ids.length,
+        centerCardW,
+        baseY,
+        baseZ,
+        dims.boxD,
+        dims.screenW,
+      )
       mesh.position.set(target.x, target.y, target.z)
       mesh.rotation.y = target.rotY
       mesh.scale.setScalar(target.scale)
@@ -388,7 +395,7 @@ export class CardSceneBuilder {
     // Fit outermost cards (slot ±2) inside the box.
     // Outer card edge = |offset| * spacing + scaledCardW/2 ≤ screenW/2
     // At slot ±2 with scale 0.55: 2*spacing + 0.55*centerCardW/2 ≤ screenW/2
-    const maxSpacing = (screenW / 2 - 0.55 * centerCardW / 2) / 2
+    const maxSpacing = (screenW / 2 - (0.55 * centerCardW) / 2) / 2
     const idealSpacing = centerCardW * 0.75
     const spacing = Math.min(idealSpacing, maxSpacing)
 
@@ -407,7 +414,7 @@ export class CardSceneBuilder {
         x: sign * (screenW / 2 + centerCardW * 0.3),
         y: baseY,
         z: baseZ - boxD * 0.5,
-        rotY: sign * (-70 * Math.PI) / 180,
+        rotY: (sign * (-70 * Math.PI)) / 180,
         scale: 0.3,
         renderOrder: 5,
       }
