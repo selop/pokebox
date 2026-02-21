@@ -52,7 +52,7 @@ _done() { echo "  $1 $2"; echo ""; }
 # Extract prefix from longFormID: "Name_sv4-5_1_ph_Common_..." → "ph"
 _get_prefix() {
   local result
-  result="$(echo "$1" | sed -E 's/.*_sv[0-9-]+_[0-9]+_([a-z]+)_.*/\1/')"
+  result="$(echo "$1" | sed -E 's/.*_[A-Za-z0-9][-A-Za-z0-9]*_[0-9]+_([a-z][a-z0-9]*)_.*/\1/')"
   if [[ "$result" == "$1" ]]; then
     echo "std"
   else

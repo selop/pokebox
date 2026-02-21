@@ -56,6 +56,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let flipStartTime = -1
   const ACTIVATION_DURATION = 1.0
 
+  // Pack opening: custom intro origin for fan cards emerging from screen center
+  let pendingIntroOrigin: { x: number; y: number; z: number } | null = null
+
   // Fan-to-single zoom transition state
   let fanZoomTransition: {
     fanIndex: number
@@ -160,6 +163,23 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
   }
 
+  /** Click on empty box space in single mode → return to fan. */
+  function onSceneClick(e: MouseEvent) {
+    if (store.cardDisplayMode !== 'single' || !camera) return
+    // Only trigger on primary button, not during UI interactions
+    if (e.button !== 0) return
+
+    // Raycast against card meshes — if we hit one, it's a card click, not a background click
+    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
+    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
+    raycaster.setFromCamera(mouseNDC, camera)
+    const hits = raycaster.intersectObjects(cardMeshes.value)
+    if (hits.length > 0) return
+
+    // Missed all cards — "put the card back in the box"
+    store.cardDisplayMode = 'fan'
+  }
+
   function init() {
     const container = containerRef.value
     if (!container) return
@@ -244,6 +264,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     window.addEventListener('keydown', onKeydown)
     renderer.domElement.addEventListener('mousemove', onFanMouseMove)
     renderer.domElement.addEventListener('click', onFanClick)
+    renderer.domElement.addEventListener('click', onSceneClick)
     renderer.domElement.addEventListener('touchstart', onFanTouchStart)
   }
 
@@ -272,7 +293,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
     // Card mode
     if (store.sceneMode === 'cards') {
-      cardMeshes.value = cardSceneBuilder.build(scene!, cardAngle)
+      const origin = pendingIntroOrigin
+      pendingIntroOrigin = null
+      cardMeshes.value = cardSceneBuilder.build(scene!, cardAngle, origin)
     }
 
     perfTracker.markRebuildEnd()
@@ -296,7 +319,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     fanZoomTransition = null
 
     // Rebuild card meshes only
-    cardMeshes.value = cardSceneBuilder.build(scene, cardAngle)
+    const origin = pendingIntroOrigin
+    pendingIntroOrigin = null
+    cardMeshes.value = cardSceneBuilder.build(scene, cardAngle, origin)
     cardNavigator.onSceneRebuilt()
   }
 
@@ -514,6 +539,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           mesh.userData.activationState = 'done'
         }
       }
+
+      // Reset pack opening phase once fan intro animation finishes
+      if (store.packOpeningPhase === 'cascade' && !isFanIntroPlaying()) {
+        store.packOpeningPhase = 'idle'
+      }
     } else {
       for (const mesh of meshes) {
         mesh.rotation.x = tilt.state.rotateX
@@ -652,19 +682,13 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       store.cardDisplayMode,
     ],
     () => {
+      // During pack opening, the cascade phase handles the rebuild with intro origin
+      const phase = store.packOpeningPhase
+      if (phase === 'css-anim' || phase === 'waiting-load') return
       rebuildScene()
     },
   )
 
-  // Auto-dim lights when transitioning from fan to single mode (after rebuild so lights animate)
-  watch(
-    () => store.cardDisplayMode,
-    (mode, oldMode) => {
-      if (oldMode === 'fan' && mode === 'single') {
-        store.isDimmed = true
-      }
-    },
-  )
 
   // Watch card transform changes (reposition all cards)
   watch(
@@ -711,9 +735,34 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     () => store.displayCardIds,
     (ids) => {
       if (!cardLoader || ids.length === 0) return
+      // During pack opening, the cascade phase handles the rebuild with intro origin
+      const phase = store.packOpeningPhase
+      if (phase === 'css-anim' || phase === 'waiting-load') return
       cardLoader.loadCards(ids).then(() => {
         rebuildCardsOnly()
       })
+    },
+  )
+
+  // Watch pack opening phase — set intro origin and trigger rebuild when cascade starts
+  watch(
+    () => store.packOpeningPhase,
+    (phase) => {
+      if (phase === 'cascade') {
+        // Compute screen center in scene coordinates as the intro origin
+        const dims = store.dimensions
+        const centerX = (store.cardTransform.x / 100) * dims.screenW
+        const centerY = (store.cardTransform.y / 100) * dims.screenH
+        const centerZ = -(store.cardTransform.z / 100) * dims.boxD
+        pendingIntroOrigin = { x: centerX, y: centerY, z: centerZ }
+
+        // If textures are already loaded, trigger rebuild immediately
+        if (cardLoader && store.displayCardIds.length > 0) {
+          cardLoader.loadCards(store.displayCardIds).then(() => {
+            rebuildCardsOnly()
+          })
+        }
+      }
     },
   )
 
@@ -1050,6 +1099,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     window.removeEventListener('keydown', onKeydown)
     renderer?.domElement.removeEventListener('mousemove', onFanMouseMove)
     renderer?.domElement.removeEventListener('click', onFanClick)
+    renderer?.domElement.removeEventListener('click', onSceneClick)
     renderer?.domElement.removeEventListener('touchstart', onFanTouchStart)
     mouseTilt.detach()
     gyroscope.stop()

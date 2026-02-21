@@ -19,14 +19,18 @@ export class CardSceneBuilder {
   ) {}
 
   /** Build card meshes and add them to the scene. Returns the created meshes. */
-  build(scene: Scene, cardAngle: number): Mesh[] {
+  build(
+    scene: Scene,
+    cardAngle: number,
+    introOrigin?: { x: number; y: number; z: number } | null,
+  ): Mesh[] {
     const loader = this.cardLoader()
     if (!loader) return []
 
     if (this.store.cardDisplayMode === 'single') {
       return this.buildSingleCard(scene, loader, cardAngle)
     } else if (this.store.cardDisplayMode === 'fan') {
-      return this.buildFanCards(scene, loader)
+      return this.buildFanCards(scene, loader, introOrigin)
     } else {
       return this.buildTripleCards(scene, loader, cardAngle)
     }
@@ -233,7 +237,11 @@ export class CardSceneBuilder {
    * All cards start at their rest positions. The animate loop lerps toward
    * hover targets stored in userData, producing a smooth "peek" animation.
    */
-  private buildFanCards(scene: Scene, loader: CardLoaderInstance): Mesh[] {
+  private buildFanCards(
+    scene: Scene,
+    loader: CardLoaderInstance,
+    introOrigin?: { x: number; y: number; z: number } | null,
+  ): Mesh[] {
     const store = this.store
     const dims = store.dimensions
     const meshes: Mesh[] = []
@@ -290,12 +298,12 @@ export class CardSceneBuilder {
       const cardMat = new MeshBasicMaterial({ map: tex.card, transparent: true, side: DoubleSide })
       const mesh = new Mesh(new PlaneGeometry(cardW, cardH), cardMat)
 
-      // Intro start position: below the pivot, collapsed at center
-      const introX = pivotX
-      const introY = pivotY - cardH * 0.5
-      const introZ = baseZ
+      // Intro start position: custom origin (pack burst) or default (below pivot)
+      const introX = introOrigin?.x ?? pivotX
+      const introY = introOrigin?.y ?? (pivotY - cardH * 0.5)
+      const introZ = introOrigin?.z ?? baseZ
       const introRotZ = 0
-      const introScale = 0.4
+      const introScale = introOrigin ? 0.15 : 0.4
 
       // Start at intro position (hidden below)
       mesh.position.set(introX, introY, introZ)

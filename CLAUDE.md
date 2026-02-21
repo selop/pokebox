@@ -14,6 +14,7 @@ bun run build        # Type-check (vue-tsc) + production build (Vite)
 bun run lint         # Run oxlint + eslint with auto-fix
 bun run format       # Prettier on src/
 bun test:unit        # Run all unit tests (includes shader tests)
+bun test:assets      # Verify texture files match set JSON (optional — needs local assets)
 bun test:shader      # Run shader compilation and validation tests
 bun test:e2e         # Playwright end-to-end tests
 ```
@@ -59,8 +60,10 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 | `SHINY_ULTRA_RARE` | any | `ultra-rare` |
 | `SPECIAL_ILLUSTRATION_RARE` | `TERA` + `SHINY` tags | `tera-shiny-rare` |
 | `SPECIAL_ILLUSTRATION_RARE` | `TERA` tag | `tera-rainbow-rare` |
-| `SPECIAL_ILLUSTRATION_RARE` / `HYPER_RARE` | any | `special-illustration-rare` |
+| `SPECIAL_ILLUSTRATION_RARE` / `HYPER_RARE` / `MEGA_HYPER_RARE` | any | `special-illustration-rare` |
+| `MEGA_ATTACK_RARE` | any | `tera-rainbow-rare` |
 | `ULTRA_RARE` / `ACE_SPEC_RARE` | any | `ultra-rare` |
+| `DOUBLE_RARE` | `TERA` or `MEGA_EVOLUTION` tag | `tera-rainbow-rare` |
 | `DOUBLE_RARE` | `SUN_PILLAR` | `double-rare` |
 | `DOUBLE_RARE` | `SV_ULTRA` + `ETCHED` mask | `rainbow-rare` |
 | `DOUBLE_RARE` / `ILLUSTRATION_RARE` | other | `illustration-rare` |
@@ -71,7 +74,7 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 
 | Directory           | Role                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode, set switching, mobile detection)                                      |
+| `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode, set switching, mobile detection, pack opening animation state machine) |
 | `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`     |
 | `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `CardSceneBuilder` (card scene orchestration), `CardNavigator` (card navigation), `MergeAnimator` (card transitions), `geometryHelpers`, `utils` |
 | `src/shaders/`      | GLSL fragment shaders; shared functions in `common/` subdir, included via `#include` (resolved by `vite-plugin-glsl`)                                        |
@@ -85,7 +88,7 @@ The card catalog is **JSON-driven and supports multiple sets**. Card sets are de
 
 - `CARD_CATALOG` is a `shallowRef<CardCatalogEntry[]>` that updates reactively when switching sets
 - `loadSetCatalog(setId)` fetches the set's JSON, filters to foil-only entries, picks the best foil variant per card number (priority: RAINBOW > non-FLAT_SILVER > FLAT_SILVER), and builds texture paths
-- File variant prefixes (e.g., `ph`, `std`, `mph`) are extracted from the JSON `longFormID` field
+- File variant prefixes (e.g., `ph`, `std`, `mph`, `ph2`) are extracted from the JSON `longFormID` field by a set-code-agnostic regex in `extractPrefix()`
 
 Each `CardCatalogEntry` defines texture paths and shader type (relative to `public/`):
 
@@ -127,6 +130,19 @@ EOF
 ### Asset processing scripts
 
 - **`process-set.sh`** — Main unified pipeline: downloads card images, upscales with Real-ESRGAN, and produces the `public/<setId>/` directory structure (fronts, holo-masks, etch-foils) expected by `cardCatalog.ts`
+
+### Booster pack opening animation
+
+Clicking a booster pack in the modal triggers a cinematic "tear open" sequence coordinated across CSS and Three.js:
+
+1. **CSS phases** (`BoosterPackModal.vue`): focus (0.5s slide-to-center + golden glow) → shake (0.3s wobble) → burst (0.4s scale-up + radial flash)
+2. **Set loading** runs in parallel with CSS animation via `store.openPack(setId)`
+3. **Cascade** (`useThreeScene`): once CSS finishes and set is loaded, `packOpeningPhase` transitions to `'cascade'`, closing the modal and triggering a fan rebuild with `introOrigin` at screen center — cards burst from a single point
+4. **State machine** (`store.packOpeningPhase`): `idle` → `css-anim` → `cascade` → `idle` (or `css-anim` → `waiting-load` → `cascade` on slow networks)
+
+The config/displayCardIds watchers in `useThreeScene` skip rebuilds during `css-anim`/`waiting-load` phases to prevent the fan intro from firing twice.
+
+**Fan ↔ single interaction**: Click a fan card to zoom into single mode. Click empty box space (miss the card) in single mode to return to fan. The toolbar dropdown `switchSet()` bypasses the animation entirely.
 
 ### State-driven rebuilds
 
@@ -205,3 +221,11 @@ or adding new visual controls, ALWAYS update all related files in a single pass:
 - Syntax errors (missing semicolons, unbalanced braces)
 
 See `docs/SHADER-TESTING.md` for detailed testing documentation.
+
+### Asset Integrity Testing
+
+```bash
+bun test:assets  # Optional — requires card assets in public/
+```
+
+The asset integrity test (`src/data/__tests__/asset-integrity.test.ts`) verifies that every texture path generated by the card catalog logic has a matching file on disk. For each set in `SET_REGISTRY`, it reads the set JSON, runs the same `pickBestFoilEntry` + `extractPrefix` logic as the runtime, and checks that front, holo-mask, and etch-foil files exist under `public/`. This test is **excluded from `bun test:unit`** because contributors typically don't have the full card asset sets locally. Run it after processing a new set or renaming asset files.

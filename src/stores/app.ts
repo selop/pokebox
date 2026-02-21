@@ -79,6 +79,9 @@ export const useAppStore = defineStore('app', () => {
   const showInstructions = ref(true)
   const showBoosterModal = ref(false)
 
+  // --- Pack opening animation state ---
+  const packOpeningPhase = ref<'idle' | 'css-anim' | 'waiting-load' | 'cascade'>('idle')
+
   // --- Viewport dimensions (updated on resize) ---
   const viewportWidth = ref(window.innerWidth)
   const viewportHeight = ref(window.innerHeight)
@@ -175,17 +178,13 @@ export const useAppStore = defineStore('app', () => {
     clearCacheFn = fn
   }
 
-  async function switchSet(setId: string) {
-    if (setId === currentSetId.value && CARD_CATALOG.value.length > 0) return
+  /** Internal set-loading logic shared by switchSet and openPack. */
+  async function switchSetInternal(setId: string) {
     setLoading.value = true
     try {
-      // Clear texture cache before loading new set
       clearCacheFn?.()
       currentSetId.value = setId
       const catalog = await loadSetCatalog(setId)
-      // Set card ID BEFORE catalog so the displayCardIds watcher
-      // fires only once with a valid ID in the new catalog.
-      // Preserve existing card ID if it exists in the new catalog (e.g. initial load).
       const keepCurrent = catalog.some((c) => c.id === currentCardId.value)
       if (!keepCurrent) {
         currentCardId.value = catalog.length > 0 ? catalog[0]!.id : STARTUP_CARD_ID
@@ -195,6 +194,51 @@ export const useAppStore = defineStore('app', () => {
       setLoading.value = false
     }
   }
+
+  async function switchSet(setId: string) {
+    if (setId === currentSetId.value && CARD_CATALOG.value.length > 0) return
+    await switchSetInternal(setId)
+  }
+
+  /** Start the booster pack opening animation and load the set in parallel. */
+  function openPack(setId: string) {
+    if (packOpeningPhase.value !== 'idle') return
+    packOpeningPhase.value = 'css-anim'
+
+    // Force fan mode and refresh seed for new random cards
+    cardDisplayMode.value = 'fan'
+    sceneSeed.value = Date.now()
+
+    // Start set loading in parallel (skip network if same set)
+    // switchSetInternal manages setLoading ref — packCssAnimDone checks it
+    if (setId !== currentSetId.value || CARD_CATALOG.value.length === 0) {
+      switchSetInternal(setId)
+    }
+  }
+
+  /** Called by modal when CSS animation phases (focus/shake/burst) finish. */
+  function packCssAnimDone() {
+    if (packOpeningPhase.value !== 'css-anim') return
+    if (!setLoading.value) {
+      // Load already finished — go straight to cascade
+      packOpeningPhase.value = 'cascade'
+      showBoosterModal.value = false
+    } else {
+      // Still loading — wait
+      packOpeningPhase.value = 'waiting-load'
+    }
+  }
+
+  // When load finishes during waiting-load, transition to cascade
+  watch(
+    () => setLoading.value,
+    (loading) => {
+      if (!loading && packOpeningPhase.value === 'waiting-load') {
+        packOpeningPhase.value = 'cascade'
+        showBoosterModal.value = false
+      }
+    },
+  )
 
   function randomizeSeed() {
     sceneSeed.value = Date.now()
@@ -290,6 +334,7 @@ export const useAppStore = defineStore('app', () => {
     statusText,
     showInstructions,
     showBoosterModal,
+    packOpeningPhase,
     viewportWidth,
     viewportHeight,
     dimensions,
@@ -301,6 +346,8 @@ export const useAppStore = defineStore('app', () => {
     resetDefaults,
     registerCacheClear,
     switchSet,
+    openPack,
+    packCssAnimDone,
     randomizeSeed,
     toggleRenderMode,
     togglePanel,

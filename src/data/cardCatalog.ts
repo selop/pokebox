@@ -8,7 +8,7 @@ export const SET_REGISTRY: SetDefinition[] = [
   { id: 'sv4-5_en', label: 'PAF Paldean Fates', jsonFile: 'sv4-5_en/sv-4-5.en-US.json' },
   { id: 'sv5_en', label: 'TEF Temporal Forces', jsonFile: 'sv5_en/sv5.en-US.json' },
   { id: 'sv10_en', label: 'DRI Destined Rivals', jsonFile: 'sv10_en/set.json' },
-  { id: 'me2-5_en', label: 'Ascended Heros', jsonFile: 'me2-5_en/set.json' },
+  { id: 'me2-5_en', label: 'ASC Ascended Heros', jsonFile: 'me2-5_en/set.json' },
 ]
 
 /** Reactive catalog — updated on set switch. */
@@ -39,13 +39,18 @@ export function mapHoloType(
         return 'tera-rainbow-rare'
       }
       return 'special-illustration-rare'
+    case 'MEGA_ATTACK_RARE':
+      return 'tera-rainbow-rare'
+    case 'MEGA_HYPER_RARE':
+      return 'special-illustration-rare'
     case 'ULTRA_RARE':
       return 'ultra-rare'
     case 'DOUBLE_RARE':
-      if (foilType === 'SUN_PILLAR') {
-        return 'double-rare'
-      }
+      if (tags?.includes('TERA')) return 'tera-rainbow-rare'
+      if (tags?.includes('MEGA_EVOLUTION')) return 'tera-rainbow-rare'
+      if (foilType === 'SUN_PILLAR') return 'double-rare'
       if (foilType === 'SV_ULTRA' && foilMask === 'ETCHED') return 'rainbow-rare'
+
     case 'ILLUSTRATION_RARE':
       return 'illustration-rare'
     case 'HYPER_RARE':
@@ -69,7 +74,7 @@ export function extractPrefix(longFormID: string): string {
   // Split and find the prefix token (4th underscore-delimited segment after set code)
   // Format: Name_setCode_cardNum_prefix_...
   // But name can contain underscores, so parse from the set code forward
-  const setMatch = longFormID.match(/_(sv[\d-]+)_(\d+)_([a-z]+)_/)
+  const setMatch = longFormID.match(/_([\w][\w-]*)_(\d+)_([a-z][a-z0-9]*)_/)
   return setMatch ? setMatch[3]! : 'std'
 }
 
