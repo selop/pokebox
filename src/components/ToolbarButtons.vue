@@ -40,9 +40,9 @@ async function shareCard() {
 }
 
 const displayModeLabel: Record<string, string> = {
-  single: '&#x2630; Triple',
-  triple: '&#x1F0CF; Fan',
-  fan: '&#x25A3; Single',
+  single: '\u2630 Triple',
+  triple: '\u{1F0CF} Fan',
+  fan: '\u25A3 Single',
 }
 </script>
 
@@ -103,8 +103,7 @@ const displayModeLabel: Record<string, string> = {
           v-if="!store.isMobile"
           class="toolbar-btn"
           @click="cycleDisplayMode"
-          v-html="displayModeLabel[store.cardDisplayMode]"
-        />
+        >{{ displayModeLabel[store.cardDisplayMode] }}</button>
         <Transition name="btn-fade">
           <button
             v-if="store.cardDisplayMode === 'single'"
@@ -210,7 +209,7 @@ const displayModeLabel: Record<string, string> = {
 }
 
 .toolbar-select {
-  display: none;
+  display: initial;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);

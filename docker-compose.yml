@@ -8,7 +8,7 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-yourusername}/pokebox:latest
     container_name: pokebox
     ports:
-      - "3000:80"
+      - "127.0.0.1:3000:80"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
@@ -20,6 +20,30 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
     environment:
       - TZ=UTC
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /var/run
+      - /var/cache/nginx
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - NET_BIND_SERVICE
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - default
       - monitoring

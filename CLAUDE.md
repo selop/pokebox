@@ -55,6 +55,9 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 | Rarity | Foil Type | Shader |
 |--------|-----------|--------|
 | any | `RAINBOW` + `ETCHED` mask | `master-ball` |
+| `SHINY_RARE` | any | `shiny-rare` |
+| `SHINY_ULTRA_RARE` | any | `ultra-rare` |
+| `SPECIAL_ILLUSTRATION_RARE` | `TERA` + `SHINY` tags | `tera-shiny-rare` |
 | `SPECIAL_ILLUSTRATION_RARE` | `TERA` tag | `tera-rainbow-rare` |
 | `SPECIAL_ILLUSTRATION_RARE` / `HYPER_RARE` | any | `special-illustration-rare` |
 | `ULTRA_RARE` / `ACE_SPEC_RARE` | any | `ultra-rare` |

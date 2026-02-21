@@ -1,6 +1,6 @@
 # pokebox
 
-A virtual holographic Pokemon card viewer that runs in your browser. Pokebox uses your webcam to track your head position and renders realistic holographic card effects that shift as you move — as if you're peering through a window into a box of shiny cards.
+Pokebox uses your webcam to track your head position and renders realistic holographic card effects that shift as you move — as if you're peering through a window into a box of shiny cards. Enjoy the holo foil effect!
 
 **Try it live:** [pokebox.lopatkin.net](https://pokebox.lopatkin.net)
 
@@ -14,7 +14,7 @@ https://github.com/user-attachments/assets/0ba49c13-38ee-443e-ac0a-128c02c3e87e
 
 ### What is Pokebox?
 
-Pokebox recreates the experience of tilting a holographic Pokemon card under a light. It displays cards with real-time holographic effects (rainbow shifts, sparkles, etch foils) that respond to your movement. The "parallax window" effect makes the screen feel like a physical opening into a 3D scene containing the cards. This is a topic I studied in university and it was part of my [Master's thesis](https://github.com/selop/dynamic-perspective-on-android).
+Pokebox recreates the experience of tilting a holographic Pokemon card under a light. It displays cards with real-time holographic effects (rainbow shifts, sparkles, etch foils) that respond to your movement. The "parallax window" effect makes the screen feel like a physical opening into a 3D scene containing the cards. This is a topic I studied in university and it was part of my [Master's thesis](https://github.com/selop/dynamic-perspective-on-android). The holo effects are based on [Simey Pokemon CSS cards](https://github.com/simeydotme/pokemon-cards-css), but are implemented in GLSL in this project. Big thanks to Simey!
 
 ### Was this built with AI?
 
@@ -22,7 +22,7 @@ Yes! I have a software engineering background but lacked the time to work on a s
 
 ### How do I use it?
 
-Just visit [pokebox.lopatkin.net](https://pokebox.lopatkin.net) in your browser — no download or installation required. When prompted, you can enable your camera for the full head-tracking experience, or skip it and use keyboard controls instead.
+Just visit [pokebox.lopatkin.net](https://pokebox.lopatkin.net) in your browser — no download or installation required. When prompted, enable your camera for the full head-tracking experience, or skip it and use keyboard controls instead. The mouse can also be used to tilt the card and provoke the holo foil effect.
 
 ### Does it work on my phone?
 
@@ -30,47 +30,11 @@ Well, it's not the full sauce. On mobile devices, Pokebox uses your phone's gyro
 
 ### Does it need my camera? Is my video sent anywhere?
 
-The camera is **completely optional** — you can dismiss the prompt and use keyboard arrow keys to move the viewpoint instead. If you do enable the camera, all face tracking runs **entirely in your browser** using [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/guide). No video or tracking data ever leaves your device.
-
-### Which card sets are included?
-
-Currently five sets are available:
-
-- **Destined Rivals** (SV10)
-- **Prismatic Evolutions** (SV8.5)
-- **Scarlet & Violet 151** (SV3.5)
-- **Paldean Fates** (SV4.5)
-- **Temporal Forces** (SV5)
-
-You can switch between sets by clicking the "Packs" button and selecting a booster pack.
-
-### Why don't I see every card from a set?
-
-Pokebox only displays cards that have holographic or foil treatments (illustration rares, ultra rares, special art rares, etc.). Common and uncommon cards without holo effects are filtered out since there's no holographic effect to show for them.
-
-### What do the different holo effects look like?
-
-Each card automatically gets the holographic effect that matches its real-world rarity:
-
-- **Regular Holo** — diagonal rainbow gradient with rotating bars
-- **Illustration Rare** — vertical rainbow bands with diagonal bars and glare
-- **Special Illustration Rare** — iridescent texture layers with tilt-reactive sparkle on etched foil
-- **Ultra Rare** — metallic sparkle with shimmer bars
-- **Double Rare** — birthday holo with grain and dual textures
-- **Rainbow Rare** — metallic spotlight with iridescent glitter
-- **Master Ball** — etched foil composite with rainbow overlay
+The camera is **completely optional** — you can dismiss the prompt and use keyboard arrow keys to move the viewpoint or use the mouse to tile the card instead. If you do enable the camera, all face tracking runs **entirely in your browser** using [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/guide). No video or tracking data ever leaves your device.
 
 ### Can I share a specific card with someone?
 
 Yes. Click the "Share" button in the toolbar (or use your browser's address bar). The URL updates to include the current set and card number, so anyone opening the link will see the exact card you're viewing.
-
-### Can I use it offline?
-
-Pokebox is a Progressive Web App (PWA), so you can install it to your home screen or desktop. The app shell works offline, but card images are loaded from a server and require an internet connection.
-
-### Which browsers are supported?
-
-Any modern browser with WebGL2 support works. This includes recent versions of Chrome, Edge, Brave, Firefox, and Safari. For the best experience, use a Chromium-based browser (Chrome, Edge, Brave) on desktop.
 
 ### The effect doesn't respond to my movement / looks wrong
 
@@ -79,6 +43,8 @@ Open the Settings panel (gear icon) and check the **Screen** calibration — the
 ### Can I add my own cards or custom scans?
 
 Not through the UI, but the project is open source. If you're comfortable with code, see the developer documentation below and `docs/CARD-SETS.md` for instructions on adding new sets.
+
+The cards displayed are sourced from [malio.io](https://malie.io/). Big thanks for their card database!
 
 ### Is this an official Pokemon product?
 

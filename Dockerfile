@@ -29,33 +29,55 @@ RUN apk add --no-cache curl
 
 # Copy custom nginx config
 COPY <<EOF /etc/nginx/conf.d/default.conf
+limit_req_zone \$binary_remote_addr zone=static:10m rate=30r/s;
+
 server {
     listen 80;
     server_name _;
+    server_tokens off;
     root /usr/share/nginx/html;
     index index.html;
+
+    # Security headers
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()" always;
+    add_header Strict-Transport-Security "max-age=63072000; includePreload" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://pokebox-assets.fsn1.your-objectstorage.com; connect-src 'self' https://cdn.jsdelivr.net https://pokebox-assets.fsn1.your-objectstorage.com; worker-src 'self' blob:; font-src 'self';" always;
 
     # Enable gzip compression
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml;
     gzip_vary on;
 
+    # Rate limiting
+    limit_req zone=static burst=60 nodelay;
+
     # SPA fallback - serve index.html for all routes
     location / {
         try_files \$uri \$uri/ /index.html;
     }
 
-    # Health check endpoint
+    # Health check endpoint (internal only)
     location /health {
         access_log off;
+        allow 127.0.0.1;
+        allow 10.0.0.0/8;
+        allow 172.16.0.0/12;
+        deny all;
         return 200 "healthy\n";
         add_header Content-Type text/plain;
     }
 
-    # Nginx metrics for Prometheus scraping
+    # Nginx metrics for Prometheus scraping (internal only)
     location /nginx_status {
         stub_status;
         access_log off;
+        allow 127.0.0.1;
+        allow 10.0.0.0/8;
+        allow 172.16.0.0/12;
+        deny all;
     }
 }
 EOF
