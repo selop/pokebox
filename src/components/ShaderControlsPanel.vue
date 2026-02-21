@@ -490,11 +490,11 @@ const currentCardHoloType = computed(() => {
 
 const activeSection = computed(() => sections.find((s) => s.id === currentCardHoloType.value))
 
-// Close panel when switching to triple mode
+// Close panel when leaving single mode
 watch(
   () => store.cardDisplayMode,
   (mode) => {
-    if (mode === 'triple') store.isShaderPanelOpen = false
+    if (mode !== 'single') store.isShaderPanelOpen = false
   },
 )
 </script>

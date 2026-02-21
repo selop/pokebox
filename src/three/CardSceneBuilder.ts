@@ -5,10 +5,7 @@ import type { useCardLoader } from '@/composables/useCardLoader'
 import type { ShaderStyle } from '@/types'
 import { buildCardMesh, CARD_ASPECT } from '@/three/buildCard'
 import { CARD_CATALOG } from '@/data/cardCatalog'
-
-// Per-card offsets for staggering (x = fraction of spacing, z = fraction of boxD)
-export const CARD_X_OFFSETS = [0.3, 0, -0.3]
-export const CARD_Z_OFFSETS = [0.2, 0, -0.2]
+import type { HeroCardEntry } from '@/data/heroShowcase'
 
 type CardLoaderInstance = ReturnType<typeof useCardLoader>
 
@@ -22,7 +19,7 @@ export class CardSceneBuilder {
   build(
     scene: Scene,
     cardAngle: number,
-    introOrigin?: { x: number; y: number; z: number } | null,
+    _introOrigin?: { x: number; y: number; z: number } | null,
   ): Mesh[] {
     const loader = this.cardLoader()
     if (!loader) return []
@@ -30,9 +27,11 @@ export class CardSceneBuilder {
     if (this.store.cardDisplayMode === 'single') {
       return this.buildSingleCard(scene, loader, cardAngle)
     } else if (this.store.cardDisplayMode === 'fan') {
-      return this.buildFanCards(scene, loader, introOrigin)
+      return this.buildFanCards(scene, loader)
+    } else if (this.store.cardDisplayMode === 'carousel') {
+      return this.buildCarouselCards(scene, loader)
     } else {
-      return this.buildTripleCards(scene, loader, cardAngle)
+      return []
     }
   }
 
@@ -62,18 +61,6 @@ export class CardSceneBuilder {
       noiseTexture,
       cardBackTexture,
     }
-  }
-
-  cardLayout() {
-    const dims = this.store.dimensions
-    const cardH = dims.screenH * this.store.config.cardSize
-    const cardW = cardH * CARD_ASPECT
-    const gap = cardW * 0.08
-    const spacing = cardW + gap
-    const centerX = (this.store.cardTransform.x / 100) * dims.screenW
-    const y = (this.store.cardTransform.y / 100) * dims.screenH
-    const z = -(this.store.cardTransform.z / 100) * dims.boxD
-    return { spacing, centerX, y, z, boxD: dims.boxD }
   }
 
   private buildSingleCard(scene: Scene, loader: CardLoaderInstance, cardAngle: number): Mesh[] {
@@ -184,51 +171,6 @@ export class CardSceneBuilder {
     return meshes
   }
 
-  private buildTripleCards(scene: Scene, loader: CardLoaderInstance, cardAngle: number): Mesh[] {
-    const store = this.store
-    const dims = store.dimensions
-    const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
-    const meshes: Mesh[] = []
-    const centerX = (store.cardTransform.x / 100) * dims.screenW
-    const { spacing, y, z, boxD } = this.cardLayout()
-
-    store.displayCardIds.forEach((id: string, i: number) => {
-      const tex = loader.get(id)
-      if (!tex) return
-      const effectiveShader = this.getEffectiveShader(id)
-      const {
-        iriTextures,
-        birthdayTextures,
-        sparkleIriTextures,
-        glitterTexture,
-        noiseTexture,
-        cardBackTexture,
-      } = this.resolveExtraTextures(loader, effectiveShader)
-      const mesh = buildCardMesh(
-        dims,
-        tex.card,
-        tex.mask,
-        tex.foil,
-        store.config,
-        effectiveShader,
-        iriTextures,
-        birthdayTextures,
-        glitterTexture,
-        noiseTexture,
-        cardBackTexture,
-        sparkleIriTextures,
-      )
-      const xPos = centerX + (i - 1) * spacing + CARD_X_OFFSETS[i]! * spacing
-      mesh.position.set(xPos, y, z + CARD_Z_OFFSETS[i]! * boxD)
-      mesh.rotation.y = baseRotY
-      mesh.castShadow = true
-      scene.add(mesh)
-      meshes.push(mesh)
-    })
-
-    return meshes
-  }
-
   /**
    * Build a fanned poker-hand layout.
    * Cards arc around a pivot below the visible area, overlapping naturally.
@@ -251,7 +193,7 @@ export class CardSceneBuilder {
     const n = ids.length
     const centerIdx = Math.floor(n / 2)
 
-    // Card sizing — slightly smaller than triple mode
+    // Card sizing — slightly smaller than single mode
     const cardH = dims.screenH * store.config.cardSize * 0.85
     const cardW = cardH * CARD_ASPECT
 
@@ -300,7 +242,7 @@ export class CardSceneBuilder {
 
       // Intro start position: custom origin (pack burst) or default (below pivot)
       const introX = introOrigin?.x ?? pivotX
-      const introY = introOrigin?.y ?? (pivotY - cardH * 0.5)
+      const introY = introOrigin?.y ?? pivotY - cardH * 0.5
       const introZ = introOrigin?.z ?? baseZ
       const introRotZ = 0
       const introScale = introOrigin ? 0.15 : 0.4
@@ -348,6 +290,183 @@ export class CardSceneBuilder {
     })
 
     return meshes
+  }
+
+  private getEffectiveShaderForHero(compoundId: string): ShaderStyle {
+    const hero = this.store.carouselHeroCatalog.find((h: HeroCardEntry) => h.id === compoundId)
+    return hero?.holoType || 'illustration-rare'
+  }
+
+  /**
+   * Build a cover-flow carousel layout with ALL hero cards.
+   * Cards are built once; when carouselIndex changes, only the targets
+   * are updated (via updateCarouselTargets) and the animation loop
+   * lerps meshes to their new positions — no rebuild needed.
+   */
+  private buildCarouselCards(scene: Scene, loader: CardLoaderInstance): Mesh[] {
+    const store = this.store
+    const dims = store.dimensions
+    const meshes: Mesh[] = []
+    const ids = store.displayCardIds
+    if (ids.length === 0) return meshes
+
+    // Card sizing — center card uses singleCardSize * 0.9
+    const centerCardH = dims.screenH * store.singleCardSize * 0.9
+    const centerCardW = centerCardH * CARD_ASPECT
+
+    const baseY = (store.cardTransform.y / 100) * dims.screenH
+    const baseZ = -(store.cardTransform.z / 100) * dims.boxD
+
+    ids.forEach((id: string, i: number) => {
+      const tex = loader.get(id)
+      if (!tex) return
+
+      const effectiveShader = this.getEffectiveShaderForHero(id)
+      const {
+        iriTextures,
+        birthdayTextures,
+        sparkleIriTextures,
+        glitterTexture,
+        noiseTexture,
+        cardBackTexture,
+      } = this.resolveExtraTextures(loader, effectiveShader)
+
+      const mesh = buildCardMesh(
+        dims,
+        tex.card,
+        tex.mask,
+        tex.foil,
+        { ...store.config, cardSize: store.singleCardSize * 0.9 },
+        effectiveShader,
+        iriTextures,
+        birthdayTextures,
+        glitterTexture,
+        noiseTexture,
+        cardBackTexture,
+        sparkleIriTextures,
+      )
+
+      // Replace geometry with center card size (scale handles per-slot sizing)
+      mesh.geometry.dispose()
+      mesh.geometry = new PlaneGeometry(centerCardW, centerCardH)
+
+      mesh.castShadow = true
+      mesh.userData.carouselHeroIndex = i
+      mesh.userData.cardId = id
+
+      // Compute initial position based on current carouselIndex
+      const target = this.computeCarouselSlot(
+        i,
+        store.carouselIndex,
+        ids.length,
+        centerCardW,
+        baseY,
+        baseZ,
+        dims.boxD,
+        dims.screenW,
+      )
+      mesh.position.set(target.x, target.y, target.z)
+      mesh.rotation.y = target.rotY
+      mesh.scale.setScalar(target.scale)
+      mesh.renderOrder = target.renderOrder
+      mesh.userData.carouselTarget = target
+
+      scene.add(mesh)
+      meshes.push(mesh)
+    })
+
+    return meshes
+  }
+
+  /**
+   * Compute carousel slot properties for a card given its hero index
+   * and the current carousel center index.
+   */
+  private computeCarouselSlot(
+    heroIndex: number,
+    centerIndex: number,
+    totalCards: number,
+    centerCardW: number,
+    baseY: number,
+    baseZ: number,
+    boxD: number,
+    screenW: number,
+  ) {
+    // Fit outermost cards (slot ±2) inside the box.
+    // Outer card edge = |offset| * spacing + scaledCardW/2 ≤ screenW/2
+    // At slot ±2 with scale 0.55: 2*spacing + 0.55*centerCardW/2 ≤ screenW/2
+    const maxSpacing = (screenW / 2 - (0.55 * centerCardW) / 2) / 2
+    const idealSpacing = centerCardW * 0.75
+    const spacing = Math.min(idealSpacing, maxSpacing)
+
+    // Compute offset from center (-N/2 .. +N/2, wrapping)
+    let offset = heroIndex - centerIndex
+    const half = Math.floor(totalCards / 2)
+    if (offset > half) offset -= totalCards
+    if (offset < -half) offset += totalCards
+
+    // Visible range: -2 to +2. Cards outside are hidden off-screen.
+    const absOffset = Math.abs(offset)
+    if (absOffset > 2) {
+      // Park just beyond the box edge so they slide in/out naturally
+      const sign = offset > 0 ? 1 : -1
+      return {
+        x: sign * (screenW / 2 + centerCardW * 0.3),
+        y: baseY,
+        z: baseZ - boxD * 0.5,
+        rotY: (sign * (-70 * Math.PI)) / 180,
+        scale: 0.3,
+        renderOrder: 5,
+      }
+    }
+
+    // Slot parameters for visible positions
+    const slotScale = [0.55, 0.75, 1.0, 0.75, 0.55][offset + 2]!
+    const slotRotDeg = [50, 25, 0, -25, -50][offset + 2]!
+    const slotZFrac = [-0.35, -0.18, 0, -0.18, -0.35][offset + 2]!
+    const slotOrder = [8, 9, 10, 9, 8][offset + 2]!
+
+    return {
+      x: offset * spacing,
+      y: baseY,
+      z: baseZ + slotZFrac * boxD,
+      rotY: (slotRotDeg * Math.PI) / 180,
+      scale: slotScale,
+      renderOrder: slotOrder,
+    }
+  }
+
+  /**
+   * Update carousel slot targets on existing meshes when carouselIndex changes.
+   * Called from useThreeScene's carouselIndex watcher — no rebuild needed.
+   */
+  updateCarouselTargets(meshes: Mesh[]): void {
+    const store = this.store
+    const dims = store.dimensions
+    const catalog = store.carouselHeroCatalog
+    if (catalog.length === 0) return
+
+    const centerCardH = dims.screenH * store.singleCardSize * 0.9
+    const centerCardW = centerCardH * CARD_ASPECT
+    const baseY = (store.cardTransform.y / 100) * dims.screenH
+    const baseZ = -(store.cardTransform.z / 100) * dims.boxD
+
+    for (const mesh of meshes) {
+      const heroIndex = mesh.userData.carouselHeroIndex as number | undefined
+      if (heroIndex === undefined) continue
+      const target = this.computeCarouselSlot(
+        heroIndex,
+        store.carouselIndex,
+        catalog.length,
+        centerCardW,
+        baseY,
+        baseZ,
+        dims.boxD,
+        dims.screenW,
+      )
+      mesh.userData.carouselTarget = target
+      mesh.renderOrder = target.renderOrder
+    }
   }
 
   /**

@@ -78,7 +78,7 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 | `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`     |
 | `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `CardSceneBuilder` (card scene orchestration), `CardNavigator` (card navigation), `MergeAnimator` (card transitions), `geometryHelpers`, `utils` |
 | `src/shaders/`      | GLSL fragment shaders; shared functions in `common/` subdir, included via `#include` (resolved by `vite-plugin-glsl`)                                        |
-| `src/data/`         | `cardCatalog.ts` (JSON-driven card catalog with `SET_REGISTRY` and `loadSetCatalog()`), `defaults.ts` (initial config values)                                |
+| `src/data/`         | `cardCatalog.ts` (JSON-driven card catalog with `SET_REGISTRY` and `loadSetCatalog()`), `defaults.ts` (initial config values), `heroShowcase.ts` (curated cross-set hero cards for carousel) |
 | `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `SetDefinition`, `SetCardJson`, `CardTransform`, `EyePosition`, `DerivedDimensions`, `HoloType`, `ShaderStyle` |
 | `docs/`             | `CARD-SETS.md` (card set system documentation, adding new sets), `SHADER-TESTING.md`                                                                         |
 
@@ -144,6 +144,10 @@ The config/displayCardIds watchers in `useThreeScene` skip rebuilds during `css-
 
 **Fan ↔ single interaction**: Click a fan card to zoom into single mode. Click empty box space (miss the card) in single mode to return to fan. The toolbar dropdown `switchSet()` bypasses the animation entirely.
 
+### Hero carousel
+
+On desktop startup (when no URL params override), the app enters a hero showcase carousel — a cover-flow layout with 5 visible cards from curated `HERO_SHOWCASE` entries spanning multiple sets. The center card is full-size and face-on, side cards are progressively smaller, Y-rotated, and Z-recessed. All hero cards are built once (not rebuilt on each advance); `updateCarouselTargets()` updates lerp targets and the animation loop smoothly slides cards to new positions. Auto-rotates every 4s; N/B keys rotate manually and reset the timer. Any user interaction (set change, card select, toolbar click) exits carousel via `stopHeroShowcase()`.
+
 ### State-driven rebuilds
 
 The scene watches store properties and rebuilds accordingly:
@@ -170,7 +174,9 @@ The app is containerized with Docker (`Dockerfile` + `docker-compose.yml`):
 - Card assets live under `public/<setId>/{fronts,holo-masks,etch-foils}/` (one directory per set)
 - Seeded PRNG (`mulberry32`) for reproducible procedural layouts
 - MediaPipe is dynamically imported to avoid bundling the full library
-- Mobile detection (`store.isMobile`) is evaluated once in the Pinia store; on mobile, `cardDisplayMode` defaults to `'single'` and the display mode toggle button is hidden
+- Mobile detection (`store.isMobile`) is evaluated once in the Pinia store; on mobile, `cardDisplayMode` defaults to `'single'` and the display mode dropdown is hidden
+- Card display modes: `single` (one card), `fan` (7-card hand), `carousel` (cover-flow hero showcase across multiple sets)
+- Hero carousel uses compound IDs (`setId:cardId`) and `loadHeroCatalog()` to resolve cards across different sets; compound-keyed textures are protected from `clearCache()` on set switch
 
 ## Testing
 

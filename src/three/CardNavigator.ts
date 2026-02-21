@@ -42,6 +42,7 @@ export class CardNavigator {
   private departStart = 0
   private arrivalStart = 0
   private arriving = false
+  private forceArrival = false
 
   constructor(
     private readonly store: ReturnType<typeof useAppStore>,
@@ -49,6 +50,11 @@ export class CardNavigator {
     private readonly cardMeshes: ShallowRef<Mesh[]>,
     private readonly onNavigate?: () => void,
   ) {}
+
+  /** Request a fade-in arrival animation on the next scene rebuild (no departure). */
+  requestArrival(): void {
+    this.forceArrival = true
+  }
 
   navigate(dir: number): void {
     const idx = CARD_CATALOG.value.findIndex((c) => c.id === this.store.currentCardId)
@@ -82,11 +88,12 @@ export class CardNavigator {
     perfTracker.markNavigationEnd()
     const scene = this.getScene()
     for (const { mesh } of this.departingMeshes) scene?.add(mesh)
-    if (this.departingMeshes.length > 0) {
+    if (this.departingMeshes.length > 0 || this.forceArrival) {
       // New meshes are ready — start arrival timeline now
       for (const mesh of this.cardMeshes.value) setCardFade(mesh, 0)
       this.arrivalStart = performance.now() * 0.001
       this.arriving = true
+      this.forceArrival = false
     }
   }
 

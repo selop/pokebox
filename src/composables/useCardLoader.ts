@@ -1,5 +1,6 @@
 import { LinearFilter, LinearMipmapLinearFilter, TextureLoader } from 'three'
 import type { Texture, WebGLRenderer } from 'three'
+import type { CardCatalogEntry } from '@/types'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 import { HERO_ASSETS } from '@/data/heroAssets'
 import { useAppStore } from '@/stores/app'
@@ -41,12 +42,14 @@ export function useCardLoader(renderer: WebGLRenderer) {
   let cardBackTexture: Texture | null = null
 
   function clearCache(): void {
-    for (const textures of loaded.values()) {
+    for (const [key, textures] of loaded.entries()) {
+      // Protect compound-keyed hero entries (setId:cardId) from cache clear
+      if (key.includes(':')) continue
       textures.card.dispose()
       textures.mask?.dispose()
       textures.foil?.dispose()
+      loaded.delete(key)
     }
-    loaded.clear()
   }
 
   function applyFilters(tex: Texture, aniso = false): void {
@@ -152,6 +155,67 @@ export function useCardLoader(renderer: WebGLRenderer) {
         span.end()
       })
     })
+  }
+
+  /** Load a hero card using its full entry (bypasses CARD_CATALOG lookup). */
+  function loadHeroCard(entry: CardCatalogEntry): Promise<void> {
+    if (loaded.has(entry.id)) return Promise.resolve()
+
+    const hasMask = !!entry.mask
+    const hasFoil = !!entry.foil
+    const totalToLoad = 1 + (hasMask ? 1 : 0) + (hasFoil ? 1 : 0)
+
+    return new Promise<void>((resolve) => {
+      let count = 0
+      let cardTex: Texture | null = null
+      let maskTex: Texture | null = null
+      let foilTex: Texture | null = null
+
+      const onReady = () => {
+        if (++count >= totalToLoad) {
+          loaded.set(entry.id, { card: cardTex!, mask: maskTex, foil: foilTex })
+          resolve()
+        }
+      }
+
+      tracedLoad(entry.front, `load-texture hero-front ${entry.id}`, (tex) => {
+        applyFilters(tex, true)
+        cardTex = tex
+        onReady()
+      })
+
+      if (hasMask) {
+        tracedLoad(
+          entry.mask,
+          `load-texture hero-mask ${entry.id}`,
+          (tex) => {
+            applyFilters(tex)
+            maskTex = tex
+            onReady()
+          },
+          undefined,
+          () => onReady(),
+        )
+      }
+
+      if (hasFoil) {
+        tracedLoad(
+          entry.foil,
+          `load-texture hero-foil ${entry.id}`,
+          (tex) => {
+            applyFilters(tex, true)
+            foilTex = tex
+            onReady()
+          },
+          undefined,
+          () => onReady(),
+        )
+      }
+    })
+  }
+
+  function loadHeroCards(entries: CardCatalogEntry[]): Promise<void> {
+    return Promise.all(entries.map((e) => loadHeroCard(e))).then(() => {})
   }
 
   function get(id: string): CardTextures | undefined {
@@ -317,6 +381,8 @@ export function useCardLoader(renderer: WebGLRenderer) {
   return {
     loadCard,
     loadCards,
+    loadHeroCard,
+    loadHeroCards,
     get,
     clearCache,
     loadIriTextures,

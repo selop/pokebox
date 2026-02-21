@@ -96,6 +96,7 @@ flowchart TB
 
     subgraph Data["Data Layer"]
         Catalog["cardCatalog.ts<br/><small>SET_REGISTRY +<br/>loadSetCatalog()</small>"]
+        Hero["heroShowcase.ts<br/><small>cross-set hero cards</small>"]
         AssetUrl["assetUrl()<br/><small>VITE_ASSET_BASE_URL</small>"]
     end
 
@@ -114,7 +115,7 @@ flowchart TB
     %% User interactions
     Search -->|"selectCard(id)"| Store
     Booster -->|"switchSet(setId)"| Store
-    Toolbar -->|"flip, display mode"| Store
+    Toolbar -->|"display mode, slideshow"| Store
     ShaderPanel -->|"shader uniforms"| Store
 
     %% Store → Scene
@@ -124,6 +125,8 @@ flowchart TB
 
     %% Catalog & asset loading
     Store -->|"switchSet()"| Catalog
+    Store -->|"carouselHeroCatalog"| Hero
+    Hero -->|"loadSetCatalog() per set"| Catalog
     Catalog -->|"fetch JSON"| AssetUrl
     Loader -->|"load textures"| AssetUrl
     AssetUrl -->|"GET (CORS)"| S3

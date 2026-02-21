@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { DataTexture, RGBAFormat, Scene, UnsignedByteType } from 'three'
-import { CardSceneBuilder, CARD_X_OFFSETS, CARD_Z_OFFSETS } from '../CardSceneBuilder'
-import { CARD_ASPECT } from '../buildCard'
+import { CardSceneBuilder } from '../CardSceneBuilder'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 import { DEFAULT_CONFIG, DEFAULT_CARD } from '@/data/defaults'
 import type { CardCatalogEntry } from '@/types'
@@ -111,21 +110,6 @@ describe('CardSceneBuilder', () => {
       expect(meshes.length).toBe(3)
     })
 
-    it('delegates to triple-card mode when cardDisplayMode is "triple"', () => {
-      const ids = ['card-1', 'card-2', 'card-3']
-      const cards: Record<string, { card: ReturnType<typeof makeTex>; mask: ReturnType<typeof makeTex> | null; foil: ReturnType<typeof makeTex> | null }> = {}
-      ids.forEach((id) => {
-        cards[id] = { card: makeTex(), mask: null, foil: null }
-      })
-      CARD_CATALOG.value = ids.map((id) => makeCatalogEntry(id))
-
-      const loader = makeLoader(cards)
-      const store = makeStore({ cardDisplayMode: 'triple', displayCardIds: ids })
-      const builder = new CardSceneBuilder(store, () => loader)
-
-      const meshes = builder.build(scene, 0)
-      expect(meshes.length).toBe(3)
-    })
   })
 
   // -----------------------------------------------------------------------
@@ -219,87 +203,6 @@ describe('CardSceneBuilder', () => {
   })
 
   // -----------------------------------------------------------------------
-  // Triple-card mode
-  // -----------------------------------------------------------------------
-  describe('triple-card mode', () => {
-    it('creates one mesh per card', () => {
-      const ids = ['a', 'b', 'c']
-      const cards: Record<string, { card: ReturnType<typeof makeTex>; mask: ReturnType<typeof makeTex> | null; foil: ReturnType<typeof makeTex> | null }> = {}
-      ids.forEach((id) => { cards[id] = { card: makeTex(), mask: null, foil: null } })
-      CARD_CATALOG.value = ids.map((id) => makeCatalogEntry(id))
-
-      const loader = makeLoader(cards)
-      const store = makeStore({ cardDisplayMode: 'triple', displayCardIds: ids })
-      const builder = new CardSceneBuilder(store, () => loader)
-
-      const meshes = builder.build(scene, 0)
-      expect(meshes.length).toBe(3)
-      expect(scene.children.length).toBe(3)
-    })
-
-    it('skips cards whose textures are not loaded', () => {
-      CARD_CATALOG.value = [makeCatalogEntry('a'), makeCatalogEntry('b')]
-      // Only 'a' is loaded
-      const loader = makeLoader({ a: { card: makeTex(), mask: null, foil: null } })
-      const store = makeStore({ cardDisplayMode: 'triple', displayCardIds: ['a', 'b'] })
-      const builder = new CardSceneBuilder(store, () => loader)
-
-      const meshes = builder.build(scene, 0)
-      expect(meshes.length).toBe(1)
-    })
-
-    it('spaces cards horizontally using cardLayout spacing', () => {
-      const ids = ['a', 'b', 'c']
-      const cards: Record<string, { card: ReturnType<typeof makeTex>; mask: ReturnType<typeof makeTex> | null; foil: ReturnType<typeof makeTex> | null }> = {}
-      ids.forEach((id) => { cards[id] = { card: makeTex(), mask: null, foil: null } })
-      CARD_CATALOG.value = ids.map((id) => makeCatalogEntry(id))
-
-      const loader = makeLoader(cards)
-      const store = makeStore({
-        cardDisplayMode: 'triple',
-        displayCardIds: ids,
-        cardTransform: { x: 0, y: 0, z: 25, rotY: 0 },
-      })
-      const builder = new CardSceneBuilder(store, () => loader)
-
-      const meshes = builder.build(scene, 0)
-
-      // Verify center card (index 1) has CARD_X_OFFSETS[1]=0 contribution
-      // and the other cards are offset left/right
-      const x0 = meshes[0]!.position.x
-      const x1 = meshes[1]!.position.x
-      const x2 = meshes[2]!.position.x
-
-      // Card 0 should be to the left of card 1, card 2 to the right
-      expect(x0).toBeLessThan(x1)
-      expect(x2).toBeGreaterThan(x1)
-    })
-
-    it('applies rotation to all cards', () => {
-      const ids = ['a', 'b', 'c']
-      const cards: Record<string, { card: ReturnType<typeof makeTex>; mask: ReturnType<typeof makeTex> | null; foil: ReturnType<typeof makeTex> | null }> = {}
-      ids.forEach((id) => { cards[id] = { card: makeTex(), mask: null, foil: null } })
-      CARD_CATALOG.value = ids.map((id) => makeCatalogEntry(id))
-
-      const loader = makeLoader(cards)
-      const rotY = 30
-      const cardAngle = 0.2
-      const store = makeStore({
-        cardDisplayMode: 'triple',
-        displayCardIds: ids,
-        cardTransform: { ...DEFAULT_CARD, rotY },
-      })
-      const builder = new CardSceneBuilder(store, () => loader)
-
-      const meshes = builder.build(scene, cardAngle)
-      const expectedRotY = cardAngle + (rotY * Math.PI) / 180
-      for (const mesh of meshes) {
-        expect(mesh.rotation.y).toBeCloseTo(expectedRotY, 5)
-      }
-    })
-  })
-
-  // -----------------------------------------------------------------------
   // resolveExtraTextures (tested indirectly via loader calls)
   // -----------------------------------------------------------------------
   describe('extra texture resolution', () => {
@@ -374,11 +277,10 @@ describe('CardSceneBuilder', () => {
       expect(loader.getCardBackTexture).toHaveBeenCalled()
     })
 
-    it('requests iri textures for rainbow-rare in triple mode (bug fix)', () => {
-      const ids = ['card-1']
+    it('requests iri textures for rainbow-rare in single mode', () => {
       CARD_CATALOG.value = [makeCatalogEntry('card-1', 'rainbow-rare')]
       const loader = makeLoader({ 'card-1': { card: makeTex(), mask: makeTex(), foil: null } })
-      const store = makeStore({ cardDisplayMode: 'triple', displayCardIds: ids })
+      const store = makeStore({ cardDisplayMode: 'single', displayCardIds: ['card-1'] })
       const builder = new CardSceneBuilder(store, () => loader)
 
       builder.build(scene, 0)
@@ -403,55 +305,4 @@ describe('CardSceneBuilder', () => {
     })
   })
 
-  // -----------------------------------------------------------------------
-  // cardLayout
-  // -----------------------------------------------------------------------
-  describe('cardLayout', () => {
-    it('computes spacing from cardSize and CARD_ASPECT', () => {
-      const store = makeStore({
-        config: { ...DEFAULT_CONFIG, cardSize: 0.5 },
-        cardTransform: { x: 0, y: 0, z: 25, rotY: 0 },
-      })
-      const builder = new CardSceneBuilder(store, () => null)
-
-      const layout = builder.cardLayout()
-      const expectedCardH = DIMS.screenH * 0.5
-      const expectedCardW = expectedCardH * CARD_ASPECT
-      const expectedGap = expectedCardW * 0.08
-      const expectedSpacing = expectedCardW + expectedGap
-
-      expect(layout.spacing).toBeCloseTo(expectedSpacing, 6)
-    })
-
-    it('computes position from cardTransform percentages', () => {
-      const store = makeStore({
-        cardTransform: { x: 10, y: -5, z: 50, rotY: 0 },
-      })
-      const builder = new CardSceneBuilder(store, () => null)
-
-      const layout = builder.cardLayout()
-      expect(layout.centerX).toBeCloseTo((10 / 100) * DIMS.screenW, 6)
-      expect(layout.y).toBeCloseTo((-5 / 100) * DIMS.screenH, 6)
-      expect(layout.z).toBeCloseTo(-(50 / 100) * DIMS.boxD, 6)
-      expect(layout.boxD).toBe(DIMS.boxD)
-    })
-  })
-
-  // -----------------------------------------------------------------------
-  // Exported constants
-  // -----------------------------------------------------------------------
-  describe('constants', () => {
-    it('CARD_X_OFFSETS has 3 entries', () => {
-      expect(CARD_X_OFFSETS).toHaveLength(3)
-    })
-
-    it('CARD_Z_OFFSETS has 3 entries', () => {
-      expect(CARD_Z_OFFSETS).toHaveLength(3)
-    })
-
-    it('center card has zero x and z offset', () => {
-      expect(CARD_X_OFFSETS[1]).toBe(0)
-      expect(CARD_Z_OFFSETS[1]).toBe(0)
-    })
-  })
 })
