@@ -87,6 +87,12 @@ bun install
 bun dev
 ```
 
+> **Tip:** The dev server runs on HTTP by default. Browsers require a secure context (HTTPS) for camera access. `localhost` is treated as secure by most browsers, so camera access works out of the box. If you access the dev server from another device on your network (e.g. via LAN IP), you'll need HTTPS. Add `@vitejs/plugin-basic-ssl` to enable it:
+> ```sh
+> bun add -d @vitejs/plugin-basic-ssl
+> ```
+> Then add `basicSsl()` to the `plugins` array in `vite.config.ts`.
+
 ### Type-Check, Compile and Minify for Production
 
 ```sh
