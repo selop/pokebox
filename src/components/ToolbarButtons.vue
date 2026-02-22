@@ -59,7 +59,7 @@ const displayModes = [
         <option v-for="card in CARD_CATALOG" :key="card.id" :value="card.id">{{ card.label }}</option>
       </select>
       <span v-if="store.setLoading" class="toolbar-loading">Loading...</span>
-      <button class="toolbar-btn mobile-order-5" @click="store.toggleBoosterModal()">&#x1F4E6; Packs</button>
+      <button class="toolbar-btn mobile-order-5 mobile-hide-packs" @click="store.toggleBoosterModal()">&#x1F4E6; Packs</button>
     </div>
 
     <span class="toolbar-sep" />
@@ -391,6 +391,10 @@ const displayModes = [
   .mobile-order-6 { order: 7; }
   .mobile-order-7 { order: 8; }
   .mobile-order-9 { order: 9; }
+
+  .mobile-hide-packs {
+    display: none;
+  }
 
   .nav-hint {
     display: none;

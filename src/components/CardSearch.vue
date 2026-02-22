@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { CARD_CATALOG } from '@/data/cardCatalog'
+import { CARD_CATALOG, SET_REGISTRY } from '@/data/cardCatalog'
 
 const store = useAppStore()
+
+const currentSetLabel = computed(
+  () => SET_REGISTRY.find((s) => s.id === store.currentSetId)?.label ?? 'cards',
+)
 const query = ref('')
 const isOpen = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -55,6 +59,8 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
 <template>
   <div ref="rootRef" class="card-search" @keydown="onKeydown">
     <div class="mobile-nav">
+      <button class="nav-btn" @click="store.toggleBoosterModal()">&#x1F4E6; Packs</button>
+      <span class="mobile-nav-sep" />
       <button class="nav-btn" @click="navigateCard(-1)" aria-label="Previous card">&larr;</button>
       <button class="nav-btn" @click="navigateCard(1)" aria-label="Next card">&rarr;</button>
     </div>
@@ -63,7 +69,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
       v-model="query"
       class="search-input"
       type="text"
-      placeholder="Search cards..."
+      :placeholder="`Search in ${currentSetLabel}...`"
       autocomplete="off"
       @focus="onFocus"
     />
@@ -179,15 +185,27 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
     bottom: 16px;
   }
 
+  .search-input {
+    font-size: 16px;
+  }
+
   .search-dropdown {
     max-height: 240px;
   }
 
   .mobile-nav {
     display: flex;
+    align-items: center;
     justify-content: center;
     gap: 16px;
     margin-bottom: 8px;
+  }
+
+  .mobile-nav-sep {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
   }
 
   .nav-btn {

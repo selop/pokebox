@@ -227,8 +227,8 @@ export const useAppStore = defineStore('app', () => {
     if (packOpeningPhase.value !== 'idle') return
     packOpeningPhase.value = 'css-anim'
 
-    // Force fan mode and refresh seed for new random cards
-    cardDisplayMode.value = 'fan'
+    // Force fan mode on desktop, keep single on mobile; refresh seed for new random cards
+    if (!isMobile) cardDisplayMode.value = 'fan'
     sceneSeed.value = Date.now()
 
     // Start set loading in parallel (skip network if same set)
@@ -323,14 +323,6 @@ export const useAppStore = defineStore('app', () => {
     url.searchParams.set('card', currentCardId.value)
     return url.toString()
   }
-
-  // --- Sync URL bar on card/set changes ---
-  watch([currentSetId, currentCardId], () => {
-    const url = new URL(window.location.href)
-    url.searchParams.set('set', currentSetId.value)
-    url.searchParams.set('card', currentCardId.value)
-    history.replaceState(null, '', url.toString())
-  })
 
   return {
     config,
