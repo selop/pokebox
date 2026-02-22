@@ -409,7 +409,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
     const store = useAppStore()
     return new Promise<Texture | null>((resolve) => {
       loader.load(
-        'img/card-back.png',
+        'img/card-back.webp',
         (tex) => {
           applyFilters(tex, true)
           cardBackTexture = tex

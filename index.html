@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
 
@@ -20,13 +20,64 @@
       name="description"
       content="Virtual Pokémon card box with holographic effects and face tracking"
     />
+    <link rel="canonical" href="https://pokebox.lopatkin.net/" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap"
-      rel="stylesheet"
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Pokebox" />
+    <meta
+      property="og:title"
+      content="Pokebox — Head-Tracked Holographic Pokemon Card Viewer"
     />
+    <meta
+      property="og:description"
+      content="A 3D Pokemon card viewer with real-time face tracking, holographic GLSL shaders, and off-axis perspective projection."
+    />
+    <meta property="og:url" content="https://pokebox.lopatkin.net/" />
+    <meta
+      property="og:image"
+      content="https://pokebox.lopatkin.net/web-app-manifest-512x512.png"
+    />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Pokebox — Head-Tracked Holographic Pokemon Card Viewer"
+    />
+    <meta
+      name="twitter:description"
+      content="A 3D Pokemon card viewer with real-time face tracking, holographic GLSL shaders, and off-axis perspective projection."
+    />
+    <meta
+      name="twitter:image"
+      content="https://pokebox.lopatkin.net/web-app-manifest-512x512.png"
+    />
+
+    <!-- Self-hosted fonts (latin only) -->
+    <style>
+      @font-face {
+        font-family: 'Space Mono';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/space-mono-400-latin.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Space Mono';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('/fonts/space-mono-700-latin.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Syne';
+        font-style: normal;
+        font-weight: 400 800;
+        font-display: swap;
+        src: url('/fonts/syne-latin.woff2') format('woff2');
+      }
+    </style>
     <title>Pokebox - Head Tracked Holo Effects!</title>
   </head>
   <body>
