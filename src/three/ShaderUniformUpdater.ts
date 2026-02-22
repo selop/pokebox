@@ -32,7 +32,7 @@ export function updateShaderUniforms(
     const cardUp = new Vector3(0, 1, 0).applyQuaternion(mesh.quaternion)
 
     const effectiveSize =
-      cardDisplayMode === 'single'
+      cardDisplayMode === 'single' || cardDisplayMode === 'stack'
         ? singleCardSize
         : cardDisplayMode === 'carousel'
           ? singleCardSize * 0.9

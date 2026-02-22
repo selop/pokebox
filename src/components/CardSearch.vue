@@ -60,9 +60,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
   <div ref="rootRef" class="card-search" @keydown="onKeydown">
     <div class="mobile-nav">
       <button class="nav-btn" @click="store.toggleBoosterModal()">&#x1F4E6; Packs</button>
-      <span class="mobile-nav-sep" />
-      <button class="nav-btn" @click="navigateCard(-1)" aria-label="Previous card">&larr;</button>
-      <button class="nav-btn" @click="navigateCard(1)" aria-label="Next card">&rarr;</button>
+      <template v-if="store.cardDisplayMode === 'single'">
+        <span class="mobile-nav-sep" />
+        <button class="nav-btn" @click="navigateCard(-1)" aria-label="Previous card">&larr;</button>
+        <button class="nav-btn" @click="navigateCard(1)" aria-label="Next card">&rarr;</button>
+      </template>
     </div>
     <input
       ref="inputRef"

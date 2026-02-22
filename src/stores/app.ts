@@ -129,6 +129,21 @@ export const useAppStore = defineStore('app', () => {
     return Math.min(0.85, maxByWidth)
   })
 
+  // --- Stack card IDs (5 random cards from catalog, seeded by sceneSeed) ---
+  const STACK_COUNT = 5
+  const stackCardIds = computed(() => {
+    const catalog = CARD_CATALOG.value
+    if (catalog.length === 0) return []
+    const count = Math.min(STACK_COUNT, catalog.length)
+    const rng = mulberry32(sceneSeed.value ^ 0xbeef) // different seed offset from fan
+    const indices = catalog.map((_, i) => i)
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1))
+      ;[indices[i], indices[j]] = [indices[j]!, indices[i]!]
+    }
+    return indices.slice(0, count).map((i) => catalog[i]!.id)
+  })
+
   // --- Fan card IDs (7 random cards from catalog, seeded by sceneSeed) ---
   const FAN_COUNT = 7
   const fanCardIds = computed(() => {
@@ -156,6 +171,10 @@ export const useAppStore = defineStore('app', () => {
 
     if (cardDisplayMode.value === 'fan') {
       return fanCardIds.value
+    }
+
+    if (cardDisplayMode.value === 'stack') {
+      return stackCardIds.value
     }
 
     // Single mode — just the current card
@@ -227,8 +246,8 @@ export const useAppStore = defineStore('app', () => {
     if (packOpeningPhase.value !== 'idle') return
     packOpeningPhase.value = 'css-anim'
 
-    // Force fan mode on desktop, keep single on mobile; refresh seed for new random cards
-    if (!isMobile) cardDisplayMode.value = 'fan'
+    // Stack mode on mobile, fan mode on desktop; refresh seed for new random cards
+    cardDisplayMode.value = isMobile ? 'stack' : 'fan'
     sceneSeed.value = Date.now()
 
     // Start set loading in parallel (skip network if same set)
@@ -336,6 +355,7 @@ export const useAppStore = defineStore('app', () => {
     cardDisplayMode,
     hoveredFanCard,
     fanCardIds,
+    stackCardIds,
     carouselHeroCatalog,
     carouselIndex,
     carouselAllIds,

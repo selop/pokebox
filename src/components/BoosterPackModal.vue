@@ -44,8 +44,9 @@ function close() {
 }
 
 async function selectSet(setId: string, event: MouseEvent) {
-  // Guard against double-click or clicking during animation
+  // Guard against double-click, clicking during animation, or re-selecting current set
   if (packPhase.value !== 'idle') return
+  if (setId === store.currentSetId) return
 
   animatingPackId.value = setId
 

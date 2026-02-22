@@ -24,6 +24,7 @@ import { CardNavigator } from '@/three/CardNavigator'
 import { MergeAnimator } from '@/three/MergeAnimator'
 import { CardSceneBuilder } from '@/three/CardSceneBuilder'
 import { FanAnimator } from '@/three/FanAnimator'
+import { StackAnimator } from '@/three/StackAnimator'
 import { updateShaderUniforms } from '@/three/ShaderUniformUpdater'
 import { HERO_SHOWCASE } from '@/data/heroShowcase'
 import { loadSetCatalog } from '@/data/cardCatalog'
@@ -31,6 +32,7 @@ import { useCardLoader } from './useCardLoader'
 import { useUniformWatchers } from './useUniformWatchers'
 import { useSceneTimers } from './useSceneTimers'
 import { useMouseTilt } from './useMouseTilt'
+import { useSwipeGesture } from './useSwipeGesture'
 import { useGyroscope } from './useGyroscope'
 import { perfTracker } from '@/utils/perfTracker'
 
@@ -69,6 +71,19 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   )
   const cardSceneBuilder = new CardSceneBuilder(store, () => cardLoader)
   const fanAnimator = new FanAnimator(store, cardSceneBuilder)
+  const stackAnimator = new StackAnimator(store)
+  const swipeGesture = useSwipeGesture({
+    onSwipeUp: () => {
+      if (store.cardDisplayMode !== 'stack') return
+      if (stackAnimator.isIntroPlaying(cardMeshes.value) || stackAnimator.isSwiping) return
+      stackAnimator.swipe(cardMeshes.value, 1)
+    },
+    onSwipeDown: () => {
+      if (store.cardDisplayMode !== 'stack') return
+      if (stackAnimator.isIntroPlaying(cardMeshes.value) || stackAnimator.isSwiping) return
+      stackAnimator.swipe(cardMeshes.value, -1)
+    },
+  })
 
   function startCardActivation(mesh: Mesh) {
     if (mesh.userData.activationState !== 'pending') return
@@ -139,8 +154,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     fanAnimator.startZoom(mesh, hit)
   }
 
-  /** Click on empty box space in single mode → return to fan. */
+  /** Click on empty box space in single mode → return to fan (desktop only). */
   function onSceneClick(e: MouseEvent) {
+    if (store.isMobile) return
     if (store.cardDisplayMode !== 'single' || !camera) return
     // Only trigger on primary button, not during UI interactions
     if (e.button !== 0) return
@@ -170,6 +186,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     renderer.shadowMap.type = PCFSoftShadowMap
     container.appendChild(renderer.domElement)
     mouseTilt.attach(renderer.domElement)
+    swipeGesture.attach(renderer.domElement)
 
     camera = new PerspectiveCamera(
       60,
@@ -256,6 +273,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     while (scene.children.length) scene.remove(scene.children[0]!)
     cardMeshes.value = []
     fanAnimator.reset()
+    stackAnimator.reset()
 
     const dims = store.dimensions
     const renderMode = store.renderMode
@@ -297,6 +315,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
     cardMeshes.value = []
     fanAnimator.reset()
+    stackAnimator.reset()
 
     // Rebuild card meshes only
     const origin = pendingIntroOrigin
@@ -392,6 +411,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       }
     } else if (store.cardDisplayMode === 'fan') {
       fanAnimator.tick(meshes, time, dt, tilt.state)
+    } else if (store.cardDisplayMode === 'stack') {
+      stackAnimator.tick(meshes, time, dt, tilt.state)
     } else {
       for (const mesh of meshes) {
         mesh.rotation.x = tilt.state.rotateX
@@ -536,7 +557,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       store.cardTransform.rotY,
     ],
     () => {
-      if (store.cardDisplayMode === 'fan' || store.cardDisplayMode === 'carousel') return
+      if (store.cardDisplayMode === 'fan' || store.cardDisplayMode === 'carousel' || store.cardDisplayMode === 'stack') return
       const meshes = cardMeshes.value
       if (!meshes.length) return
       const dims = store.dimensions
@@ -624,6 +645,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     renderer?.domElement.removeEventListener('click', onSceneClick)
     renderer?.domElement.removeEventListener('touchstart', onFanTouchStart)
     mouseTilt.detach()
+    swipeGesture.detach()
     gyroscope.stop()
     renderer?.dispose()
   }

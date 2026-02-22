@@ -22,7 +22,7 @@ function onCardChange(e: Event) {
 
 function onDisplayModeChange(e: Event) {
   store.stopHeroShowcase()
-  store.cardDisplayMode = (e.target as HTMLSelectElement).value as 'single' | 'fan' | 'carousel'
+  store.cardDisplayMode = (e.target as HTMLSelectElement).value as 'single' | 'fan' | 'carousel' | 'stack'
 }
 
 async function shareCard() {
@@ -117,13 +117,16 @@ const displayModes = [
             &#x2699; Shader
           </button>
         </Transition>
-        <button
-          class="toolbar-btn mobile-order-6"
-          :class="{ accent: store.isSlideshowActive }"
-          @click="store.toggleSlideshow()"
-        >
-          {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
-        </button>
+        <Transition name="btn-fade">
+          <button
+            v-if="store.cardDisplayMode === 'single'"
+            class="toolbar-btn mobile-order-6"
+            :class="{ accent: store.isSlideshowActive }"
+            @click="store.toggleSlideshow()"
+          >
+            {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
+          </button>
+        </Transition>
         <Transition name="btn-fade">
           <button
             v-if="store.cardDisplayMode === 'single'"

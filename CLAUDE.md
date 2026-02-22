@@ -75,8 +75,8 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 | Directory           | Role                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode, set switching, mobile detection, pack opening animation state machine) |
-| `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`, `useUniformWatchers` (registry-driven config→uniform sync), `useSceneTimers` (slideshow/carousel/hero timers) |
-| `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `CardSceneBuilder` (card scene orchestration — dispatches to layout builders), `CardNavigator` (card navigation), `MergeAnimator` (card transitions), `FanAnimator` (fan intro/hover/zoom animation), `FanLayoutBuilder` (fan arc layout), `CarouselLayoutBuilder` (carousel slot layout), `ShaderUniformUpdater` (per-frame uniform push), `geometryHelpers`, `utils` |
+| `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`, `useUniformWatchers` (registry-driven config→uniform sync), `useSceneTimers` (slideshow/carousel/hero timers), `useSwipeGesture` (vertical swipe detection for mobile stack mode) |
+| `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `CardSceneBuilder` (card scene orchestration — dispatches to layout builders), `CardNavigator` (card navigation), `MergeAnimator` (card transitions), `FanAnimator` (fan intro/hover/zoom animation), `FanLayoutBuilder` (fan arc layout), `StackAnimator` (stack intro/swipe animation), `StackLayoutBuilder` (stacked card layout for mobile), `CarouselLayoutBuilder` (carousel slot layout), `ShaderUniformUpdater` (per-frame uniform push), `geometryHelpers`, `utils` |
 | `src/shaders/`      | GLSL fragment shaders; shared functions in `common/` subdir, included via `#include` (resolved by `vite-plugin-glsl`)                                        |
 | `src/data/`         | `cardCatalog.ts` (JSON-driven card catalog with `SET_REGISTRY` and `loadSetCatalog()`), `defaults.ts` (initial config values), `heroShowcase.ts` (curated cross-set hero cards for carousel), `shaderRegistry.ts` (canonical uniform↔config mappings — single source of truth for all shader styles) |
 | `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `SetDefinition`, `SetCardJson`, `CardTransform`, `EyePosition`, `DerivedDimensions`, `HoloType`, `ShaderStyle` |
@@ -142,7 +142,9 @@ Clicking a booster pack in the modal triggers a cinematic "tear open" sequence c
 
 The config/displayCardIds watchers in `useThreeScene` skip rebuilds during `css-anim`/`waiting-load` phases to prevent the fan intro from firing twice.
 
-**Fan ↔ single interaction**: Click a fan card to zoom into single mode. Click empty box space (miss the card) in single mode to return to fan. The toolbar dropdown `switchSet()` bypasses the animation entirely.
+**Fan ↔ single interaction**: Click a fan card to zoom into single mode. Click empty box space (miss the card) in single mode to return to fan (desktop only). The toolbar dropdown `switchSet()` bypasses the animation entirely.
+
+**Mobile stack mode**: On mobile, pack opening enters `stack` mode instead of `fan` — 5 cards pile with visible edges, swipeable up/down to cycle. The top card flies off and reappears at the bottom. Arrow nav and slideshow buttons are hidden in stack mode.
 
 ### Hero carousel
 
@@ -175,7 +177,7 @@ The app is containerized with Docker (`Dockerfile` + `docker-compose.yml`):
 - Seeded PRNG (`mulberry32`) for reproducible procedural layouts
 - MediaPipe is dynamically imported to avoid bundling the full library
 - Mobile detection (`store.isMobile`) is evaluated once in the Pinia store; on mobile, `cardDisplayMode` defaults to `'single'` and the display mode dropdown is hidden
-- Card display modes: `single` (one card), `fan` (7-card hand), `carousel` (cover-flow hero showcase across multiple sets)
+- Card display modes: `single` (one card), `fan` (7-card hand), `stack` (5-card swipeable pile for mobile), `carousel` (cover-flow hero showcase across multiple sets)
 - Hero carousel uses compound IDs (`setId:cardId`) and `loadHeroCatalog()` to resolve cards across different sets; compound-keyed textures are protected from `clearCache()` on set switch
 
 ## Testing

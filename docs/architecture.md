@@ -78,6 +78,7 @@ flowchart TB
         Loader["useCardLoader"]
         Face["useFaceTracking"]
         Tilt["useMouseTilt /<br/>useGyroscope"]
+        Swipe["useSwipeGesture<br/><small>mobile vertical swipe</small>"]
         UniformWatch["useUniformWatchers<br/><small>registry-driven<br/>config→uniform sync</small>"]
         Timers["useSceneTimers<br/><small>slideshow, carousel,<br/>hero lifecycle</small>"]
     end
@@ -90,7 +91,9 @@ flowchart TB
         subgraph SceneHelpers["Scene Helpers"]
             UniformUpd["ShaderUniformUpdater<br/><small>per-frame uniform push</small>"]
             FanAnim["FanAnimator<br/><small>intro, hover, zoom</small>"]
+            StackAnim["StackAnimator<br/><small>stack intro, swipe</small>"]
             FanLayout["FanLayoutBuilder"]
+            StackLayout["StackLayoutBuilder"]
             CarouselLayout["CarouselLayoutBuilder"]
         end
     end
@@ -148,6 +151,7 @@ flowchart TB
 
     %% Tilt input
     Tilt -->|"rotateX/Y"| Scene
+    Swipe -->|"swipe up/down"| Scene
 
     %% Scene rendering
     Scene --> Camera
@@ -155,6 +159,7 @@ flowchart TB
     Scene --> Cards
     Scene --> Lights
     Scene -->|"tick()"| FanAnim
+    Scene -->|"tick()"| StackAnim
     Loader -->|"CardTextures"| Cards
     Cards --- Vert
     Cards --- Frag
@@ -166,6 +171,7 @@ flowchart TB
 
     %% Layout builders
     FanLayout -->|"build meshes"| Cards
+    StackLayout -->|"build meshes"| Cards
     CarouselLayout -->|"build meshes"| Cards
 
     %% Telemetry

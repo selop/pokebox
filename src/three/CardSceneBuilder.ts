@@ -7,6 +7,7 @@ import { buildCardMesh, CARD_ASPECT } from '@/three/buildCard'
 import { CARD_CATALOG } from '@/data/cardCatalog'
 import type { HeroCardEntry } from '@/data/heroShowcase'
 import { buildFanLayout } from '@/three/FanLayoutBuilder'
+import { buildStackLayout } from '@/three/StackLayoutBuilder'
 import {
   buildCarouselLayout,
   updateCarouselTargets as updateCarouselTargetsImpl,
@@ -33,6 +34,10 @@ export class CardSceneBuilder {
       return this.buildSingleCard(scene, loader, cardAngle)
     } else if (this.store.cardDisplayMode === 'fan') {
       return buildFanLayout(scene, loader, this.store, introOrigin)
+    } else if (this.store.cardDisplayMode === 'stack') {
+      return buildStackLayout(scene, loader, this.store, introOrigin, (l, s) =>
+        this.resolveExtraTextures(l, s),
+      )
     } else if (this.store.cardDisplayMode === 'carousel') {
       return buildCarouselLayout(
         scene,
