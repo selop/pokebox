@@ -142,7 +142,7 @@ Clicking a booster pack in the modal triggers a cinematic "tear open" sequence c
 
 The config/displayCardIds watchers in `useThreeScene` skip rebuilds during `css-anim`/`waiting-load` phases to prevent the fan intro from firing twice.
 
-**Fan ↔ single interaction**: Click a fan card to zoom into single mode. Click empty box space (miss the card) in single mode to return to fan (desktop only). The toolbar dropdown `switchSet()` bypasses the animation entirely.
+**Fan ↔ single interaction**: Click a fan card to zoom into single mode. The toolbar dropdown `switchSet()` bypasses the animation entirely.
 
 **Mobile stack mode**: On mobile, pack opening enters `stack` mode instead of `fan` — 5 cards pile with visible edges, swipeable up/down to cycle. The top card flies off and reappears at the bottom. Arrow nav and slideshow buttons are hidden in stack mode. A "Browse Set" button appears in the bottom nav bar (next to "Packs") allowing the user to exit stack into single mode for browsing individual cards. The calibration panel, shader controls panel, and their toolbar toggle buttons (Settings, Shader) are hidden on mobile via `v-if="!store.isMobile"`.
 

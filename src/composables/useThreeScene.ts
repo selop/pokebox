@@ -199,14 +199,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       return
     }
 
-    // Single mode: click empty space to return to fan
-    if (store.cardDisplayMode !== 'single') return
-    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
-    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
-    raycaster.setFromCamera(mouseNDC, camera)
-    const hits = raycaster.intersectObjects(cardMeshes.value)
-    if (hits.length > 0) return
-    store.cardDisplayMode = 'fan'
   }
 
   function init() {
