@@ -1,7 +1,10 @@
 import {
   AmbientLight,
   BufferGeometry,
+  ConeGeometry,
+  CylinderGeometry,
   DirectionalLight,
+  MeshBasicMaterial,
   Line,
   LineDashedMaterial,
   Mesh,
@@ -313,6 +316,50 @@ export function buildBoxShell(
     backLight.name = 'solidBack'
     backLight.position.set(0, 0, -boxD * 0.7)
     scene.add(backLight)
+
+    // Candle objects + lights along the bottom of the back wall
+    const candleSpacing = [-0.6, -0.3, 0, 0.3, 0.6]
+    const candleH = hh * 0.08
+    const candleR = hh * 0.012
+    const candleMat = new MeshStandardMaterial({
+      color: 0xf5f0e0,
+      emissive: 0x222018,
+      emissiveIntensity: 0.2,
+      roughness: 0.8,
+    })
+    for (let i = 0; i < candleSpacing.length; i++) {
+      const cx = hw * candleSpacing[i]!
+      const cy = -hh + candleH / 2
+      const cz = -boxD * 0.85
+
+      // Candle body
+      const body = new Mesh(new CylinderGeometry(candleR, candleR, candleH, 8), candleMat)
+      body.position.set(cx, cy, cz)
+      body.receiveShadow = true
+      scene.add(body)
+
+      // Flame (cone, transparent — faded in/out with candle light)
+      const flameH = candleH * 0.5
+      const flameR = candleR * 0.6
+      const flame = new Mesh(
+        new ConeGeometry(flameR, flameH, 6),
+        new MeshBasicMaterial({
+          color: 0xffcc44,
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
+        }),
+      )
+      flame.name = `candleFlame${i}`
+      flame.position.set(cx, -hh + candleH + flameH / 2, cz)
+      scene.add(flame)
+
+      // Point light (off by default, animated in dim mode)
+      const light = new PointLight(0xffaa44, 0, boxD * 0.6, 0)
+      light.name = `candle${i}`
+      light.position.set(cx, -hh + candleH + flameH * 0.4, cz)
+      scene.add(light)
+    }
   } else {
     scene.add(new AmbientLight(0xffffff, 0.05))
   }
@@ -320,14 +367,15 @@ export function buildBoxShell(
   // Fixed spotlight casting shadows onto the walls
   const spotX = lights?.spotlightX ?? 0.8
   const spotY = lights?.spotlightY ?? 0.9
-  const spotAngle = lights?.spotlightAngle ?? 45
-  const spotPenumbra = lights?.spotlightPenumbra ?? 0.5
+  const spotAngle = lights?.spotlightAngle ?? 48
+  const spotPenumbra = lights?.spotlightPenumbra ?? 1.0
   const spotI = lights?.spotlightIntensity ?? 0.6
   const spotlight = new SpotLight(0xffffff, spotI, 0, (spotAngle * Math.PI) / 180, spotPenumbra, 0)
   spotlight.name = 'headSpotlight'
   spotlight.castShadow = true
-  spotlight.shadow.mapSize.width = 1024
-  spotlight.shadow.mapSize.height = 1024
+  spotlight.shadow.mapSize.width = 4096
+  spotlight.shadow.mapSize.height = 4096
+  spotlight.shadow.radius = 10
   spotlight.shadow.camera.near = 5
   spotlight.shadow.camera.far = dims.eyeDefaultZ + boxD
   spotlight.shadow.bias = -0.001

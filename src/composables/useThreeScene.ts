@@ -44,6 +44,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let camera: PerspectiveCamera | null = null
   let animationId: number | null = null
   let lastTime = performance.now() * 0.001
+  let dimStartTime = 0
+  let wasDimmed = false
 
   // Card state
   const cardMeshes = shallowRef<Mesh[]>([])
@@ -526,6 +528,38 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       ambient.intensity += (targetA - ambient.intensity) * dimRate
       dirLight.intensity += (targetD - dirLight.intensity) * dimRate
       back.intensity += (targetB - back.intensity) * dimRate
+    }
+
+    // Track dim transition for candle stagger timing
+    if (store.isDimmed && !wasDimmed) dimStartTime = time
+    wasDimmed = store.isDimmed
+
+    // Animate candle lights + flames (staggered on, together off, with flicker)
+    for (let i = 0; i < 5; i++) {
+      const candle = scene.getObjectByName(`candle${i}`) as PointLight | undefined
+      const flame = scene.getObjectByName(`candleFlame${i}`) as Mesh | undefined
+      if (!candle) continue
+      if (store.isDimmed) {
+        const elapsed = time - dimStartTime
+        const delay = i * 0.3
+        const baseTarget = elapsed > delay ? 0.8 : 0
+        const flicker = baseTarget * (0.9 + 0.1 * Math.sin(time * (3 + i * 0.7)))
+        candle.intensity += (flicker - candle.intensity) * dimRate
+        // Flame visibility + wobble
+        if (flame) {
+          const targetOpacity = baseTarget > 0 ? 0.9 : 0
+          const mat = flame.material as { opacity: number }
+          mat.opacity += (targetOpacity - mat.opacity) * dimRate
+          const scaleFlicker = 0.85 + 0.15 * Math.sin(time * (4 + i * 1.1))
+          flame.scale.set(scaleFlicker, 0.9 + 0.2 * Math.sin(time * (3.5 + i * 0.9)), scaleFlicker)
+        }
+      } else {
+        candle.intensity += (0 - candle.intensity) * dimRate
+        if (flame) {
+          const mat = flame.material as { opacity: number }
+          mat.opacity += (0 - mat.opacity) * dimRate
+        }
+      }
     }
 
     // Update spotlight from config
