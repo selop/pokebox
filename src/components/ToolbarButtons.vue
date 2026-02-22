@@ -16,7 +16,11 @@ function onCardChange(e: Event) {
 
 function onDisplayModeChange(e: Event) {
   store.stopHeroShowcase()
-  store.cardDisplayMode = (e.target as HTMLSelectElement).value as 'single' | 'fan' | 'carousel' | 'stack'
+  store.cardDisplayMode = (e.target as HTMLSelectElement).value as
+    | 'single'
+    | 'fan'
+    | 'carousel'
+    | 'stack'
 }
 
 async function copyToClipboard(url: string) {
@@ -64,18 +68,37 @@ const displayModes = [
     <div class="mobile-row-break" />
     <!-- Set & card selector -->
     <div class="toolbar-group">
-      <select v-if="store.cardDisplayMode !== 'carousel' && store.cardDisplayMode !== 'fan'" class="toolbar-select card-select" :disabled="store.setLoading" :value="store.currentCardId" @change="onCardChange">
-        <option v-for="card in CARD_CATALOG" :key="card.id" :value="card.id">{{ card.label }}</option>
+      <select
+        v-if="store.cardDisplayMode === 'single'"
+        class="toolbar-select card-select mobile-order-1"
+        :disabled="store.setLoading"
+        :value="store.currentCardId"
+        @change="onCardChange"
+      >
+        <option v-for="card in CARD_CATALOG" :key="card.id" :value="card.id">
+          {{ card.label }}
+        </option>
       </select>
       <span v-if="store.setLoading" class="toolbar-loading">Loading...</span>
-      <button class="toolbar-btn mobile-order-5 mobile-hide-packs" @click="store.toggleBoosterModal()">&#x1F4E6; Packs</button>
+      <button
+        class="toolbar-btn mobile-order-5 mobile-hide-packs"
+        @click="store.toggleBoosterModal()"
+      >
+        &#x1F4E6; Packs
+      </button>
     </div>
 
     <span class="toolbar-sep" />
 
     <!-- Global controls — always visible -->
     <div class="toolbar-group">
-      <button v-if="!store.isMobile" class="toolbar-btn mobile-order-1" @click="store.togglePanel()">&#x2699; Settings</button>
+      <button
+        v-if="!store.isMobile"
+        class="toolbar-btn mobile-order-1"
+        @click="store.togglePanel()"
+      >
+        &#x2699; Settings
+      </button>
       <button v-if="!store.isMobile" class="toolbar-btn" @click="toggleFullscreen">
         &#x26F6; {{ isFullscreen ? 'Exit FS' : 'Fullscreen' }}
       </button>
@@ -115,7 +138,9 @@ const displayModes = [
           :value="store.cardDisplayMode"
           @change="onDisplayModeChange"
         >
-          <option v-for="mode in displayModes" :key="mode.value" :value="mode.value">{{ mode.label }}</option>
+          <option v-for="mode in displayModes" :key="mode.value" :value="mode.value">
+            {{ mode.label }}
+          </option>
         </select>
         <Transition name="btn-fade">
           <button
@@ -176,12 +201,11 @@ const displayModes = [
 
   <div v-show="store.sceneMode === 'cards'" class="nav-hint">
     <template v-if="store.cardDisplayMode === 'fan'">
-      hover to preview &middot; click to inspect
-      &middot; <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
+      hover to preview &middot; click to inspect &middot; <kbd>B</kbd> prev &middot;
+      <kbd>N</kbd> next
     </template>
     <template v-else-if="store.cardDisplayMode === 'carousel'">
-      <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
-      &middot; auto-rotates every 4s
+      <kbd>B</kbd> prev &middot; <kbd>N</kbd> next &middot; auto-rotates every 4s
     </template>
     <template v-else>
       <kbd>B</kbd> prev &middot; <kbd>N</kbd> next
@@ -233,7 +257,9 @@ const displayModes = [
   text-transform: uppercase;
   letter-spacing: 0.1em;
   white-space: nowrap;
-  transition: border-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 }
 
 .toolbar-select {
@@ -250,7 +276,9 @@ const displayModes = [
   text-transform: uppercase;
   letter-spacing: 0.1em;
   outline: none;
-  transition: border-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 }
 
 .toolbar-select:hover:not(:disabled) {
@@ -273,8 +301,13 @@ const displayModes = [
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .toolbar-select option {
@@ -300,7 +333,9 @@ const displayModes = [
 /* fade transition for conditional buttons */
 .btn-fade-enter-active,
 .btn-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 .btn-fade-enter-from,
 .btn-fade-leave-to {
@@ -359,7 +394,9 @@ const displayModes = [
 
 .toast-fade-enter-active,
 .toast-fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 .toast-fade-enter-from,
 .toast-fade-leave-to {
@@ -393,18 +430,40 @@ const displayModes = [
   }
 
   .toolbar-select.card-select {
-    display: none;
+    display: initial;
+    max-width: 45vw;
   }
 
-  .mobile-order-1 { order: 1; }
-  .mobile-order-2 { order: 2; }
-  .mobile-order-3 { order: 3; }
-  .mobile-order-4 { order: 4; }
-  .mobile-row-break { display: block; order: 5; flex-basis: 100%; height: 0; }
-  .mobile-order-5 { order: 6; }
-  .mobile-order-6 { order: 7; }
-  .mobile-order-7 { order: 8; }
-  .mobile-order-9 { order: 9; }
+  .mobile-order-1 {
+    order: 1;
+  }
+  .mobile-order-2 {
+    order: 2;
+  }
+  .mobile-order-3 {
+    order: 3;
+  }
+  .mobile-order-4 {
+    order: 4;
+  }
+  .mobile-row-break {
+    display: block;
+    order: 5;
+    flex-basis: 100%;
+    height: 0;
+  }
+  .mobile-order-5 {
+    order: 6;
+  }
+  .mobile-order-6 {
+    order: 7;
+  }
+  .mobile-order-7 {
+    order: 8;
+  }
+  .mobile-order-9 {
+    order: 9;
+  }
 
   .mobile-hide-packs {
     display: none;
