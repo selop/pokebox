@@ -12,15 +12,35 @@ interface FanZoomTransition {
   startTime: number
   duration: number
   startPos: { x: number; y: number; z: number }
+  midPos: { x: number; y: number; z: number } // slide-out waypoint
   startRotZ: number
   startScale: number
 }
 
-const FAN_ZOOM_DURATION = 1.0
+interface FanUnzoomTransition {
+  fanIndex: number
+  startTime: number
+  duration: number
+  startPos: { x: number; y: number; z: number }
+  midPos: { x: number; y: number; z: number } // slide-out waypoint (= fan rest shifted -x)
+  startScale: number
+  restRotZ: number
+  restScale: number
+}
+
+const FAN_ZOOM_DURATION = 1.2
 const ACTIVATION_DURATION = 2.0
+/** Z offset (toward viewer) for the zoomed card, in scene units (cm). */
+const ZOOMED_Z_OFFSET = 4
+/** Fraction of the zoom duration spent on the initial slide-out phase. */
+const SLIDE_PHASE = 0.25
+/** Seconds after intro finishes before auto-reveal begins (if no hover). */
+const AUTO_REVEAL_DELAY = 1.5
+/** Seconds between each card's auto-reveal activation. */
+const AUTO_REVEAL_SPREAD = 0.2
 
 /**
- * Handles fan mode animation: intro stagger, hover peek, zoom-to-single transition,
+ * Handles fan mode animation: intro stagger, hover peek, zoom-in/out transitions,
  * activation progress driving, and pack opening cascade reset.
  *
  * Follows the established pattern of CardNavigator and MergeAnimator
@@ -28,26 +48,72 @@ const ACTIVATION_DURATION = 2.0
  */
 export class FanAnimator {
   private fanZoomTransition: FanZoomTransition | null = null
+  private fanUnzoomTransition: FanUnzoomTransition | null = null
+  private _zoomedFanIndex: number | null = null
+
+  /** Time when the fan intro animation finished (null = still playing or not started). */
+  private introFinishedTime: number | null = null
+  /** Set to true once any hover occurs after intro, cancelling auto-reveal. */
+  private userHasHovered = false
+  /** Number of cards that have been auto-reveal triggered so far. */
+  private autoRevealCount = 0
 
   constructor(
     private readonly store: ReturnType<typeof useAppStore>,
     private readonly cardSceneBuilder: CardSceneBuilder,
+    private readonly activateCard: (mesh: Mesh) => void,
   ) {}
 
-  /** Start a zoom transition from a fan card to single mode. */
+  /** Start a zoom transition from a fan card to center. */
   startZoom(mesh: Mesh, fanIndex: number): void {
+    // Slide-out waypoint: move card left by ~15% of screen width
+    const slideX = this.store.dimensions.screenW * 0.15
     this.fanZoomTransition = {
       fanIndex,
       startTime: performance.now() * 0.001,
       duration: FAN_ZOOM_DURATION,
       startPos: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z },
+      midPos: { x: mesh.position.x - slideX, y: mesh.position.y, z: mesh.position.z },
       startRotZ: mesh.rotation.z,
       startScale: mesh.scale.x,
     }
   }
 
+  /** Start the return-to-fan animation from the zoomed state. */
+  startReturnToFan(meshes: Mesh[]): void {
+    if (this._zoomedFanIndex === null) return
+    const mesh = meshes.find((m) => m.userData.fanIndex === this._zoomedFanIndex)
+    if (!mesh) {
+      this._zoomedFanIndex = null
+      return
+    }
+    const rest = mesh.userData.fanRest as
+      | { x: number; y: number; z: number; rotZ: number; scale: number }
+      | undefined
+    if (!rest) {
+      this._zoomedFanIndex = null
+      return
+    }
+    // Mid waypoint: fan rest shifted left (same slide-out position as zoom-in)
+    const slideX = this.store.dimensions.screenW * 0.15
+    this.fanUnzoomTransition = {
+      fanIndex: this._zoomedFanIndex,
+      startTime: performance.now() * 0.001,
+      duration: FAN_ZOOM_DURATION,
+      startPos: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z },
+      midPos: { x: rest.x - slideX, y: rest.y, z: rest.z },
+      startScale: mesh.scale.x,
+      restRotZ: rest.rotZ,
+      restScale: rest.scale,
+    }
+  }
+
   get isZooming(): boolean {
-    return this.fanZoomTransition !== null
+    return this.fanZoomTransition !== null || this.fanUnzoomTransition !== null
+  }
+
+  get zoomedFanIndex(): number | null {
+    return this._zoomedFanIndex
   }
 
   isIntroPlaying(meshes: Mesh[]): boolean {
@@ -57,6 +123,23 @@ export class FanAnimator {
   /** Reset zoom state (e.g. on scene rebuild). */
   reset(): void {
     this.fanZoomTransition = null
+    this.fanUnzoomTransition = null
+    this._zoomedFanIndex = null
+    this.introFinishedTime = null
+    this.userHasHovered = false
+    this.autoRevealCount = 0
+  }
+
+  /** Compute the zoomed card's center target position and scale. */
+  private zoomedTarget() {
+    const store = this.store
+    const dims = store.dimensions
+    return {
+      x: (store.cardTransform.x / 100) * dims.screenW,
+      y: (store.cardTransform.y / 100) * dims.screenH,
+      z: ZOOMED_Z_OFFSET, // bring card forward, in front of the fan
+      scale: store.singleCardSize / (store.config.cardSize * 0.85),
+    }
   }
 
   /** Animate fan cards. Call once per frame when in fan mode. */
@@ -65,6 +148,40 @@ export class FanAnimator {
     const peekSpeed = 1 - Math.pow(0.001, dt)
     const hoveredIdx = store.hoveredFanCard
     const introPlaying = this.isIntroPlaying(meshes)
+
+    // Track intro completion — delay until instructions modal is dismissed
+    if (
+      !introPlaying &&
+      this.introFinishedTime === null &&
+      meshes.length > 0 &&
+      !store.showInstructions
+    ) {
+      if (meshes.some((m) => m.userData.fanRest)) {
+        this.introFinishedTime = time
+      }
+    }
+
+    // Cancel auto-reveal if user hovers any card
+    if (hoveredIdx !== null && !this.userHasHovered) {
+      this.userHasHovered = true
+    }
+
+    // Auto-reveal: staggered activation if no hover after delay
+    if (
+      this.introFinishedTime !== null &&
+      !this.userHasHovered &&
+      this.autoRevealCount < meshes.length
+    ) {
+      const elapsed = time - this.introFinishedTime - AUTO_REVEAL_DELAY
+      if (elapsed >= 0) {
+        const targetCount = Math.min(meshes.length, Math.floor(elapsed / AUTO_REVEAL_SPREAD) + 1)
+        while (this.autoRevealCount < targetCount) {
+          const mesh = meshes[this.autoRevealCount]
+          if (mesh) this.activateCard(mesh)
+          this.autoRevealCount++
+        }
+      }
+    }
 
     for (const mesh of meshes) {
       const rest = mesh.userData.fanRest as
@@ -119,8 +236,9 @@ export class FanAnimator {
         continue
       }
 
-      // Skip normal peek if zoom transition is driving positions
-      if (this.fanZoomTransition) continue
+      // Skip normal peek if any transition or zoomed state is active
+      if (this.fanZoomTransition || this.fanUnzoomTransition || this._zoomedFanIndex !== null)
+        continue
 
       const isHovered = mesh.userData.fanIndex === hoveredIdx && !introPlaying
       const target = isHovered ? hover : rest
@@ -147,45 +265,142 @@ export class FanAnimator {
       mesh.renderOrder = isHovered ? 100 : baseOrder
     }
 
-    // ── Fan-to-single zoom transition ──
+    // ── Fan zoom-in transition (two phases: slide-out, then spin+zoom) ──
     if (this.fanZoomTransition) {
       const zt = this.fanZoomTransition
       const elapsed = time - zt.startTime
       const rawT = Math.min(elapsed / zt.duration, 1.0)
-      // Cubic ease-in-out
-      const ease = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2
 
-      const dims = store.dimensions
-      const targetX = (store.cardTransform.x / 100) * dims.screenW
-      const targetY = (store.cardTransform.y / 100) * dims.screenH
-      const targetZ = -(store.cardTransform.z / 100) * dims.boxD
-      const singleScale = store.singleCardSize / (store.config.cardSize * 0.85)
+      const target = this.zoomedTarget()
 
       for (const mesh of meshes) {
         const isFocused = mesh.userData.fanIndex === zt.fanIndex
-        if (isFocused) {
-          mesh.position.x = zt.startPos.x + (targetX - zt.startPos.x) * ease
-          mesh.position.y = zt.startPos.y + (targetY - zt.startPos.y) * ease
-          mesh.position.z = zt.startPos.z + (targetZ - zt.startPos.z) * ease
+        if (!isFocused) continue
+
+        if (rawT <= SLIDE_PHASE) {
+          // Phase 1: slide card left to the midpoint
+          const phaseT = rawT / SLIDE_PHASE
+          // Ease-out quad for a snappy extraction
+          const ease = 1 - (1 - phaseT) * (1 - phaseT)
+          mesh.position.x = zt.startPos.x + (zt.midPos.x - zt.startPos.x) * ease
+          mesh.position.y = zt.startPos.y + (zt.midPos.y - zt.startPos.y) * ease
+          mesh.position.z = zt.startPos.z + (zt.midPos.z - zt.startPos.z) * ease
+          // Flatten fan tilt during slide
           mesh.rotation.z = zt.startRotZ * (1 - ease)
-          mesh.rotation.y = ease * Math.PI * 2
-          const s = zt.startScale + (singleScale - zt.startScale) * ease
-          mesh.scale.setScalar(s)
-          mesh.renderOrder = 200
+          mesh.rotation.y = 0
+          mesh.scale.setScalar(zt.startScale)
         } else {
-          const fadeScale = mesh.scale.x * (1 - ease * 0.5)
-          mesh.scale.setScalar(Math.max(fadeScale, 0.01))
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if ((mesh.material as any).opacity !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ;(mesh.material as any).opacity = 1 - ease
-          }
+          // Phase 2: spin + zoom from midpoint to center target
+          const phaseT = (rawT - SLIDE_PHASE) / (1 - SLIDE_PHASE)
+          // Cubic ease-in-out
+          const ease =
+            phaseT < 0.5 ? 4 * phaseT * phaseT * phaseT : 1 - Math.pow(-2 * phaseT + 2, 3) / 2
+          mesh.position.x = zt.midPos.x + (target.x - zt.midPos.x) * ease
+          mesh.position.y = zt.midPos.y + (target.y - zt.midPos.y) * ease
+          mesh.position.z = zt.midPos.z + (target.z - zt.midPos.z) * ease
+          mesh.rotation.z = 0
+          mesh.rotation.y = ease * Math.PI * 2
+          const s = zt.startScale + (target.scale - zt.startScale) * ease
+          mesh.scale.setScalar(s)
         }
+        mesh.renderOrder = 200
       }
 
       if (rawT >= 1.0) {
-        store.selectFanCard(zt.fanIndex)
+        // Enter zoomed rest state — set currentCardId directly, do NOT change cardDisplayMode
+        this._zoomedFanIndex = zt.fanIndex
+        const ids = store.fanCardIds
+        if (zt.fanIndex >= 0 && zt.fanIndex < ids.length) {
+          store.currentCardId = ids[zt.fanIndex]!
+        }
+        store.stopHeroShowcase()
         this.fanZoomTransition = null
+      }
+    }
+
+    // ── Fan zoom-out (two phases: spin to mid, then slide right into fan) ──
+    if (this.fanUnzoomTransition) {
+      const ut = this.fanUnzoomTransition
+      const elapsed = time - ut.startTime
+      const rawT = Math.min(elapsed / ut.duration, 1.0)
+      const spinPhase = 1 - SLIDE_PHASE // reverse: spin first, slide last
+
+      for (const mesh of meshes) {
+        const rest = mesh.userData.fanRest as
+          | { x: number; y: number; z: number; rotZ: number; scale: number }
+          | undefined
+        if (!rest) continue
+
+        const isFocused = mesh.userData.fanIndex === ut.fanIndex
+        if (!isFocused) continue
+
+        if (rawT <= spinPhase) {
+          // Phase 1: spin from center to the slide-out midpoint
+          const phaseT = rawT / spinPhase
+          // Cubic ease-in-out
+          const ease =
+            phaseT < 0.5 ? 4 * phaseT * phaseT * phaseT : 1 - Math.pow(-2 * phaseT + 2, 3) / 2
+          mesh.position.x = ut.startPos.x + (ut.midPos.x - ut.startPos.x) * ease
+          mesh.position.y = ut.startPos.y + (ut.midPos.y - ut.startPos.y) * ease
+          mesh.position.z = ut.startPos.z + (ut.midPos.z - ut.startPos.z) * ease
+          mesh.rotation.z = 0
+          mesh.rotation.y = -ease * Math.PI * 2
+          const s = ut.startScale + (ut.restScale - ut.startScale) * ease
+          mesh.scale.setScalar(s)
+        } else {
+          // Phase 2: slide right from midpoint back into fan rest
+          const phaseT = (rawT - spinPhase) / (1 - spinPhase)
+          // Ease-in quad for a settling feel
+          const ease = phaseT * phaseT
+          mesh.position.x = ut.midPos.x + (rest.x - ut.midPos.x) * ease
+          mesh.position.y = ut.midPos.y + (rest.y - ut.midPos.y) * ease
+          mesh.position.z = ut.midPos.z + (rest.z - ut.midPos.z) * ease
+          // Re-apply fan tilt
+          mesh.rotation.z = ut.restRotZ * ease
+          mesh.rotation.y = 0
+          mesh.scale.setScalar(ut.restScale)
+        }
+        mesh.renderOrder = 200
+      }
+
+      if (rawT >= 1.0) {
+        this._zoomedFanIndex = null
+        this.fanUnzoomTransition = null
+      }
+    }
+
+    // ── Zoomed rest state (no transition active, card held at center) ──
+    if (this._zoomedFanIndex !== null && !this.fanZoomTransition && !this.fanUnzoomTransition) {
+      const target = this.zoomedTarget()
+      const n = meshes.length
+
+      for (const mesh of meshes) {
+        const rest = mesh.userData.fanRest as
+          | { x: number; y: number; z: number; rotZ: number; scale: number }
+          | undefined
+        if (!rest) continue
+
+        const isFocused = mesh.userData.fanIndex === this._zoomedFanIndex
+        if (isFocused) {
+          // Hold at center with head-tracking tilt
+          mesh.position.set(target.x, target.y, target.z)
+          mesh.rotation.z = 0
+          mesh.scale.setScalar(target.scale)
+          mesh.rotation.x = tilt.rotateX
+          mesh.rotation.y = tilt.rotateY
+          mesh.renderOrder = 200
+        } else {
+          // Hold at normal fan rest position
+          mesh.position.x += (rest.x - mesh.position.x) * peekSpeed
+          mesh.position.y += (rest.y - mesh.position.y) * peekSpeed
+          mesh.position.z += (rest.z - mesh.position.z) * peekSpeed
+          mesh.rotation.z += (rest.rotZ - mesh.rotation.z) * peekSpeed
+          mesh.scale.setScalar(rest.scale)
+          mesh.rotation.x = tilt.rotateX * 0.5
+          mesh.rotation.y = tilt.rotateY * 0.3
+          const baseOrder = (mesh.userData.fanBaseRenderOrder as number) ?? n
+          mesh.renderOrder = baseOrder
+        }
       }
     }
 

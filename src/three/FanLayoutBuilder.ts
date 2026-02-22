@@ -39,7 +39,7 @@ export function buildFanLayout(
   // Pivot is below screen center — cards fan upward
   const pivotY = (store.cardTransform.y / 100) * dims.screenH - pivotRadius + cardH * 0.15
   const pivotX = (store.cardTransform.x / 100) * dims.screenW
-  const baseZ = -(store.cardTransform.z / 100) * dims.boxD
+  const baseZ = -(store.cardTransform.z / 100) * dims.boxD - 2
 
   ids.forEach((id: string, i: number) => {
     const tex = loader.get(id)
@@ -54,7 +54,7 @@ export function buildFanLayout(
     const arcY = pivotY + Math.cos(angleRad) * pivotRadius
 
     // Z-spread: fan cards across the box depth (left=back wall, right=front)
-    const zSpread = n > 1 ? (i / (n - 1)) * dims.boxD * 0.55 : 0
+    const zSpread = n > 1 ? (i / (n - 1)) * dims.boxD * 0.45 : 0
 
     // Rest state (no hover)
     const restX = arcX

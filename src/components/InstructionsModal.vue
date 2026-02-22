@@ -40,12 +40,12 @@ function onClose() {
     <button class="close-btn" @click="onClose" aria-label="Close">×</button>
     <h2>Virtual Pokebox Demo</h2>
     <p v-if="isMobile">
-      This demonstrates off-axis perspective projection. Tilt your phone to move the parallax
-      and see the holographic card effects respond to physical movement.
+      This demonstrates off-axis perspective projection. Tilt your phone to move the parallax and
+      see the holographic card effects respond to physical movement.
     </p>
     <p v-if="isMobile" class="desktop-hint">
-      For the full experience, visit on a laptop with a webcam — head tracking makes the screen
-      feel like a real window into a 3D box.
+      For the full experience, visit on a laptop with a webcam — head tracking makes the screen feel
+      like a real window into a 3D box.
     </p>
     <p v-else>
       This demonstrates off-axis perspective projection. Your webcam tracks your head position and
@@ -56,7 +56,11 @@ function onClose() {
       {{ isMobile ? 'Enable Gyroscope' : 'Enable Camera' }}
     </button>
     <p class="keyboard-hint">
-      {{ isMobile ? 'Tilt your phone to move the parallax' : 'Or use arrow keys + W/S to test without camera' }}
+      {{
+        isMobile
+          ? 'Tilt your phone to move the parallax'
+          : 'Or use arrow keys + W/S to test without camera'
+      }}
     </p>
   </div>
 </template>

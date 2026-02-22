@@ -70,7 +70,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     () => mergeAnimator.reset(),
   )
   const cardSceneBuilder = new CardSceneBuilder(store, () => cardLoader)
-  const fanAnimator = new FanAnimator(store, cardSceneBuilder)
+  const fanAnimator = new FanAnimator(store, cardSceneBuilder, startCardActivation)
   const stackAnimator = new StackAnimator(store)
   const swipeGesture = useSwipeGesture({
     onSwipeUp: () => {
@@ -115,6 +115,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
   function onFanMouseMove(e: MouseEvent) {
     if (isFanIntroPlaying()) return
+    // Disable hover peeks while a card is zoomed
+    if (fanAnimator.zoomedFanIndex !== null) return
     const hit = fanRaycast(e.clientX, e.clientY)
     if (hit !== lastHoveredFanIndex) {
       lastHoveredFanIndex = hit
@@ -128,6 +130,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
   function onFanTouchStart(e: TouchEvent) {
     if (store.cardDisplayMode !== 'fan' || !camera || isFanIntroPlaying()) return
+    // If zoomed, touching anywhere returns to fan
+    if (fanAnimator.zoomedFanIndex !== null) {
+      fanAnimator.startReturnToFan(cardMeshes.value)
+      return
+    }
     const touch = e.touches[0]
     if (!touch) return
     const hit = fanRaycast(touch.clientX, touch.clientY)
@@ -141,6 +148,13 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   function onFanClick(e: MouseEvent) {
     if (store.cardDisplayMode !== 'fan' || !camera || fanAnimator.isZooming) return
     if (isFanIntroPlaying()) return
+
+    // If a card is zoomed, clicking anywhere returns to fan
+    if (fanAnimator.zoomedFanIndex !== null) {
+      fanAnimator.startReturnToFan(cardMeshes.value)
+      return
+    }
+
     const hit = fanRaycast(e.clientX, e.clientY)
     if (hit == null) return
 
@@ -168,21 +182,30 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
   }
 
-  /** Click on empty box space in single mode → return to fan (desktop only). */
+  /** Click on empty box space → return to fan (desktop only). */
   function onSceneClick(e: MouseEvent) {
     if (store.isMobile) return
-    if (store.cardDisplayMode !== 'single' || !camera) return
-    // Only trigger on primary button, not during UI interactions
     if (e.button !== 0) return
+    if (!camera) return
 
-    // Raycast against card meshes — if we hit one, it's a card click, not a background click
+    // Fan mode with zoomed card: click empty space to un-zoom
+    if (store.cardDisplayMode === 'fan' && fanAnimator.zoomedFanIndex !== null) {
+      mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
+      mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
+      raycaster.setFromCamera(mouseNDC, camera)
+      const hits = raycaster.intersectObjects(cardMeshes.value)
+      if (hits.length > 0) return // card click handled by onFanClick
+      fanAnimator.startReturnToFan(cardMeshes.value)
+      return
+    }
+
+    // Single mode: click empty space to return to fan
+    if (store.cardDisplayMode !== 'single') return
     mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
     mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
     raycaster.setFromCamera(mouseNDC, camera)
     const hits = raycaster.intersectObjects(cardMeshes.value)
     if (hits.length > 0) return
-
-    // Missed all cards — "put the card back in the box"
     store.cardDisplayMode = 'fan'
   }
 
@@ -535,10 +558,14 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       }
       return
     }
-    // Fan mode: N/B shuffle to a new random hand
+    // Fan mode: if zoomed, N/B returns to fan; otherwise shuffles to a new hand
     if (store.cardDisplayMode === 'fan') {
       if (e.key === 'n' || e.key === 'b') {
-        store.randomizeSeed()
+        if (fanAnimator.zoomedFanIndex !== null) {
+          fanAnimator.startReturnToFan(cardMeshes.value)
+        } else {
+          store.randomizeSeed()
+        }
       }
       return
     }
