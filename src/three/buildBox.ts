@@ -317,18 +317,22 @@ export function buildBoxShell(
     scene.add(new AmbientLight(0xffffff, 0.05))
   }
 
-  // Head-tracked spotlight for dynamic shadows
+  // Fixed spotlight casting shadows onto the walls
+  const spotX = lights?.spotlightX ?? 0.8
+  const spotY = lights?.spotlightY ?? 0.9
+  const spotAngle = lights?.spotlightAngle ?? 45
+  const spotPenumbra = lights?.spotlightPenumbra ?? 0.5
   const spotI = lights?.spotlightIntensity ?? 0.6
-  const spotlight = new SpotLight(0xffffff, spotI, boxD * 3, Math.PI / 5, 0.4, 1.5)
+  const spotlight = new SpotLight(0xffffff, spotI, 0, (spotAngle * Math.PI) / 180, spotPenumbra, 0)
   spotlight.name = 'headSpotlight'
   spotlight.castShadow = true
   spotlight.shadow.mapSize.width = 1024
   spotlight.shadow.mapSize.height = 1024
   spotlight.shadow.camera.near = 5
-  spotlight.shadow.camera.far = boxD * 3
+  spotlight.shadow.camera.far = dims.eyeDefaultZ + boxD
   spotlight.shadow.bias = -0.001
-  spotlight.position.set(0, 0, dims.eyeDefaultZ * 0.5)
-  spotlight.target.position.set(0, 0, -boxD / 2)
+  spotlight.position.set(hw * spotX, hh * spotY, boxD * 0.1)
+  spotlight.target.position.set(-hw * spotX * 0.4, -hh * spotY * 0.2, -boxD * 0.6)
   scene.add(spotlight)
   scene.add(spotlight.target)
 }

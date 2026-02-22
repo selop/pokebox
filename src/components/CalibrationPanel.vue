@@ -157,7 +157,7 @@ function formatValue(v: number): string {
       <div class="cal-row">
         <span class="cal-label">Backlight</span>
         <div class="cal-slider-wrap">
-          <input type="range" class="cal-slider" min="0" max="5" step="0.1"
+          <input type="range" class="cal-slider" min="0" max="15" step="0.1"
             :value="store.config.lights.backlightIntensity"
             @input="onLightSlider('backlightIntensity', ($event.target as HTMLInputElement).value)" />
           <span class="cal-value">{{ formatValue(store.config.lights.backlightIntensity) }}</span>
@@ -166,10 +166,46 @@ function formatValue(v: number): string {
       <div class="cal-row">
         <span class="cal-label">Spotlight</span>
         <div class="cal-slider-wrap">
-          <input type="range" class="cal-slider" min="0" max="2" step="0.1"
+          <input type="range" class="cal-slider" min="0" max="20" step="0.1"
             :value="store.config.lights.spotlightIntensity"
             @input="onLightSlider('spotlightIntensity', ($event.target as HTMLInputElement).value)" />
           <span class="cal-value">{{ formatValue(store.config.lights.spotlightIntensity) }}</span>
+        </div>
+      </div>
+      <div class="cal-row">
+        <span class="cal-label">Spot X</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="-1" max="1" step="0.05"
+            :value="store.config.lights.spotlightX"
+            @input="onLightSlider('spotlightX', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ formatValue(store.config.lights.spotlightX) }}</span>
+        </div>
+      </div>
+      <div class="cal-row">
+        <span class="cal-label">Spot Y</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="-1" max="1" step="0.05"
+            :value="store.config.lights.spotlightY"
+            @input="onLightSlider('spotlightY', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ formatValue(store.config.lights.spotlightY) }}</span>
+        </div>
+      </div>
+      <div class="cal-row">
+        <span class="cal-label">Spot angle</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="10" max="90" step="1"
+            :value="store.config.lights.spotlightAngle"
+            @input="onLightSlider('spotlightAngle', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ formatValue(store.config.lights.spotlightAngle) }}</span>
+        </div>
+      </div>
+      <div class="cal-row">
+        <span class="cal-label">Spot soft</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="0" max="1" step="0.05"
+            :value="store.config.lights.spotlightPenumbra"
+            @input="onLightSlider('spotlightPenumbra', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ formatValue(store.config.lights.spotlightPenumbra) }}</span>
         </div>
       </div>
     </div>
