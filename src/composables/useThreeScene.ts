@@ -9,11 +9,9 @@ import {
   PointLight,
   Raycaster,
   Scene,
-  ShaderMaterial,
   SpotLight,
   TextureLoader,
   Vector2,
-  Vector3,
   WebGLRenderer,
 } from 'three'
 import type { Texture } from 'three'
@@ -25,9 +23,13 @@ import { mulberry32 } from '@/three/utils'
 import { CardNavigator } from '@/three/CardNavigator'
 import { MergeAnimator } from '@/three/MergeAnimator'
 import { CardSceneBuilder } from '@/three/CardSceneBuilder'
-import { HERO_SHOWCASE, loadHeroCatalog } from '@/data/heroShowcase'
+import { FanAnimator } from '@/three/FanAnimator'
+import { updateShaderUniforms } from '@/three/ShaderUniformUpdater'
+import { HERO_SHOWCASE } from '@/data/heroShowcase'
 import { loadSetCatalog } from '@/data/cardCatalog'
 import { useCardLoader } from './useCardLoader'
+import { useUniformWatchers } from './useUniformWatchers'
+import { useSceneTimers } from './useSceneTimers'
 import { useMouseTilt } from './useMouseTilt'
 import { useGyroscope } from './useGyroscope'
 import { perfTracker } from '@/utils/perfTracker'
@@ -54,22 +56,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   const mouseNDC = new Vector2()
   let lastHoveredFanIndex: number | null = null
 
-  const ACTIVATION_DURATION = 1.0
-
   // Pack opening: custom intro origin for fan cards emerging from screen center
   let pendingIntroOrigin: { x: number; y: number; z: number } | null = null
-
-  // Fan-to-single zoom transition state
-  let fanZoomTransition: {
-    fanIndex: number
-    startTime: number
-    duration: number
-    // Snapshot of the clicked card's starting transform
-    startPos: { x: number; y: number; z: number }
-    startRotZ: number
-    startScale: number
-  } | null = null
-  const FAN_ZOOM_DURATION = 0.8
 
   // Delegates
   const mergeAnimator = new MergeAnimator(store)
@@ -80,6 +68,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     () => mergeAnimator.reset(),
   )
   const cardSceneBuilder = new CardSceneBuilder(store, () => cardLoader)
+  const fanAnimator = new FanAnimator(store, cardSceneBuilder)
 
   function startCardActivation(mesh: Mesh) {
     if (mesh.userData.activationState !== 'pending') return
@@ -106,7 +95,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   }
 
   function isFanIntroPlaying(): boolean {
-    return cardMeshes.value.some((m) => m.userData.fanIntro)
+    return fanAnimator.isIntroPlaying(cardMeshes.value)
   }
 
   function onFanMouseMove(e: MouseEvent) {
@@ -135,7 +124,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   }
 
   function onFanClick(e: MouseEvent) {
-    if (store.cardDisplayMode !== 'fan' || !camera || fanZoomTransition) return
+    if (store.cardDisplayMode !== 'fan' || !camera || fanAnimator.isZooming) return
     if (isFanIntroPlaying()) return
     const hit = fanRaycast(e.clientX, e.clientY)
     if (hit == null) return
@@ -146,15 +135,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Ensure card is activated before zoom
     startCardActivation(mesh)
 
-    // Snapshot current transform and start the zoom transition
-    fanZoomTransition = {
-      fanIndex: hit,
-      startTime: performance.now() * 0.001,
-      duration: FAN_ZOOM_DURATION,
-      startPos: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z },
-      startRotZ: mesh.rotation.z,
-      startScale: mesh.scale.x,
-    }
+    // Start the zoom transition
+    fanAnimator.startZoom(mesh, hit)
   }
 
   /** Click on empty box space in single mode → return to fan. */
@@ -273,7 +255,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Clear scene
     while (scene.children.length) scene.remove(scene.children[0]!)
     cardMeshes.value = []
-    fanZoomTransition = null
+    fanAnimator.reset()
 
     const dims = store.dimensions
     const renderMode = store.renderMode
@@ -314,7 +296,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       mesh.geometry.dispose()
     }
     cardMeshes.value = []
-    fanZoomTransition = null
+    fanAnimator.reset()
 
     // Rebuild card meshes only
     const origin = pendingIntroOrigin
@@ -409,157 +391,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         mesh.rotation.x = tilt.state.rotateX * 0.3
       }
     } else if (store.cardDisplayMode === 'fan') {
-      // Fan mode: smooth peek animation — lerp each card toward rest or hover target
-      const peekSpeed = 1 - Math.pow(0.001, dt) // ~0.12 per frame at 60fps, frame-rate independent
-      const hoveredIdx = store.hoveredFanCard
-      for (const mesh of meshes) {
-        const rest = mesh.userData.fanRest as
-          | { x: number; y: number; z: number; rotZ: number; scale: number }
-          | undefined
-        const hover = mesh.userData.fanHover as
-          | { x: number; y: number; z: number; rotZ: number; scale: number }
-          | undefined
-        const intro = mesh.userData.fanIntro as
-          | {
-              x: number
-              y: number
-              z: number
-              rotZ: number
-              scale: number
-              delay: number
-              duration: number
-              startTime: number
-            }
-          | undefined
-        if (!rest || !hover) continue
-
-        // Staggered intro animation: ease from intro position to rest
-        if (intro) {
-          const elapsed = time - intro.startTime - intro.delay
-          if (elapsed < 0) {
-            // Not started yet — stay at intro position
-            mesh.position.set(intro.x, intro.y, intro.z)
-            mesh.rotation.z = intro.rotZ
-            mesh.scale.setScalar(intro.scale)
-            mesh.rotation.x = 0
-            mesh.rotation.y = 0
-            continue
-          }
-          const t = Math.min(elapsed / intro.duration, 1)
-          // Ease-out back: overshoots slightly then settles (pop feel)
-          const c1 = 1.70158
-          const c3 = c1 + 1
-          const ease = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
-
-          mesh.position.x = intro.x + (rest.x - intro.x) * ease
-          mesh.position.y = intro.y + (rest.y - intro.y) * ease
-          mesh.position.z = intro.z + (rest.z - intro.z) * ease
-          mesh.rotation.z = intro.rotZ + (rest.rotZ - intro.rotZ) * ease
-          const s = intro.scale + (rest.scale - intro.scale) * ease
-          mesh.scale.setScalar(s)
-          mesh.rotation.x = tilt.state.rotateX * 0.5 * ease
-          mesh.rotation.y = tilt.state.rotateY * 0.3 * ease
-
-          if (t >= 1) {
-            // Intro complete — remove intro data so normal hover takes over
-            delete mesh.userData.fanIntro
-          }
-          continue
-        }
-
-        // Skip normal peek if zoom transition is driving positions
-        if (fanZoomTransition) continue
-
-        const isHovered = mesh.userData.fanIndex === hoveredIdx && !isFanIntroPlaying()
-        const target = isHovered ? hover : rest
-        const n = meshes.length
-
-        // Lerp position
-        mesh.position.x += (target.x - mesh.position.x) * peekSpeed
-        mesh.position.y += (target.y - mesh.position.y) * peekSpeed
-        mesh.position.z += (target.z - mesh.position.z) * peekSpeed
-
-        // Lerp rotation.z (fan tilt)
-        mesh.rotation.z += (target.rotZ - mesh.rotation.z) * peekSpeed
-
-        // Lerp scale
-        const s = mesh.scale.x + (target.scale - mesh.scale.x) * peekSpeed
-        mesh.scale.setScalar(s)
-
-        // Gentle head-tracking tilt on x/y axes
-        mesh.rotation.x = tilt.state.rotateX * 0.5
-        mesh.rotation.y = tilt.state.rotateY * 0.3
-
-        // Dynamic renderOrder: hovered card always on top
-        const baseOrder = (mesh.userData.fanBaseRenderOrder as number) ?? n
-        mesh.renderOrder = isHovered ? 100 : baseOrder
-      }
-
-      // ── Fan-to-single zoom transition ──────────────────
-      if (fanZoomTransition) {
-        const zt = fanZoomTransition
-        const elapsed = time - zt.startTime
-        const rawT = Math.min(elapsed / zt.duration, 1.0)
-        // Cubic ease-in-out
-        const ease = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2
-
-        // Target: center of the scene, scaled up to single card size
-        const dims = store.dimensions
-        const targetX = (store.cardTransform.x / 100) * dims.screenW
-        const targetY = (store.cardTransform.y / 100) * dims.screenH
-        const targetZ = -(store.cardTransform.z / 100) * dims.boxD
-        const singleScale = store.singleCardSize / (store.config.cardSize * 0.85)
-
-        for (const mesh of meshes) {
-          const isFocused = mesh.userData.fanIndex === zt.fanIndex
-          if (isFocused) {
-            // Zoom + flip to center
-            mesh.position.x = zt.startPos.x + (targetX - zt.startPos.x) * ease
-            mesh.position.y = zt.startPos.y + (targetY - zt.startPos.y) * ease
-            mesh.position.z = zt.startPos.z + (targetZ - zt.startPos.z) * ease
-            mesh.rotation.z = zt.startRotZ * (1 - ease)
-            mesh.rotation.y = ease * Math.PI * 2 // full flip
-            const s = zt.startScale + (singleScale - zt.startScale) * ease
-            mesh.scale.setScalar(s)
-            mesh.renderOrder = 200
-          } else {
-            // Fade out other cards by scaling down and becoming transparent
-            const fadeScale = mesh.scale.x * (1 - ease * 0.5)
-            mesh.scale.setScalar(Math.max(fadeScale, 0.01))
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if ((mesh.material as any).opacity !== undefined) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ;(mesh.material as any).opacity = 1 - ease
-            }
-          }
-        }
-
-        if (rawT >= 1.0) {
-          // Transition complete — switch to single mode
-          store.selectFanCard(zt.fanIndex)
-          fanZoomTransition = null
-        }
-      }
-
-      // ── Drive activation progress for cards being activated ──
-      for (const mesh of meshes) {
-        if (mesh.userData.activationState !== 'activating') continue
-        const startTime = mesh.userData.activationStartTime as number
-        const progress = Math.min((time - startTime) / ACTIVATION_DURATION, 1.0)
-        const mat = mesh.material as ShaderMaterial
-        if (mat.isShaderMaterial && mat.uniforms['uProgress']) {
-          mat.uniforms['uProgress']!.value = progress
-        }
-        if (progress >= 1.0) {
-          cardSceneBuilder.upgradeFanCardShader(mesh)
-          mesh.userData.activationState = 'done'
-        }
-      }
-
-      // Reset pack opening phase once fan intro animation finishes
-      if (store.packOpeningPhase === 'cascade' && !isFanIntroPlaying()) {
-        store.packOpeningPhase = 'idle'
-      }
+      fanAnimator.tick(meshes, time, dt, tilt.state)
     } else {
       for (const mesh of meshes) {
         mesh.rotation.x = tilt.state.rotateX
@@ -579,57 +411,15 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
 
     // Update holo shader uniforms for all cards
-    for (const mesh of meshes) {
-      if (!(mesh.material as ShaderMaterial).isShaderMaterial) continue
-      const u = (mesh.material as ShaderMaterial).uniforms
-      u['uTime']!.value = time
-
-      // Eye-based shader uniforms (face tracking / keyboard)
-      mesh.updateMatrixWorld()
-      const cardPos = new Vector3()
-      mesh.getWorldPosition(cardPos)
-
-      const eyeVec = new Vector3(store.eyePos.x, store.eyePos.y, store.eyePos.z)
-      const dir = eyeVec.clone().sub(cardPos)
-
-      const cardRight = new Vector3(1, 0, 0).applyQuaternion(mesh.quaternion)
-      const cardUp = new Vector3(0, 1, 0).applyQuaternion(mesh.quaternion)
-
-      const dims = store.dimensions
-      const effectiveSize =
-        store.cardDisplayMode === 'single'
-          ? store.singleCardSize
-          : store.cardDisplayMode === 'carousel'
-            ? store.singleCardSize * 0.9
-            : store.cardDisplayMode === 'fan'
-              ? store.config.cardSize * 0.85
-              : store.config.cardSize
-      const cardH = dims.screenH * effectiveSize
-      const cardW = cardH * CARD_ASPECT
-
-      const localX = dir.dot(cardRight) / cardW + 0.5
-      const localY = dir.dot(cardUp) / cardH + 0.5
-
-      const px = Math.max(0, Math.min(1, localX))
-      const py = Math.max(0, Math.min(1, localY))
-      if (u['uPointer']) (u['uPointer']!.value as Vector2).set(px, py)
-
-      if (u['uBackground']) {
-        const bx = 0.37 + Math.max(0, Math.min(1, localX)) * 0.26
-        const by = 0.37 + Math.max(0, Math.min(1, localY)) * 0.26
-        ;(u['uBackground']!.value as Vector2).set(bx, by)
-      }
-
-      const dx = px - 0.5,
-        dy = py - 0.5
-      if (u['uPointerFromCenter'])
-        u['uPointerFromCenter']!.value = Math.min(Math.sqrt(dx * dx + dy * dy) * 2.0, 1.0)
-
-      // Additional uniforms for ultra-rare shader
-      if (u['uPointerFromLeft']) u['uPointerFromLeft']!.value = px
-      if (u['uPointerFromTop']) u['uPointerFromTop']!.value = py
-      if (u['uRotateX']) u['uRotateX']!.value = mesh.rotation.y * (180 / Math.PI)
-    }
+    updateShaderUniforms(
+      meshes,
+      time,
+      store.eyePos,
+      store.dimensions,
+      store.cardDisplayMode,
+      store.singleCardSize,
+      store.config.cardSize,
+    )
 
     // Animate card transitions (departing fade-out + push-back, arriving fade-in)
     cardNavigator.tick(time)
@@ -685,10 +475,10 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     if (store.cardDisplayMode === 'carousel') {
       if (e.key === 'n') {
         store.advanceCarousel(1)
-        resetCarouselTimer()
+        sceneTimers.resetCarouselTimer()
       } else if (e.key === 'b') {
         store.advanceCarousel(-1)
-        resetCarouselTimer()
+        sceneTimers.resetCarouselTimer()
       }
       return
     }
@@ -818,382 +608,15 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     },
   )
 
-  // Helper: watch a store config getter and push its value to a shader uniform on all card meshes
-  function watchUniform(getter: () => number, uniformName: string) {
-    watch(getter, (val) => {
-      for (const mesh of cardMeshes.value) {
-        const mat = mesh.material as ShaderMaterial
-        if (mat.isShaderMaterial && mat.uniforms[uniformName]) {
-          mat.uniforms[uniformName]!.value = val
-        }
-      }
-    })
-  }
+  // Register shader uniform watchers (push store config changes to shader uniforms)
+  useUniformWatchers(store, cardMeshes)
 
-  // Holo intensity
-  watchUniform(() => store.config.holoIntensity, 'uCardOpacity')
-
-  // Illustration-rare shader parameters
-  const illustRareUniformMap: [() => number, string][] = [
-    [() => store.config.shaders.illustrationRare.rainbowScale, 'uRainbowScale'],
-    [() => store.config.shaders.illustrationRare.barAngle, 'uBarAngle'],
-    [() => store.config.shaders.illustrationRare.barDensity, 'uBarDensity'],
-    [() => store.config.shaders.illustrationRare.barDensity2, 'uBarDensity2'],
-    [() => store.config.shaders.illustrationRare.barOffsetBgYMult, 'uBarOffsetBgYMult'],
-    [() => store.config.shaders.illustrationRare.bar2OffsetBgYMult, 'uBar2OffsetBgYMult'],
-    [() => store.config.shaders.illustrationRare.barWidth, 'uBarWidth'],
-    [() => store.config.shaders.illustrationRare.barWidth2, 'uBarWidth2'],
-    [() => store.config.shaders.illustrationRare.barIntensity, 'uBarIntensity'],
-    [() => store.config.shaders.illustrationRare.barHue, 'uBarHue'],
-    [() => store.config.shaders.illustrationRare.barMediumSaturation, 'uBarMediumSaturation'],
-    [() => store.config.shaders.illustrationRare.barMediumLightness, 'uBarMediumLightness'],
-    [() => store.config.shaders.illustrationRare.barBrightSaturation, 'uBarBrightSaturation'],
-    [() => store.config.shaders.illustrationRare.barBrightLightness, 'uBarBrightLightness'],
-    [() => store.config.shaders.illustrationRare.barIntensity2, 'uBarIntensity2'],
-    [() => store.config.shaders.illustrationRare.barHue2, 'uBarHue2'],
-    [() => store.config.shaders.illustrationRare.barMediumSaturation2, 'uBarMediumSaturation2'],
-    [() => store.config.shaders.illustrationRare.barMediumLightness2, 'uBarMediumLightness2'],
-    [() => store.config.shaders.illustrationRare.barBrightSaturation2, 'uBarBrightSaturation2'],
-    [() => store.config.shaders.illustrationRare.barBrightLightness2, 'uBarBrightLightness2'],
-    [() => store.config.shaders.illustrationRare.shine1Contrast, 'uShine1Contrast'],
-    [() => store.config.shaders.illustrationRare.shine1Saturation, 'uShine1Saturation'],
-    [() => store.config.shaders.illustrationRare.shine2Opacity, 'uShine2Opacity'],
-    [() => store.config.shaders.illustrationRare.glareOpacity, 'uGlareOpacity'],
-  ]
-  for (const [getter, uniformName] of illustRareUniformMap) {
-    watchUniform(getter, uniformName)
-  }
-
-  // Ultra-rare shader parameters
-  const ultraRareUniformMap: [() => number, string][] = [
-    [() => store.config.shaders.ultraRare.baseBrightness, 'uBaseBrightness'],
-    [() => store.config.shaders.ultraRare.shineBrightness, 'uShineBrightness'],
-    [() => store.config.shaders.ultraRare.shineContrast, 'uShineContrast'],
-    [() => store.config.shaders.ultraRare.shineSaturation, 'uShineSaturation'],
-    [() => store.config.shaders.ultraRare.shineAfterBrightness, 'uShineAfterBrightness'],
-    [() => store.config.shaders.ultraRare.shineAfterContrast, 'uShineAfterContrast'],
-    [() => store.config.shaders.ultraRare.shineAfterSaturation, 'uShineAfterSaturation'],
-    [() => store.config.shaders.ultraRare.shineBaseBrightness, 'uShineBaseBrightness'],
-    [() => store.config.shaders.ultraRare.shineBaseContrast, 'uShineBaseContrast'],
-    [() => store.config.shaders.ultraRare.shineBaseSaturation, 'uShineBaseSaturation'],
-    [() => store.config.shaders.ultraRare.glareContrast, 'uGlareContrast'],
-    [() => store.config.shaders.ultraRare.glare2Contrast, 'uGlare2Contrast'],
-    [() => store.config.shaders.ultraRare.rotateDelta, 'uRotateDelta'],
-    [() => store.config.shaders.ultraRare.angle1Mult, 'uAngle1Mult'],
-    [() => store.config.shaders.ultraRare.angle2Mult, 'uAngle2Mult'],
-    [() => store.config.shaders.ultraRare.bgYMult1, 'uBgYMult1'],
-    [() => store.config.shaders.ultraRare.bgYMult2, 'uBgYMult2'],
-    [() => store.config.shaders.ultraRare.barAngle, 'uBarAngle'],
-    [() => store.config.shaders.ultraRare.barOffsetBgXMult, 'uBarOffsetBgXMult'],
-    [() => store.config.shaders.ultraRare.barOffsetBgYMult, 'uBarOffsetBgYMult'],
-    [() => store.config.shaders.ultraRare.barFrequency, 'uBarFrequency'],
-    [() => store.config.shaders.ultraRare.barIntensityStart1, 'uBarIntensityStart1'],
-    [() => store.config.shaders.ultraRare.barIntensityEnd1, 'uBarIntensityEnd1'],
-    [() => store.config.shaders.ultraRare.barIntensityStart2, 'uBarIntensityStart2'],
-    [() => store.config.shaders.ultraRare.barIntensityEnd2, 'uBarIntensityEnd2'],
-    [() => store.config.shaders.ultraRare.sparkleIntensity, 'uSparkleIntensity'],
-    [() => store.config.shaders.ultraRare.sparkleRadius, 'uSparkleRadius'],
-    [() => store.config.shaders.ultraRare.sparkleContrast, 'uSparkleContrast'],
-    [() => store.config.shaders.ultraRare.sparkleColorShift, 'uSparkleColorShift'],
-  ]
-  for (const [getter, uniformName] of ultraRareUniformMap) {
-    watchUniform(getter, uniformName)
-  }
-
-  let slideshowInterval: ReturnType<typeof setInterval> | null = null
-  watch(
-    () => store.isSlideshowActive,
-    (active) => {
-      if (slideshowInterval) {
-        clearInterval(slideshowInterval)
-        slideshowInterval = null
-      }
-      if (active) {
-        slideshowInterval = setInterval(() => {
-          cardNavigator.navigate(1)
-        }, 3000)
-      }
-    },
-  )
-
-  // Carousel auto-advance timer
-  let carouselInterval: ReturnType<typeof setInterval> | null = null
-
-  function resetCarouselTimer() {
-    if (carouselInterval) {
-      clearInterval(carouselInterval)
-      carouselInterval = null
-    }
-    if (store.cardDisplayMode === 'carousel') {
-      carouselInterval = setInterval(() => {
-        store.advanceCarousel(1)
-      }, 4000)
-    }
-  }
-
-  // Hero showcase: on desktop startup, load hero catalog and enter carousel mode
-  watch(
-    () => store.isHeroShowcaseActive,
-    async (active) => {
-      if (active) {
-        // Load hero catalog and enter carousel mode
-        const catalog = await loadHeroCatalog()
-        store.carouselHeroCatalog = catalog
-        store.cardDisplayMode = 'carousel'
-      } else {
-        // Stop carousel timer when hero showcase ends
-        if (carouselInterval) {
-          clearInterval(carouselInterval)
-          carouselInterval = null
-        }
-      }
-    },
-    { immediate: true },
-  )
-
-  // Watch carousel mode to manage auto-advance timer and ensure hero catalog is loaded
-  watch(
-    () => store.cardDisplayMode === 'carousel',
-    async (isCarousel) => {
-      if (carouselInterval) {
-        clearInterval(carouselInterval)
-        carouselInterval = null
-      }
-      if (isCarousel) {
-        // Ensure hero catalog is loaded (e.g. when entering via toolbar cycle)
-        if (store.carouselHeroCatalog.length === 0) {
-          const catalog = await loadHeroCatalog()
-          store.carouselHeroCatalog = catalog
-        }
-        carouselInterval = setInterval(() => {
-          store.advanceCarousel(1)
-        }, 4000)
-      }
-    },
-  )
-
-  // Special-illustration-rare shader parameters
-  const sir = () => store.config.shaders.specialIllustrationRare
-  const sirUniformMap: [() => number, string][] = [
-    [() => sir().shineAngle, 'uSirShineAngle'],
-    [() => sir().shineFrequency, 'uSirShineFrequency'],
-    [() => sir().shineBrightness, 'uSirShineBrightness'],
-    [() => sir().shineContrast, 'uSirShineContrast'],
-    [() => sir().shineSaturation, 'uSirShineSaturation'],
-    [() => sir().glitterContrast, 'uSirGlitterContrast'],
-    [() => sir().glitterSaturation, 'uSirGlitterSaturation'],
-    [() => sir().washScale, 'uSirWashScale'],
-    [() => sir().washTiltSensitivity, 'uSirWashTiltSensitivity'],
-    [() => sir().washSaturation, 'uSirWashSaturation'],
-    [() => sir().washContrast, 'uSirWashContrast'],
-    [() => sir().washOpacity, 'uSirWashOpacity'],
-    [() => sir().tiltSparkleScale, 'uSirTiltSparkleScale'],
-    [() => sir().tiltSparkleIntensity, 'uSirTiltSparkleIntensity'],
-    [() => sir().tiltSparkleTiltSensitivity, 'uSirTiltSparkleTiltSensitivity'],
-    [() => sir().tiltSparkle2Scale, 'uSirTiltSparkle2Scale'],
-    [() => sir().tiltSparkle2Intensity, 'uSirTiltSparkle2Intensity'],
-    [() => sir().tiltSparkle2TiltSensitivity, 'uSirTiltSparkle2TiltSensitivity'],
-    [() => sir().baseBrightness, 'uSirBaseBrightness'],
-    [() => sir().baseContrast, 'uSirBaseContrast'],
-  ]
-  for (const [getter, uniformName] of sirUniformMap) {
-    watchUniform(getter, uniformName)
-  }
-
-  // Tera-rainbow-rare shader parameters
-  const trrUniformMap: [() => number, string][] = [
-    [() => store.config.shaders.teraRainbowRare.holoOpacity, 'uHoloOpacity'],
-    [() => store.config.shaders.teraRainbowRare.rainbowScale, 'uRainbowScale'],
-    [() => store.config.shaders.teraRainbowRare.rainbowShift, 'uRainbowShift'],
-    [() => store.config.shaders.teraRainbowRare.maskThreshold, 'uMaskThreshold'],
-    [() => store.config.shaders.teraRainbowRare.sparkleIntensity, 'uSparkleIntensity'],
-    [() => store.config.shaders.teraRainbowRare.sparkleRadius, 'uSparkleRadius'],
-    [() => store.config.shaders.teraRainbowRare.sparkleContrast, 'uSparkleContrast'],
-    [() => store.config.shaders.teraRainbowRare.sparkleColorShift, 'uSparkleColorShift'],
-    [() => store.config.shaders.teraRainbowRare.etchSparkleScale, 'uEtchSparkleScale'],
-    [() => store.config.shaders.teraRainbowRare.etchSparkleIntensity, 'uEtchSparkleIntensity'],
-    [
-      () => store.config.shaders.teraRainbowRare.etchSparkleTiltSensitivity,
-      'uEtchSparkleTiltSensitivity',
-    ],
-    [() => store.config.shaders.teraRainbowRare.etchSparkleTexMix, 'uEtchSparkleTexMix'],
-    [() => store.config.shaders.teraRainbowRare.etchSparkle2Scale, 'uEtchSparkle2Scale'],
-    [() => store.config.shaders.teraRainbowRare.etchSparkle2Intensity, 'uEtchSparkle2Intensity'],
-    [
-      () => store.config.shaders.teraRainbowRare.etchSparkle2TiltSensitivity,
-      'uEtchSparkle2TiltSensitivity',
-    ],
-    [() => store.config.shaders.teraRainbowRare.etchSparkle2TexMix, 'uEtchSparkle2TexMix'],
-    [() => store.config.shaders.teraRainbowRare.baseBrightness, 'uBaseBrightness'],
-    [() => store.config.shaders.teraRainbowRare.baseContrast, 'uBaseContrast'],
-    [() => store.config.shaders.teraRainbowRare.baseSaturation, 'uBaseSaturation'],
-  ]
-  for (const [getter, uniformName] of trrUniformMap) {
-    watchUniform(getter, uniformName)
-  }
-
-  // Tera-shiny-rare shader parameters
-  const tsrUniformMap: [() => number, string][] = [
-    [() => store.config.shaders.teraShinyRare.holoOpacity, 'uHoloOpacity'],
-    [() => store.config.shaders.teraShinyRare.rainbowScale, 'uRainbowScale'],
-    [() => store.config.shaders.teraShinyRare.rainbowShift, 'uRainbowShift'],
-    [() => store.config.shaders.teraShinyRare.maskThreshold, 'uMaskThreshold'],
-    [() => store.config.shaders.teraShinyRare.sparkleIntensity, 'uSparkleIntensity'],
-    [() => store.config.shaders.teraShinyRare.sparkleRadius, 'uSparkleRadius'],
-    [() => store.config.shaders.teraShinyRare.sparkleContrast, 'uSparkleContrast'],
-    [() => store.config.shaders.teraShinyRare.sparkleColorShift, 'uSparkleColorShift'],
-    [() => store.config.shaders.teraShinyRare.etchSparkleScale, 'uEtchSparkleScale'],
-    [() => store.config.shaders.teraShinyRare.etchSparkleIntensity, 'uEtchSparkleIntensity'],
-    [
-      () => store.config.shaders.teraShinyRare.etchSparkleTiltSensitivity,
-      'uEtchSparkleTiltSensitivity',
-    ],
-    [() => store.config.shaders.teraShinyRare.etchSparkleTexMix, 'uEtchSparkleTexMix'],
-    [() => store.config.shaders.teraShinyRare.etchSparkle2Scale, 'uEtchSparkle2Scale'],
-    [() => store.config.shaders.teraShinyRare.etchSparkle2Intensity, 'uEtchSparkle2Intensity'],
-    [
-      () => store.config.shaders.teraShinyRare.etchSparkle2TiltSensitivity,
-      'uEtchSparkle2TiltSensitivity',
-    ],
-    [() => store.config.shaders.teraShinyRare.etchSparkle2TexMix, 'uEtchSparkle2TexMix'],
-    [() => store.config.shaders.teraShinyRare.baseBrightness, 'uBaseBrightness'],
-    [() => store.config.shaders.teraShinyRare.baseContrast, 'uBaseContrast'],
-    [() => store.config.shaders.teraShinyRare.baseSaturation, 'uBaseSaturation'],
-    [() => store.config.shaders.teraShinyRare.mosaicScale, 'uMosaicScale'],
-    [() => store.config.shaders.teraShinyRare.mosaicIntensity, 'uMosaicIntensity'],
-    [() => store.config.shaders.teraShinyRare.mosaicSaturation, 'uMosaicSaturation'],
-    [() => store.config.shaders.teraShinyRare.mosaicContrast, 'uMosaicContrast'],
-    [() => store.config.shaders.teraShinyRare.mosaicFoilThreshold, 'uMosaicFoilThreshold'],
-  ]
-  for (const [getter, uniformName] of tsrUniformMap) {
-    watchUniform(getter, uniformName)
-  }
-
-  // Reverse-holo shader parameters
-  const reverseHoloUniformMap: [() => number, string][] = [
-    [() => store.config.shaders.reverseHolo.shineIntensity, 'uShineIntensity'],
-    [() => store.config.shaders.reverseHolo.shineOpacity, 'uShineOpacity'],
-    [() => store.config.shaders.reverseHolo.shineColorR, 'uShineColorR'],
-    [() => store.config.shaders.reverseHolo.shineColorG, 'uShineColorG'],
-    [() => store.config.shaders.reverseHolo.shineColorB, 'uShineColorB'],
-    [() => store.config.shaders.reverseHolo.specularRadius, 'uSpecularRadius'],
-    [() => store.config.shaders.reverseHolo.specularPower, 'uSpecularPower'],
-    [() => store.config.shaders.reverseHolo.baseBrightness, 'uBaseBrightness'],
-    [() => store.config.shaders.reverseHolo.baseContrast, 'uBaseContrast'],
-    [() => store.config.shaders.reverseHolo.baseSaturation, 'uBaseSaturation'],
-  ]
-  for (const [getter, uniformName] of reverseHoloUniformMap) {
-    watchUniform(getter, uniformName)
-  }
-
-  // Rainbow-rare shader parameters
-  const rainbowRareUniformMap: [() => number, string][] = [
-    [() => store.config.shaders.rainbowRare.baseBrightness, 'uBaseBrightness'],
-    [() => store.config.shaders.rainbowRare.shineBrightness, 'uShineBrightness'],
-    [() => store.config.shaders.rainbowRare.shineContrast, 'uShineContrast'],
-    [() => store.config.shaders.rainbowRare.shineSaturation, 'uShineSaturation'],
-    [() => store.config.shaders.rainbowRare.shineBaseBrightness, 'uShineBaseBrightness'],
-    [() => store.config.shaders.rainbowRare.shineBaseContrast, 'uShineBaseContrast'],
-    [() => store.config.shaders.rainbowRare.shineBaseSaturation, 'uShineBaseSaturation'],
-    [() => store.config.shaders.rainbowRare.glareContrast, 'uGlareContrast'],
-    [() => store.config.shaders.rainbowRare.glare2Contrast, 'uGlare2Contrast'],
-    [() => store.config.shaders.rainbowRare.sparkleIntensity, 'uSparkleIntensity'],
-    [() => store.config.shaders.rainbowRare.sparkleRadius, 'uSparkleRadius'],
-    [() => store.config.shaders.rainbowRare.sparkleContrast, 'uSparkleContrast'],
-    [() => store.config.shaders.rainbowRare.sparkleColorShift, 'uSparkleColorShift'],
-  ]
-  for (const [getter, uniformName] of rainbowRareUniformMap) {
-    watchUniform(getter, uniformName)
-  }
-
-  // Master-ball shader parameters
-  const masterBallUniformMap: [() => number, string][] = [
-    [() => store.config.shaders.masterBall.rainbowScale, 'uRainbowScale'],
-    [() => store.config.shaders.masterBall.rainbowShift, 'uRainbowShift'],
-    [() => store.config.shaders.masterBall.rainbowOpacity, 'uRainbowOpacity'],
-    [() => store.config.shaders.masterBall.etchOpacity, 'uEtchOpacity'],
-    [() => store.config.shaders.masterBall.etchContrast, 'uEtchContrast'],
-    [() => store.config.shaders.masterBall.etchStampOpacity, 'uEtchStampOpacity'],
-    [() => store.config.shaders.masterBall.etchStampHoloOpacity, 'uEtchStampHoloOpacity'],
-    [() => store.config.shaders.masterBall.etchStampHoloScale, 'uEtchStampHoloScale'],
-    [() => store.config.shaders.masterBall.etchStampMaskThreshold, 'uEtchStampMaskThreshold'],
-    [() => store.config.shaders.masterBall.sparkleScale, 'uSparkleScale'],
-    [() => store.config.shaders.masterBall.sparkleIntensity, 'uSparkleIntensity'],
-    [() => store.config.shaders.masterBall.sparkleTiltSensitivity, 'uSparkleTiltSensitivity'],
-    [() => store.config.shaders.masterBall.sparkleTexMix, 'uSparkleTexMix'],
-    [() => store.config.shaders.masterBall.sparkle2Scale, 'uSparkle2Scale'],
-    [() => store.config.shaders.masterBall.sparkle2Intensity, 'uSparkle2Intensity'],
-    [() => store.config.shaders.masterBall.sparkle2TiltSensitivity, 'uSparkle2TiltSensitivity'],
-    [() => store.config.shaders.masterBall.sparkle2TexMix, 'uSparkle2TexMix'],
-    [() => store.config.shaders.masterBall.mosaicScale, 'uMosaicScale'],
-    [() => store.config.shaders.masterBall.mosaicIntensity, 'uMosaicIntensity'],
-    [() => store.config.shaders.masterBall.mosaicSaturation, 'uMosaicSaturation'],
-    [() => store.config.shaders.masterBall.mosaicContrast, 'uMosaicContrast'],
-    [() => store.config.shaders.masterBall.mosaicFoilThreshold, 'uMosaicFoilThreshold'],
-    [() => store.config.shaders.masterBall.glareOpacity, 'uGlareOpacity'],
-    [() => store.config.shaders.masterBall.glareContrast, 'uGlareContrast'],
-    [() => store.config.shaders.masterBall.glareSaturation, 'uGlareSaturation'],
-    [() => store.config.shaders.masterBall.baseBrightness, 'uBaseBrightness'],
-    [() => store.config.shaders.masterBall.baseContrast, 'uBaseContrast'],
-  ]
-  for (const [getter, uniformName] of masterBallUniformMap) {
-    watchUniform(getter, uniformName)
-  }
-
-  // Shiny-rare shader parameters
-  const shinyRareUniformMap: [() => number, string][] = [
-    [() => store.config.shaders.shinyRare.rainbowScale, 'uRainbowScale'],
-    [() => store.config.shaders.shinyRare.rainbowShift, 'uRainbowShift'],
-    [() => store.config.shaders.shinyRare.rainbowOpacity, 'uRainbowOpacity'],
-    [() => store.config.shaders.shinyRare.etchOpacity, 'uEtchOpacity'],
-    [() => store.config.shaders.shinyRare.etchContrast, 'uEtchContrast'],
-    [() => store.config.shaders.shinyRare.etchStampOpacity, 'uEtchStampOpacity'],
-    [() => store.config.shaders.shinyRare.etchStampHoloOpacity, 'uEtchStampHoloOpacity'],
-    [() => store.config.shaders.shinyRare.etchStampHoloScale, 'uEtchStampHoloScale'],
-    [() => store.config.shaders.shinyRare.etchStampMaskThreshold, 'uEtchStampMaskThreshold'],
-    [() => store.config.shaders.shinyRare.glareOpacity, 'uGlareOpacity'],
-    [() => store.config.shaders.shinyRare.glareContrast, 'uGlareContrast'],
-    [() => store.config.shaders.shinyRare.glareSaturation, 'uGlareSaturation'],
-    [() => store.config.shaders.shinyRare.baseBrightness, 'uBaseBrightness'],
-    [() => store.config.shaders.shinyRare.baseContrast, 'uBaseContrast'],
-    [() => store.config.shaders.shinyRare.metalIntensity, 'uMetalIntensity'],
-    [() => store.config.shaders.shinyRare.metalMaskThreshold, 'uMetalMaskThreshold'],
-    [() => store.config.shaders.shinyRare.metalTiltSensitivity, 'uMetalTiltSensitivity'],
-    [() => store.config.shaders.shinyRare.metalTiltThreshold, 'uMetalTiltThreshold'],
-    [() => store.config.shaders.shinyRare.metalBrightness, 'uMetalBrightness'],
-    [() => store.config.shaders.shinyRare.metalNoiseScale, 'uMetalNoiseScale'],
-    [() => store.config.shaders.shinyRare.metalSaturation, 'uMetalSaturation'],
-    [() => store.config.shaders.shinyRare.barAngle, 'uBarAngle'],
-    [() => store.config.shaders.shinyRare.barDensity, 'uBarDensity'],
-    [() => store.config.shaders.shinyRare.barOffsetBgYMult, 'uBarOffsetBgYMult'],
-    [() => store.config.shaders.shinyRare.barWidth, 'uBarWidth'],
-    [() => store.config.shaders.shinyRare.barIntensity, 'uBarIntensity'],
-    [() => store.config.shaders.shinyRare.barHue, 'uBarHue'],
-    [() => store.config.shaders.shinyRare.barMediumSaturation, 'uBarMediumSaturation'],
-    [() => store.config.shaders.shinyRare.barMediumLightness, 'uBarMediumLightness'],
-    [() => store.config.shaders.shinyRare.barBrightSaturation, 'uBarBrightSaturation'],
-    [() => store.config.shaders.shinyRare.barBrightLightness, 'uBarBrightLightness'],
-    [() => store.config.shaders.shinyRare.barDensity2, 'uBarDensity2'],
-    [() => store.config.shaders.shinyRare.bar2OffsetBgYMult, 'uBar2OffsetBgYMult'],
-    [() => store.config.shaders.shinyRare.barWidth2, 'uBarWidth2'],
-    [() => store.config.shaders.shinyRare.barIntensity2, 'uBarIntensity2'],
-    [() => store.config.shaders.shinyRare.barHue2, 'uBarHue2'],
-    [() => store.config.shaders.shinyRare.barMediumSaturation2, 'uBarMediumSaturation2'],
-    [() => store.config.shaders.shinyRare.barMediumLightness2, 'uBarMediumLightness2'],
-    [() => store.config.shaders.shinyRare.barBrightSaturation2, 'uBarBrightSaturation2'],
-    [() => store.config.shaders.shinyRare.barBrightLightness2, 'uBarBrightLightness2'],
-    [() => store.config.shaders.shinyRare.shine1Contrast, 'uShine1Contrast'],
-    [() => store.config.shaders.shinyRare.shine1Saturation, 'uShine1Saturation'],
-    [() => store.config.shaders.shinyRare.shine2Opacity, 'uShine2Opacity'],
-  ]
-  for (const [getter, uniformName] of shinyRareUniformMap) {
-    watchUniform(getter, uniformName)
-  }
+  // Register slideshow, carousel, and hero showcase timers
+  const sceneTimers = useSceneTimers(store, cardNavigator)
 
   function dispose() {
     if (animationId !== null) cancelAnimationFrame(animationId)
-    if (slideshowInterval) clearInterval(slideshowInterval)
-    if (carouselInterval) clearInterval(carouselInterval)
+    sceneTimers.dispose()
     window.removeEventListener('resize', onResize)
     window.removeEventListener('keydown', onKeydown)
     renderer?.domElement.removeEventListener('mousemove', onFanMouseMove)
