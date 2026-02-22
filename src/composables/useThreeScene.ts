@@ -154,6 +154,20 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     fanAnimator.startZoom(mesh, hit)
   }
 
+  function onCarouselClick(e: MouseEvent) {
+    if (store.cardDisplayMode !== 'carousel' || !camera) return
+    if (e.button !== 0) return
+    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
+    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
+    raycaster.setFromCamera(mouseNDC, camera)
+    const intersects = raycaster.intersectObjects(cardMeshes.value)
+    if (intersects.length === 0) return
+    const compoundId = intersects[0]!.object.userData.cardId as string | undefined
+    if (compoundId && compoundId.includes(':')) {
+      store.selectCarouselCard(compoundId)
+    }
+  }
+
   /** Click on empty box space in single mode → return to fan (desktop only). */
   function onSceneClick(e: MouseEvent) {
     if (store.isMobile) return
@@ -261,6 +275,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     window.addEventListener('keydown', onKeydown)
     renderer.domElement.addEventListener('mousemove', onFanMouseMove)
     renderer.domElement.addEventListener('click', onFanClick)
+    renderer.domElement.addEventListener('click', onCarouselClick)
     renderer.domElement.addEventListener('click', onSceneClick)
     renderer.domElement.addEventListener('touchstart', onFanTouchStart)
   }
@@ -664,6 +679,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     window.removeEventListener('keydown', onKeydown)
     renderer?.domElement.removeEventListener('mousemove', onFanMouseMove)
     renderer?.domElement.removeEventListener('click', onFanClick)
+    renderer?.domElement.removeEventListener('click', onCarouselClick)
     renderer?.domElement.removeEventListener('click', onSceneClick)
     renderer?.domElement.removeEventListener('touchstart', onFanTouchStart)
     mouseTilt.detach()
@@ -678,7 +694,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
 
   // Expose card mesh data for e2e test introspection (dev only)
   if (import.meta.env.DEV) {
-    ;(window as Record<string, unknown>).__POKEBOX_DEBUG__ = {
+    ;(window as unknown as Record<string, unknown>).__POKEBOX_DEBUG__ = {
       getCardMeshes: () =>
         cardMeshes.value.map((m) => ({
           id: m.userData.cardId as string,

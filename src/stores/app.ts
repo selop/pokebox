@@ -335,6 +335,18 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  /** Click a carousel card → load its set, navigate to it, enter single mode. */
+  async function selectCarouselCard(compoundId: string) {
+    const sep = compoundId.indexOf(':')
+    if (sep < 0) return
+    const setId = compoundId.slice(0, sep)
+    const originalCardId = compoundId.slice(sep + 1)
+    stopHeroShowcase()
+    await switchSet(setId)
+    currentCardId.value = originalCardId
+    cardDisplayMode.value = 'single'
+  }
+
   /** Build a shareable URL for the current card/set. */
   function shareUrl() {
     const url = new URL(window.location.origin + window.location.pathname)
@@ -402,6 +414,7 @@ export const useAppStore = defineStore('app', () => {
     setSceneMode,
     setHoveredFanCard,
     selectFanCard,
+    selectCarouselCard,
     shareUrl,
   }
 })

@@ -21,7 +21,7 @@ export function buildStackLayout(
   introOrigin?: { x: number; y: number; z: number } | null,
   resolveExtraTextures?: (loader: CardLoaderInstance, shader: ShaderStyle) => {
     iriTextures: { iri7: Texture; iri8: Texture; iri9: Texture } | null
-    birthdayTextures: { grain: Texture; dank1: Texture; dank2: Texture } | null
+    birthdayTextures: { dank: Texture; dank2: Texture } | null
     sparkleIriTextures: { iri1: Texture; iri2: Texture } | null
     glitterTexture: Texture | null
     noiseTexture: Texture | null
