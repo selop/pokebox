@@ -127,7 +127,7 @@ flowchart TB
     %% User interactions
     Search -->|"selectCard(id)"| Store
     Booster -->|"switchSet(setId)"| Store
-    Toolbar -->|"display mode, slideshow"| Store
+    Toolbar -->|"display mode, slideshow<br/><small>set/card selects hidden in carousel</small>"| Store
     ShaderPanel -->|"shader uniforms"| Store
 
     %% Store → Scene
