@@ -103,6 +103,20 @@ export const useAppStore = defineStore('app', () => {
   const showInstructions = ref(true)
   const showBoosterModal = ref(false)
 
+  // --- Toast notifications ---
+  let toastIdCounter = 0
+  const toasts = ref<{ id: number; message: string }[]>([])
+
+  function addToast(message: string) {
+    const id = ++toastIdCounter
+    toasts.value.push({ id, message })
+    setTimeout(() => removeToast(id), 5000)
+  }
+
+  function removeToast(id: number) {
+    toasts.value = toasts.value.filter((t) => t.id !== id)
+  }
+
   // --- Pack opening animation state ---
   const packOpeningPhase = ref<'idle' | 'css-anim' | 'waiting-load' | 'cascade'>('idle')
 
@@ -438,6 +452,9 @@ export const useAppStore = defineStore('app', () => {
     statusText,
     showInstructions,
     showBoosterModal,
+    toasts,
+    addToast,
+    removeToast,
     packOpeningPhase,
     viewportWidth,
     viewportHeight,

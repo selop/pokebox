@@ -225,6 +225,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
   function loadIriTextures(): Promise<IriTextures> {
     if (iriTextures) return Promise.resolve(iriTextures)
 
+    const store = useAppStore()
     return new Promise<IriTextures>((resolve) => {
       let count = 0
       let iri7: Texture | null = null
@@ -238,23 +239,29 @@ export function useCardLoader(renderer: WebGLRenderer) {
         }
       }
 
+      const onFail = (name: string) => () => {
+        console.warn(`[useCardLoader] Failed to load texture: ${name}`)
+        store.addToast(`Texture "${name}" could not be loaded`)
+        onReady()
+      }
+
       loader.load('img/151/iri-7.webp', (tex) => {
         applyFilters(tex)
         iri7 = tex
         onReady()
-      })
+      }, undefined, onFail('iri-7.webp'))
 
       loader.load('img/151/iri-8.webp', (tex) => {
         applyFilters(tex)
         iri8 = tex
         onReady()
-      })
+      }, undefined, onFail('iri-8.webp'))
 
       loader.load('img/151/iri-9.webp', (tex) => {
         applyFilters(tex)
         iri9 = tex
         onReady()
-      })
+      }, undefined, onFail('iri-9.webp'))
     })
   }
 
@@ -265,6 +272,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
   function loadSparkleIriTextures(): Promise<SparkleIriTextures> {
     if (sparkleIriTextures) return Promise.resolve(sparkleIriTextures)
 
+    const store = useAppStore()
     return new Promise<SparkleIriTextures>((resolve) => {
       let count = 0
       let iri1: Texture | null = null
@@ -277,17 +285,23 @@ export function useCardLoader(renderer: WebGLRenderer) {
         }
       }
 
+      const onFail = (name: string) => () => {
+        console.warn(`[useCardLoader] Failed to load texture: ${name}`)
+        store.addToast(`Texture "${name}" could not be loaded`)
+        onReady()
+      }
+
       loader.load('img/151/iri-1.webp', (tex) => {
         applyFilters(tex)
         iri1 = tex
         onReady()
-      })
+      }, undefined, onFail('iri-1.webp'))
 
       loader.load('img/151/iri-2.webp', (tex) => {
         applyFilters(tex)
         iri2 = tex
         onReady()
-      })
+      }, undefined, onFail('iri-2.webp'))
     })
   }
 
@@ -298,6 +312,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
   function loadBirthdayTextures(): Promise<BirthdayTextures> {
     if (birthdayTextures) return Promise.resolve(birthdayTextures)
 
+    const store = useAppStore()
     return new Promise<BirthdayTextures>((resolve) => {
       let count = 0
       let dank: Texture | null = null
@@ -310,17 +325,23 @@ export function useCardLoader(renderer: WebGLRenderer) {
         }
       }
 
+      const onFail = (name: string) => () => {
+        console.warn(`[useCardLoader] Failed to load texture: ${name}`)
+        store.addToast(`Texture "${name}" could not be loaded`)
+        onReady()
+      }
+
       loader.load('img/151/birthday-holo-dank.webp', (tex) => {
         applyFilters(tex)
         dank = tex
         onReady()
-      })
+      }, undefined, onFail('birthday-holo-dank.webp'))
 
       loader.load('img/151/birthday-holo-dank-2.webp', (tex) => {
         applyFilters(tex)
         dank2 = tex
         onReady()
-      })
+      }, undefined, onFail('birthday-holo-dank-2.webp'))
     })
   }
 
@@ -328,16 +349,26 @@ export function useCardLoader(renderer: WebGLRenderer) {
     return birthdayTextures
   }
 
-  function loadGlitterTexture(): Promise<Texture> {
+  function loadGlitterTexture(): Promise<Texture | null> {
     if (glitterTexture) return Promise.resolve(glitterTexture)
 
-    return new Promise<Texture>((resolve) => {
-      loader.load('img/glitter.png', (tex) => {
-        applyFilters(tex)
-        tex.wrapS = tex.wrapT = 1000 // RepeatWrapping
-        glitterTexture = tex
-        resolve(glitterTexture)
-      })
+    const store = useAppStore()
+    return new Promise<Texture | null>((resolve) => {
+      loader.load(
+        'img/glitter.png',
+        (tex) => {
+          applyFilters(tex)
+          tex.wrapS = tex.wrapT = 1000 // RepeatWrapping
+          glitterTexture = tex
+          resolve(glitterTexture)
+        },
+        undefined,
+        () => {
+          console.warn('[useCardLoader] Failed to load texture: glitter.png')
+          store.addToast('Texture "glitter.png" could not be loaded')
+          resolve(null)
+        },
+      )
     })
   }
 
@@ -345,16 +376,26 @@ export function useCardLoader(renderer: WebGLRenderer) {
     return glitterTexture
   }
 
-  function loadNoiseTexture(): Promise<Texture> {
+  function loadNoiseTexture(): Promise<Texture | null> {
     if (noiseTexture) return Promise.resolve(noiseTexture)
 
-    return new Promise<Texture>((resolve) => {
-      loader.load('img/151/noise-base.webp', (tex) => {
-        applyFilters(tex)
-        tex.wrapS = tex.wrapT = 1000 // RepeatWrapping
-        noiseTexture = tex
-        resolve(noiseTexture)
-      })
+    const store = useAppStore()
+    return new Promise<Texture | null>((resolve) => {
+      loader.load(
+        'img/151/noise-base.webp',
+        (tex) => {
+          applyFilters(tex)
+          tex.wrapS = tex.wrapT = 1000 // RepeatWrapping
+          noiseTexture = tex
+          resolve(noiseTexture)
+        },
+        undefined,
+        () => {
+          console.warn('[useCardLoader] Failed to load texture: noise-base.webp')
+          store.addToast('Texture "noise-base.webp" could not be loaded')
+          resolve(null)
+        },
+      )
     })
   }
 
@@ -362,15 +403,25 @@ export function useCardLoader(renderer: WebGLRenderer) {
     return noiseTexture
   }
 
-  function loadCardBackTexture(): Promise<Texture> {
+  function loadCardBackTexture(): Promise<Texture | null> {
     if (cardBackTexture) return Promise.resolve(cardBackTexture)
 
-    return new Promise<Texture>((resolve) => {
-      loader.load('img/card-back.png', (tex) => {
-        applyFilters(tex, true)
-        cardBackTexture = tex
-        resolve(cardBackTexture)
-      })
+    const store = useAppStore()
+    return new Promise<Texture | null>((resolve) => {
+      loader.load(
+        'img/card-back.png',
+        (tex) => {
+          applyFilters(tex, true)
+          cardBackTexture = tex
+          resolve(cardBackTexture)
+        },
+        undefined,
+        () => {
+          console.warn('[useCardLoader] Failed to load texture: card-back.png')
+          store.addToast('Texture "card-back.png" could not be loaded')
+          resolve(null)
+        },
+      )
     })
   }
 

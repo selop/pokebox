@@ -257,10 +257,19 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Load wall texture for box interior
     const textureLoader = new TextureLoader()
     textureLoader.setCrossOrigin('anonymous')
-    textureLoader.load('151-pattern-default.webp', (texture) => {
-      wallTexture = texture
-      rebuildScene()
-    })
+    textureLoader.load(
+      '151-pattern-default.webp',
+      (texture) => {
+        wallTexture = texture
+        rebuildScene()
+      },
+      undefined,
+      () => {
+        console.warn('[useThreeScene] Failed to load wall texture: 151-pattern-default.webp')
+        store.addToast('Texture "151-pattern-default.webp" could not be loaded')
+        rebuildScene()
+      },
+    )
 
     // Set initial eye position
     const dims = store.dimensions

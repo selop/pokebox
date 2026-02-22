@@ -11,6 +11,7 @@ import InstructionsModal from './components/InstructionsModal.vue'
 import BoosterPackModal from './components/BoosterPackModal.vue'
 import CardSearch from './components/CardSearch.vue'
 import PerfOverlay from './components/PerfOverlay.vue'
+import ToastContainer from './components/ToastContainer.vue'
 import { useFaceTracking } from './composables/useFaceTracking'
 import { useAppStore } from './stores/app'
 
@@ -57,6 +58,7 @@ async function onEnableGyroscope() {
   <ShaderControlsPanel v-if="!store.isMobile" />
   <CardSearch v-if="store.cardDisplayMode !== 'carousel'" />
   <PerfOverlay />
+  <ToastContainer />
   <BoosterPackModal />
   <InstructionsModal
     :is-mobile="store.isMobile"
