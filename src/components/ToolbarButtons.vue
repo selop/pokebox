@@ -52,10 +52,10 @@ const displayModes = [
     <div class="mobile-row-break" />
     <!-- Set & card selector -->
     <div class="toolbar-group">
-      <select class="toolbar-select set-select" :disabled="store.setLoading" :value="store.currentSetId" @change="onSetChange">
+      <select v-if="store.cardDisplayMode !== 'carousel'" class="toolbar-select set-select" :disabled="store.setLoading" :value="store.currentSetId" @change="onSetChange">
         <option v-for="set in SET_REGISTRY" :key="set.id" :value="set.id">{{ set.label }}</option>
       </select>
-      <select class="toolbar-select card-select" :disabled="store.setLoading" :value="store.currentCardId" @change="onCardChange">
+      <select v-if="store.cardDisplayMode !== 'carousel'" class="toolbar-select card-select" :disabled="store.setLoading" :value="store.currentCardId" @change="onCardChange">
         <option v-for="card in CARD_CATALOG" :key="card.id" :value="card.id">{{ card.label }}</option>
       </select>
       <span v-if="store.setLoading" class="toolbar-loading">Loading...</span>
