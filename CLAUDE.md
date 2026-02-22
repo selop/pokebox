@@ -28,7 +28,7 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 ### Rendering pipeline
 
 1. **Face tracking** (`useFaceTracking`) polls MediaPipe for head position → writes to `store.targetEye`
-2. **Scene loop** (`useThreeScene.animate`) smoothly interpolates eye position, computes off-axis projection matrix, updates shader uniforms per frame
+2. **Scene loop** (`useThreeScene.animate`) smoothly interpolates eye position, computes off-axis projection matrix; delegates per-frame uniform updates to `ShaderUniformUpdater` and fan animation to `FanAnimator`
 3. **Off-axis camera** maps real-world eye coordinates to an asymmetric frustum so the 3D scene responds to head movement
 4. **Card shaders** — Each card uses one of several holo shader types, automatically selected based on card type:
    - **Illustration Rare** (`illustration-rare.frag`): Multiple vertical rainbow bands with diagonal bars + glare, matching Pokémon illustration rare holo cards
@@ -75,10 +75,10 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 | Directory           | Role                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode, set switching, mobile detection, pack opening animation state machine) |
-| `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`     |
-| `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `CardSceneBuilder` (card scene orchestration), `CardNavigator` (card navigation), `MergeAnimator` (card transitions), `geometryHelpers`, `utils` |
+| `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`, `useUniformWatchers` (registry-driven config→uniform sync), `useSceneTimers` (slideshow/carousel/hero timers) |
+| `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `CardSceneBuilder` (card scene orchestration — dispatches to layout builders), `CardNavigator` (card navigation), `MergeAnimator` (card transitions), `FanAnimator` (fan intro/hover/zoom animation), `FanLayoutBuilder` (fan arc layout), `CarouselLayoutBuilder` (carousel slot layout), `ShaderUniformUpdater` (per-frame uniform push), `geometryHelpers`, `utils` |
 | `src/shaders/`      | GLSL fragment shaders; shared functions in `common/` subdir, included via `#include` (resolved by `vite-plugin-glsl`)                                        |
-| `src/data/`         | `cardCatalog.ts` (JSON-driven card catalog with `SET_REGISTRY` and `loadSetCatalog()`), `defaults.ts` (initial config values), `heroShowcase.ts` (curated cross-set hero cards for carousel) |
+| `src/data/`         | `cardCatalog.ts` (JSON-driven card catalog with `SET_REGISTRY` and `loadSetCatalog()`), `defaults.ts` (initial config values), `heroShowcase.ts` (curated cross-set hero cards for carousel), `shaderRegistry.ts` (canonical uniform↔config mappings — single source of truth for all shader styles) |
 | `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `SetDefinition`, `SetCardJson`, `CardTransform`, `EyePosition`, `DerivedDimensions`, `HoloType`, `ShaderStyle` |
 | `docs/`             | `CARD-SETS.md` (card set system documentation, adding new sets), `SHADER-TESTING.md`                                                                         |
 
@@ -208,11 +208,11 @@ The shader test suite (`src/shaders/__tests__/`) includes:
 2. Add shader to both test files
 3. List required uniforms in compilation test
 4. Run `bun test:shader` to verify
-5. Add uniforms to `AppConfig` type, `defaults.ts`, and `buildCard.ts`
+5. Add uniform↔config mappings to `SHADER_UNIFORM_REGISTRY` in `src/data/shaderRegistry.ts`, defaults to `src/data/defaults.ts`, types to `AppConfig` in `src/types/`, and the fragment shader import to `buildCard.ts`
 
 **When modifying shader uniforms**:
 
-or adding new visual controls, ALWAYS update all related files in a single pass: the shader (.glsl/.frag), the Vue component (ShaderControlsPanel.vue), the defaults file (defaults.ts), and the store. Do not consider the task complete until all four are updated.
+or adding new visual controls, ALWAYS update all related files in a single pass: the shader (.glsl/.frag), `shaderRegistry.ts` (uniform↔config mapping), `defaults.ts` (default values), the Vue component (`ShaderControlsPanel.vue`), and the `AppConfig` type. The registry is the single source of truth — `buildCard.ts` reads initial values from it and `useUniformWatchers.ts` creates reactive watchers from it automatically. Do not consider the task complete until all files are updated.
 
 **When modifying shared includes** (`src/shaders/common/*.glsl`):
 

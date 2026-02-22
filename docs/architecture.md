@@ -78,6 +78,8 @@ flowchart TB
         Loader["useCardLoader"]
         Face["useFaceTracking"]
         Tilt["useMouseTilt /<br/>useGyroscope"]
+        UniformWatch["useUniformWatchers<br/><small>registry-driven<br/>config→uniform sync</small>"]
+        Timers["useSceneTimers<br/><small>slideshow, carousel,<br/>hero lifecycle</small>"]
     end
 
     subgraph ThreeJS["Three.js Scene"]
@@ -85,6 +87,12 @@ flowchart TB
         Box["Box Shell"]
         Cards["Card Meshes<br/><small>ShaderMaterial</small>"]
         Lights["Lights<br/><small>head-tracked spotlight</small>"]
+        subgraph SceneHelpers["Scene Helpers"]
+            UniformUpd["ShaderUniformUpdater<br/><small>per-frame uniform push</small>"]
+            FanAnim["FanAnimator<br/><small>intro, hover, zoom</small>"]
+            FanLayout["FanLayoutBuilder"]
+            CarouselLayout["CarouselLayoutBuilder"]
+        end
     end
 
     subgraph Shaders["GLSL Shaders"]
@@ -98,6 +106,7 @@ flowchart TB
         Catalog["cardCatalog.ts<br/><small>SET_REGISTRY +<br/>loadSetCatalog()</small>"]
         Hero["heroShowcase.ts<br/><small>cross-set hero cards</small>"]
         AssetUrl["assetUrl()<br/><small>VITE_ASSET_BASE_URL</small>"]
+        Registry["shaderRegistry.ts<br/><small>uniform↔config<br/>single source of truth</small>"]
     end
 
     subgraph External["External"]
@@ -120,8 +129,9 @@ flowchart TB
 
     %% Store → Scene
     Store -->|"displayCardIds watcher"| Loader
-    Store -->|"config watchers"| Scene
+    Store -->|"config watchers"| UniformWatch
     Store -->|"targetEye"| Scene
+    Store -->|"timers"| Timers
 
     %% Catalog & asset loading
     Store -->|"switchSet()"| Catalog
@@ -144,9 +154,19 @@ flowchart TB
     Scene --> Box
     Scene --> Cards
     Scene --> Lights
+    Scene -->|"tick()"| FanAnim
     Loader -->|"CardTextures"| Cards
     Cards --- Vert
     Cards --- Frag
+
+    %% Uniform flow
+    UniformWatch -->|"pushUniform()"| Cards
+    Registry -->|"uniform defs"| UniformWatch
+    Registry -->|"initial values"| Cards
+
+    %% Layout builders
+    FanLayout -->|"build meshes"| Cards
+    CarouselLayout -->|"build meshes"| Cards
 
     %% Telemetry
     Loader -->|"traced spans"| Tracer
@@ -154,7 +174,7 @@ flowchart TB
     Scene -->|"frame stats"| Perf
 
     %% Animate loop
-    Scene -->|"uPointer, uTime<br/>uniforms per frame"| Cards
+    UniformUpd -->|"uPointer, uTime<br/>uniforms per frame"| Cards
 ```
 
 ## Data Flow: Card Set Switch
