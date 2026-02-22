@@ -16,8 +16,8 @@ interface FanZoomTransition {
   startScale: number
 }
 
-const FAN_ZOOM_DURATION = 0.8
-const ACTIVATION_DURATION = 1.0
+const FAN_ZOOM_DURATION = 1.0
+const ACTIVATION_DURATION = 2.0
 
 /**
  * Handles fan mode animation: intro stagger, hover peek, zoom-to-single transition,

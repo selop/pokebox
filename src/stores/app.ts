@@ -55,7 +55,7 @@ export const useAppStore = defineStore('app', () => {
   const sceneMode = ref<SceneMode>('cards')
   const renderMode = ref<RenderMode>('solid')
   const currentCardId = ref(urlParams.cardId ?? STARTUP_CARD_ID)
-  const cardDisplayMode = ref<CardDisplayMode>('single')
+  const cardDisplayMode = ref<CardDisplayMode>(isMobile ? 'single' : 'fan')
   const sceneSeed = ref(Date.now())
 
   // --- Fan state ---
@@ -82,12 +82,12 @@ export const useAppStore = defineStore('app', () => {
   const inputMode = ref<InputMode>('keyboard')
 
   // --- Hero showcase (auto-cycling curated cards on desktop startup) ---
-  const isHeroShowcaseActive = ref(!isMobile && !urlParams.setId && !urlParams.cardId)
+  const isHeroShowcaseActive = ref(false)
 
   function stopHeroShowcase() {
     isHeroShowcaseActive.value = false
     if (cardDisplayMode.value === 'carousel') {
-      cardDisplayMode.value = 'single'
+      cardDisplayMode.value = isMobile ? 'single' : 'fan'
     }
   }
 
