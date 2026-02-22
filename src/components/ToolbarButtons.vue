@@ -2,18 +2,12 @@
 import { ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useFullscreen } from '@/composables/useFullscreen'
-import { CARD_CATALOG, SET_REGISTRY } from '@/data/cardCatalog'
+import { CARD_CATALOG } from '@/data/cardCatalog'
 
 const store = useAppStore()
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 
 const shareToast = ref(false)
-
-function onSetChange(e: Event) {
-  store.stopHeroShowcase()
-  const value = (e.target as HTMLSelectElement).value
-  store.switchSet(value)
-}
 
 function onCardChange(e: Event) {
   store.stopHeroShowcase()
@@ -52,10 +46,7 @@ const displayModes = [
     <div class="mobile-row-break" />
     <!-- Set & card selector -->
     <div class="toolbar-group">
-      <select v-if="store.cardDisplayMode !== 'carousel'" class="toolbar-select set-select" :disabled="store.setLoading" :value="store.currentSetId" @change="onSetChange">
-        <option v-for="set in SET_REGISTRY" :key="set.id" :value="set.id">{{ set.label }}</option>
-      </select>
-      <select v-if="store.cardDisplayMode !== 'carousel'" class="toolbar-select card-select" :disabled="store.setLoading" :value="store.currentCardId" @change="onCardChange">
+      <select v-if="store.cardDisplayMode !== 'carousel' && store.cardDisplayMode !== 'fan'" class="toolbar-select card-select" :disabled="store.setLoading" :value="store.currentCardId" @change="onCardChange">
         <option v-for="card in CARD_CATALOG" :key="card.id" :value="card.id">{{ card.label }}</option>
       </select>
       <span v-if="store.setLoading" class="toolbar-loading">Loading...</span>
@@ -380,8 +371,7 @@ const displayModes = [
     display: initial;
   }
 
-  .toolbar-select.card-select,
-  .toolbar-select.set-select {
+  .toolbar-select.card-select {
     display: none;
   }
 

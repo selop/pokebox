@@ -145,19 +145,69 @@ export const useAppStore = defineStore('app', () => {
   })
 
   // --- Fan card IDs (7 random cards from catalog, seeded by sceneSeed) ---
+  // Picks one card per unique holoType first, then fills remaining slots randomly.
+  // Duplicates are only allowed when the set has fewer than FAN_COUNT distinct shader types.
   const FAN_COUNT = 7
   const fanCardIds = computed(() => {
     const catalog = CARD_CATALOG.value
     if (catalog.length === 0) return []
     const count = Math.min(FAN_COUNT, catalog.length)
-    // Fisher-Yates shuffle with seeded PRNG for reproducible random selection
     const rng = mulberry32(sceneSeed.value)
-    const indices = catalog.map((_, i) => i)
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1))
-      ;[indices[i], indices[j]] = [indices[j]!, indices[i]!]
+
+    // Group indices by holoType
+    const byType = new Map<string, number[]>()
+    for (let i = 0; i < catalog.length; i++) {
+      const ht = catalog[i]!.holoType
+      let arr = byType.get(ht)
+      if (!arr) {
+        arr = []
+        byType.set(ht, arr)
+      }
+      arr.push(i)
     }
-    return indices.slice(0, count).map((i) => catalog[i]!.id)
+
+    // Shuffle each group internally
+    for (const arr of byType.values()) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1))
+        ;[arr[i], arr[j]] = [arr[j]!, arr[i]!]
+      }
+    }
+
+    // Shuffle the type keys to randomize which types are picked
+    const types = [...byType.keys()]
+    for (let i = types.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1))
+      ;[types[i], types[j]] = [types[j]!, types[i]!]
+    }
+
+    // Pick one card per type until we have enough or exhaust types
+    const picked = new Set<number>()
+    const result: number[] = []
+    for (const t of types) {
+      if (result.length >= count) break
+      const arr = byType.get(t)!
+      const idx = arr.find((i) => !picked.has(i))
+      if (idx !== undefined) {
+        result.push(idx)
+        picked.add(idx)
+      }
+    }
+
+    // Fill remaining slots from unused cards (duplicates allowed now)
+    if (result.length < count) {
+      const remaining = catalog.map((_, i) => i).filter((i) => !picked.has(i))
+      for (let i = remaining.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1))
+        ;[remaining[i], remaining[j]] = [remaining[j]!, remaining[i]!]
+      }
+      for (const idx of remaining) {
+        if (result.length >= count) break
+        result.push(idx)
+      }
+    }
+
+    return result.map((i) => catalog[i]!.id)
   })
 
   // --- Display card IDs (single = just center, fan = 7-card hand, carousel = 5-card coverflow) ---
