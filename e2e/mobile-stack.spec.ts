@@ -56,4 +56,35 @@ test.describe('Mobile stack cards', () => {
     // Slideshow button should be hidden in stack mode
     await expect(page.locator('.toolbar-btn:has-text("Slideshow")')).toBeHidden()
   })
+
+  test('Browse Set button appears in stack mode and switches to single', async ({ page }) => {
+    // Browse Set should not be visible in single mode
+    await expect(page.locator('.nav-btn:has-text("Browse Set")')).toBeHidden()
+
+    // Open pack to enter stack mode
+    await page.locator('.nav-btn:has-text("Packs")').click({ force: true })
+    await expect(page.locator('.booster-backdrop')).toBeVisible()
+    await page.locator('.booster-pack:not(.active)').first().click()
+    await expect(page.locator('.booster-backdrop')).toBeHidden({ timeout: 10000 })
+
+    // Browse Set should now be visible
+    const browseBtn = page.locator('.nav-btn:has-text("Browse Set")')
+    await expect(browseBtn).toBeVisible()
+
+    // Clicking it should switch to single mode (arrows reappear, Browse Set hides)
+    await browseBtn.click()
+    await expect(page.locator('button[aria-label="Previous card"]')).toBeVisible()
+    await expect(page.locator('button[aria-label="Next card"]')).toBeVisible()
+    await expect(browseBtn).toBeHidden()
+  })
+
+  test('calibration and shader panels are hidden on mobile', async ({ page }) => {
+    // Settings and Shader toolbar buttons should not exist on mobile
+    await expect(page.locator('.toolbar-btn:has-text("Settings")')).toBeHidden()
+    await expect(page.locator('.toolbar-btn:has-text("Shader")')).toBeHidden()
+
+    // Panels themselves should not be in the DOM
+    await expect(page.locator('.calibration-panel')).toHaveCount(0)
+    await expect(page.locator('.shader-panel')).toHaveCount(0)
+  })
 })

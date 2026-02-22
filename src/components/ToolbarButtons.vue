@@ -66,7 +66,7 @@ const displayModes = [
 
     <!-- Global controls — always visible -->
     <div class="toolbar-group">
-      <button class="toolbar-btn mobile-order-1" @click="store.togglePanel()">&#x2699; Settings</button>
+      <button v-if="!store.isMobile" class="toolbar-btn mobile-order-1" @click="store.togglePanel()">&#x2699; Settings</button>
       <button v-if="!store.isMobile" class="toolbar-btn" @click="toggleFullscreen">
         &#x26F6; {{ isFullscreen ? 'Exit FS' : 'Fullscreen' }}
       </button>
@@ -110,7 +110,7 @@ const displayModes = [
         </select>
         <Transition name="btn-fade">
           <button
-            v-if="store.cardDisplayMode === 'single'"
+            v-if="store.cardDisplayMode === 'single' && !store.isMobile"
             class="toolbar-btn mobile-order-2"
             @click="store.toggleShaderPanel()"
           >

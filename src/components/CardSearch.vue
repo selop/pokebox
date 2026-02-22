@@ -59,6 +59,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
 <template>
   <div ref="rootRef" class="card-search" @keydown="onKeydown">
     <div class="mobile-nav">
+      <template v-if="store.cardDisplayMode === 'stack'">
+        <button class="nav-btn" @click="store.cardDisplayMode = 'single'">&#x1F50D; Browse</button>
+        <span class="mobile-nav-sep" />
+      </template>
       <button class="nav-btn" @click="store.toggleBoosterModal()">&#x1F4E6; Packs</button>
       <template v-if="store.cardDisplayMode === 'single'">
         <span class="mobile-nav-sep" />
@@ -82,7 +86,13 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
         class="search-result"
         @click="selectCard(card.id)"
       >
-        <img :src="card.front" :alt="card.label" class="search-thumb" loading="lazy" crossorigin="anonymous" />
+        <img
+          :src="card.front"
+          :alt="card.label"
+          class="search-thumb"
+          loading="lazy"
+          crossorigin="anonymous"
+        />
         <span class="search-label">{{ card.label }}</span>
       </div>
       <div v-if="filtered.length === 0" class="search-empty">No cards found</div>

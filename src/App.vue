@@ -53,8 +53,8 @@ async function onEnableGyroscope() {
   <StatusIndicator v-if="store.isPanelOpen" />
   <TrackingData v-if="store.isPanelOpen && store.isTrackingActive" />
   <ToolbarButtons />
-  <CalibrationPanel />
-  <ShaderControlsPanel />
+  <CalibrationPanel v-if="!store.isMobile" />
+  <ShaderControlsPanel v-if="!store.isMobile" />
   <CardSearch v-if="store.cardDisplayMode !== 'carousel'" />
   <PerfOverlay />
   <BoosterPackModal />
