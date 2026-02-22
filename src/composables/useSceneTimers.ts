@@ -37,7 +37,7 @@ export function useSceneTimers(
     if (store.cardDisplayMode === 'carousel') {
       carouselInterval = setInterval(() => {
         store.advanceCarousel(1)
-      }, 4000)
+      }, 5500)
     }
   }
 
@@ -74,7 +74,7 @@ export function useSceneTimers(
         }
         carouselInterval = setInterval(() => {
           store.advanceCarousel(1)
-        }, 4000)
+        }, 5500)
       }
     },
   )

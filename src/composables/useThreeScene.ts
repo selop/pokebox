@@ -389,6 +389,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     if (store.cardDisplayMode === 'carousel') {
       // Carousel mode: smooth slide animation — lerp each card toward its target slot
       const peekSpeed = 1 - Math.pow(0.001, dt)
+      let frontMesh: Mesh | null = null
+      let frontAbsRotY = Infinity
       for (const mesh of meshes) {
         const target = mesh.userData.carouselTarget as
           | { x: number; y: number; z: number; rotY: number; scale: number }
@@ -408,6 +410,21 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         mesh.rotation.y += rotDiff * peekSpeed
         // Gentle tilt from head tracking
         mesh.rotation.x = tilt.state.rotateX * 0.3
+        // Track front card (smallest |rotY| = closest to viewer)
+        const absRotY = Math.abs(target.rotY)
+        if (absRotY < frontAbsRotY) {
+          frontAbsRotY = absRotY
+          frontMesh = mesh
+        }
+      }
+      // Float animation on the front (prime spot) card
+      if (frontMesh) {
+        const dims = store.dimensions
+        const amp = dims.screenH * 0.001
+        frontMesh.rotation.y += Math.sin(time * 0.7) * 0.025
+        frontMesh.rotation.x += Math.sin(time * 0.9 + 0.5) * 0.01
+        frontMesh.position.x += Math.sin(time * 1.9) * amp * 1.0
+        frontMesh.position.y += Math.sin(time * 1.4 + 1.0) * amp
       }
     } else if (store.cardDisplayMode === 'fan') {
       fanAnimator.tick(meshes, time, dt, tilt.state)
@@ -557,7 +574,12 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       store.cardTransform.rotY,
     ],
     () => {
-      if (store.cardDisplayMode === 'fan' || store.cardDisplayMode === 'carousel' || store.cardDisplayMode === 'stack') return
+      if (
+        store.cardDisplayMode === 'fan' ||
+        store.cardDisplayMode === 'carousel' ||
+        store.cardDisplayMode === 'stack'
+      )
+        return
       const meshes = cardMeshes.value
       if (!meshes.length) return
       const dims = store.dimensions
@@ -653,6 +675,25 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   onBeforeUnmount(() => {
     dispose()
   })
+
+  // Expose card mesh data for e2e test introspection (dev only)
+  if (import.meta.env.DEV) {
+    ;(window as Record<string, unknown>).__POKEBOX_DEBUG__ = {
+      getCardMeshes: () =>
+        cardMeshes.value.map((m) => ({
+          id: m.userData.cardId as string,
+          heroIndex: m.userData.carouselHeroIndex as number | undefined,
+          x: m.position.x,
+          y: m.position.y,
+          z: m.position.z,
+          scaleX: m.scale.x,
+          rotY: m.rotation.y,
+          target: m.userData.carouselTarget as
+            | { x: number; y: number; z: number; rotY: number; scale: number }
+            | undefined,
+        })),
+    }
+  }
 
   return { init, rebuildScene, dispose, gyroscope }
 }

@@ -18,8 +18,10 @@ export function useMouseTilt() {
   }
 
   let canvas: HTMLElement | null = null
+  let enabled = true
 
   function onPointerMove(e: PointerEvent) {
+    if (!enabled) return
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const nx = (e.clientX - rect.left) / rect.width
     const ny = 1 - (e.clientY - rect.top) / rect.height // Y-flipped for GL
@@ -32,6 +34,14 @@ export function useMouseTilt() {
   function onPointerLeave() {
     springs.rotateX.target = 0
     springs.rotateY.target = 0
+  }
+
+  function setEnabled(value: boolean): void {
+    enabled = value
+    if (!enabled) {
+      springs.rotateX.target = 0
+      springs.rotateY.target = 0
+    }
   }
 
   function update(dt: number): void {
@@ -55,5 +65,5 @@ export function useMouseTilt() {
     canvas = null
   }
 
-  return { state, update, attach, detach }
+  return { state, update, attach, detach, setEnabled }
 }

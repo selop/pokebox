@@ -16,8 +16,12 @@ export function updateShaderUniforms(
   cardSize: number,
 ): void {
   for (const mesh of meshes) {
-    if (!(mesh.material as ShaderMaterial).isShaderMaterial) continue
-    const u = (mesh.material as ShaderMaterial).uniforms
+    // Find the ShaderMaterial — either the sole material or the first one in an array
+    // (carousel cards use a material array with ShaderMaterial on the front face)
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+    const shaderMat = mats.find((m): m is ShaderMaterial => (m as ShaderMaterial).isShaderMaterial === true) as ShaderMaterial | undefined
+    if (!shaderMat) continue
+    const u = shaderMat.uniforms
     u['uTime']!.value = time
 
     // Eye-based shader uniforms (face tracking / keyboard)
@@ -35,7 +39,7 @@ export function updateShaderUniforms(
       cardDisplayMode === 'single' || cardDisplayMode === 'stack'
         ? singleCardSize
         : cardDisplayMode === 'carousel'
-          ? singleCardSize * 0.9
+          ? singleCardSize * 0.65
           : cardDisplayMode === 'fan'
             ? cardSize * 0.85
             : cardSize

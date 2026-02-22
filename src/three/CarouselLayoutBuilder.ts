@@ -1,5 +1,5 @@
-import { Mesh, PlaneGeometry } from 'three'
-import type { Scene } from 'three'
+import { BoxGeometry, Mesh, MeshBasicMaterial } from 'three'
+import type { Material, Scene } from 'three'
 import type { useAppStore } from '@/stores/app'
 import type { useCardLoader } from '@/composables/useCardLoader'
 import type { ShaderStyle } from '@/types'
@@ -30,44 +30,33 @@ export function computeCarouselSlot(
   boxD: number,
   screenW: number,
 ): CarouselSlotTarget {
-  // Fit outermost cards (slot ±2) inside the box.
-  const maxSpacing = (screenW / 2 - (0.55 * centerCardW) / 2) / 2
-  const idealSpacing = centerCardW * 0.75
-  const spacing = Math.min(idealSpacing, maxSpacing)
+  // Elliptical merry-go-round: all cards placed on a ring in the XZ plane.
+  const radiusX = screenW * 0.4
+  const radiusZ = boxD * 0.25
+  const ellipseCenterZ = baseZ - radiusZ // front card sits at baseZ
 
-  // Compute offset from center (-N/2 .. +N/2, wrapping)
-  let offset = heroIndex - centerIndex
-  const half = Math.floor(totalCards / 2)
-  if (offset > half) offset -= totalCards
-  if (offset < -half) offset += totalCards
+  // Angle for this card relative to center (front = 0, wraps around)
+  let theta = ((2 * Math.PI) / totalCards) * (heroIndex - centerIndex)
+  // Normalize to [-PI, PI]
+  while (theta > Math.PI) theta -= 2 * Math.PI
+  while (theta < -Math.PI) theta += 2 * Math.PI
 
-  // Visible range: -2 to +2. Cards outside are hidden off-screen.
-  const absOffset = Math.abs(offset)
-  if (absOffset > 2) {
-    const sign = offset > 0 ? 1 : -1
-    return {
-      x: sign * (screenW / 2 + centerCardW * 0.3),
-      y: baseY,
-      z: baseZ - boxD * 0.5,
-      rotY: (sign * (-70 * Math.PI)) / 180,
-      scale: 0.3,
-      renderOrder: 5,
-    }
-  }
+  const x = Math.sin(theta) * radiusX
+  const z = ellipseCenterZ + Math.cos(theta) * radiusZ
+  const rotY = theta // face outward from ring
 
-  // Slot parameters for visible positions
-  const slotScale = [0.55, 0.75, 1.0, 0.75, 0.55][offset + 2]!
-  const slotRotDeg = [50, 25, 0, -25, -50][offset + 2]!
-  const slotZFrac = [-0.35, -0.18, 0, -0.18, -0.35][offset + 2]!
-  const slotOrder = [8, 9, 10, 9, 8][offset + 2]!
+  // Depth-based scale: 1.0 at front (cos=1), 0.35 at back (cos=-1)
+  const depthFraction = (Math.cos(theta) + 1) / 2
+  const scale = 0.35 + 0.65 * depthFraction
+  const renderOrder = Math.round(5 + 5 * depthFraction)
 
   return {
-    x: offset * spacing,
+    x,
     y: baseY,
-    z: baseZ + slotZFrac * boxD,
-    rotY: (slotRotDeg * Math.PI) / 180,
-    scale: slotScale,
-    renderOrder: slotOrder,
+    z,
+    rotY,
+    scale,
+    renderOrder,
   }
 }
 
@@ -99,8 +88,8 @@ export function buildCarouselLayout(
   const ids = store.displayCardIds
   if (ids.length === 0) return meshes
 
-  // Card sizing — center card uses singleCardSize * 0.9
-  const centerCardH = dims.screenH * store.singleCardSize * 0.9
+  // Card sizing — center card uses singleCardSize * 0.65 (smaller for merry-go-round fit)
+  const centerCardH = dims.screenH * store.singleCardSize * 0.65
   const centerCardW = centerCardH * CARD_ASPECT
 
   const baseY = (store.cardTransform.y / 100) * dims.screenH
@@ -125,7 +114,7 @@ export function buildCarouselLayout(
       tex.card,
       tex.mask,
       tex.foil,
-      { ...store.config, cardSize: store.singleCardSize * 0.9 },
+      { ...store.config, cardSize: store.singleCardSize * 0.65 },
       effectiveShader,
       iriTextures,
       birthdayTextures,
@@ -135,9 +124,15 @@ export function buildCarouselLayout(
       sparkleIriTextures,
     )
 
-    // Replace geometry with center card size (scale handles per-slot sizing)
+    // Replace geometry with a thin box so cards have visible thickness on the ring
+    const cardDepth = centerCardH * 0.003
+    const frontMat = mesh.material as Material
+    const edgeMat = new MeshBasicMaterial({ color: 0xd4d0c8 })
+    const backMat = new MeshBasicMaterial({ map: cardBackTexture ?? null })
     mesh.geometry.dispose()
-    mesh.geometry = new PlaneGeometry(centerCardW, centerCardH)
+    mesh.geometry = new BoxGeometry(centerCardW, centerCardH, cardDepth)
+    // BoxGeometry groups: 0=+x, 1=-x, 2=+y, 3=-y, 4=+z(front), 5=-z(back)
+    mesh.material = [edgeMat, edgeMat, edgeMat, edgeMat, frontMat, backMat]
 
     mesh.castShadow = true
     mesh.userData.carouselHeroIndex = i
@@ -171,15 +166,12 @@ export function buildCarouselLayout(
  * Update carousel slot targets on existing meshes when carouselIndex changes.
  * Called from useThreeScene's carouselIndex watcher — no rebuild needed.
  */
-export function updateCarouselTargets(
-  meshes: Mesh[],
-  store: ReturnType<typeof useAppStore>,
-): void {
+export function updateCarouselTargets(meshes: Mesh[], store: ReturnType<typeof useAppStore>): void {
   const dims = store.dimensions
   const catalog = store.carouselHeroCatalog
   if (catalog.length === 0) return
 
-  const centerCardH = dims.screenH * store.singleCardSize * 0.9
+  const centerCardH = dims.screenH * store.singleCardSize * 0.65
   const centerCardW = centerCardH * CARD_ASPECT
   const baseY = (store.cardTransform.y / 100) * dims.screenH
   const baseZ = -(store.cardTransform.z / 100) * dims.boxD
