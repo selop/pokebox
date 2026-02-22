@@ -30,6 +30,8 @@ interface FanUnzoomTransition {
 
 const FAN_ZOOM_DURATION = 1.2
 const ACTIVATION_DURATION = 2.0
+/** Seconds for the holo effect to blend in after the activation reveal finishes. */
+const HOLO_BLEND_DURATION = 0.5
 /** Z offset (toward viewer) for the zoomed card, in scene units (cm). */
 const ZOOMED_Z_OFFSET = 4
 /** Fraction of the zoom duration spent on the initial slide-out phase. */
@@ -415,6 +417,29 @@ export class FanAnimator {
       }
       if (progress >= 1.0) {
         this.cardSceneBuilder.upgradeFanCardShader(mesh)
+        // Start holo blend-in: zero-out holo intensity so it matches the plain card
+        // the activation shader was showing, then animate it up.
+        const newMat = mesh.material as ShaderMaterial
+        if (newMat.isShaderMaterial && newMat.uniforms['uCardOpacity']) {
+          newMat.uniforms['uCardOpacity']!.value = 0
+        }
+        mesh.userData.activationState = 'blending'
+        mesh.userData.blendStartTime = time
+      }
+    }
+
+    // ── Blend-in holo effect after shader upgrade ──
+    for (const mesh of meshes) {
+      if (mesh.userData.activationState !== 'blending') continue
+      const blendStart = mesh.userData.blendStartTime as number
+      const t = Math.min((time - blendStart) / HOLO_BLEND_DURATION, 1.0)
+      // Ease-out quad: fast appearance then gentle settle
+      const ease = 1 - (1 - t) * (1 - t)
+      const mat = mesh.material as ShaderMaterial
+      if (mat.isShaderMaterial && mat.uniforms['uCardOpacity']) {
+        mat.uniforms['uCardOpacity']!.value = store.config.holoIntensity * ease
+      }
+      if (t >= 1.0) {
         mesh.userData.activationState = 'done'
       }
     }
