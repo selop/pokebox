@@ -14,7 +14,7 @@ Pokebox uses your webcam to track your head position and renders realistic holog
 
 <div align="center">
 
-https://github.com/user-attachments/assets/0ba49c13-38ee-443e-ac0a-128c02c3e87e
+https://github.com/user-attachments/assets/4bd75b1f-04c3-4bf0-a1fa-ba6c4b2531fb
 
 </div>
 
