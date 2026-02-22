@@ -76,6 +76,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
       class="search-input"
       type="text"
       :placeholder="`Search in ${currentSetLabel}...`"
+      :disabled="store.cardDisplayMode === 'stack'"
       autocomplete="off"
       @focus="onFocus"
     />
@@ -127,6 +128,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
 
 .search-input::placeholder {
   color: #666;
+}
+
+.search-input:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .search-input:focus {

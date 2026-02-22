@@ -19,18 +19,36 @@ function onDisplayModeChange(e: Event) {
   store.cardDisplayMode = (e.target as HTMLSelectElement).value as 'single' | 'fan' | 'carousel' | 'stack'
 }
 
+async function copyToClipboard(url: string) {
+  try {
+    await navigator.clipboard.writeText(url)
+  } catch {
+    // Clipboard API blocked (e.g. PWA standalone) — legacy fallback
+    const ta = document.createElement('textarea')
+    ta.value = url
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+  }
+  shareToast.value = true
+  setTimeout(() => (shareToast.value = false), 2000)
+}
+
 async function shareCard() {
   const url = store.shareUrl()
   if (navigator.share) {
     try {
       await navigator.share({ title: 'Pokebox', url })
-    } catch {
-      /* user cancelled share sheet */
+    } catch (err) {
+      // User cancelled — do nothing; any other error — fall back to clipboard
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      await copyToClipboard(url)
     }
   } else {
-    await navigator.clipboard.writeText(url)
-    shareToast.value = true
-    setTimeout(() => (shareToast.value = false), 2000)
+    await copyToClipboard(url)
   }
 }
 
@@ -288,6 +306,9 @@ const displayModes = [
 .btn-fade-leave-to {
   opacity: 0;
   transform: scale(0.92);
+}
+.btn-fade-leave-active {
+  pointer-events: none;
 }
 
 .nav-hint {

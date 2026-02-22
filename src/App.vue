@@ -56,7 +56,7 @@ async function onEnableGyroscope() {
   <ToolbarButtons />
   <CalibrationPanel v-if="!store.isMobile" />
   <ShaderControlsPanel v-if="!store.isMobile" />
-  <CardSearch v-if="store.cardDisplayMode !== 'carousel'" />
+  <CardSearch v-if="store.cardDisplayMode === 'single' || (store.isMobile && store.cardDisplayMode === 'stack')" />
   <PerfOverlay />
   <ToastContainer />
   <BoosterPackModal />

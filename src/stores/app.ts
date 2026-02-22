@@ -309,6 +309,7 @@ export const useAppStore = defineStore('app', () => {
   function openPack(setId: string) {
     if (packOpeningPhase.value !== 'idle') return
     packOpeningPhase.value = 'css-anim'
+    isSlideshowActive.value = false
 
     // Stack mode on mobile, fan mode on desktop; refresh seed for new random cards
     cardDisplayMode.value = isMobile ? 'stack' : 'fan'

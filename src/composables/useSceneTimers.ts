@@ -21,12 +21,19 @@ export function useSceneTimers(
         clearInterval(slideshowInterval)
         slideshowInterval = null
       }
-      if (active) {
+      if (active && store.cardDisplayMode === 'single') {
         slideshowInterval = setInterval(() => {
+          if (store.cardDisplayMode !== 'single') {
+            clearInterval(slideshowInterval!)
+            slideshowInterval = null
+            store.isSlideshowActive = false
+            return
+          }
           cardNavigator.navigate(1)
         }, 3000)
       }
     },
+    { flush: 'sync' },
   )
 
   function resetCarouselTimer() {
