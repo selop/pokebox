@@ -1,8 +1,16 @@
+<div align="center">
+  <img src="public/favicon-96x96.png" alt="Pokebox icon" width="96" height="96">
+</div>
+
 # pokebox
 
 Pokebox uses your webcam to track your head position and renders realistic holographic card effects that shift as you move — as if you're peering through a window into a box of shiny cards. Enjoy the holo foil effect!
 
+<div align="center">
+
 **Try it live:** [pokebox.lopatkin.net](https://pokebox.lopatkin.net)
+
+</div>
 
 <div align="center">
 
@@ -88,9 +96,11 @@ bun dev
 ```
 
 > **Tip:** The dev server runs on HTTP by default. Browsers require a secure context (HTTPS) for camera access. `localhost` is treated as secure by most browsers, so camera access works out of the box. If you access the dev server from another device on your network (e.g. via LAN IP), you'll need HTTPS. Add `@vitejs/plugin-basic-ssl` to enable it:
+>
 > ```sh
 > bun add -d @vitejs/plugin-basic-ssl
 > ```
+>
 > Then add `basicSsl()` to the `plugins` array in `vite.config.ts`.
 
 ### Type-Check, Compile and Minify for Production
