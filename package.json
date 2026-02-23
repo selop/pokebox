@@ -51,6 +51,7 @@
     "@tsconfig/node24": "^24.0.4",
     "@types/node": "^24.10.9",
     "@types/three": "^0.182.0",
+    "@vitejs/plugin-basic-ssl": "^2.1.4",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/test-utils": "^2.4.6",
