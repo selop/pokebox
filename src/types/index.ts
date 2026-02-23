@@ -18,6 +18,8 @@ export interface SceneConfig {
   cardSpinSpeed: number
   nearPlane: number
   farPlane: number
+  webcamOffsetX: number // cm offset of webcam from screen centre (positive = right)
+  webcamOffsetY: number // cm offset of webcam from screen centre (positive = up)
   lights: LightConfig
 }
 

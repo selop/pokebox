@@ -113,6 +113,24 @@ function formatValue(v: number): string {
           <span class="cal-value">{{ formatValue(store.config.smoothing) }}</span>
         </div>
       </div>
+      <div class="cal-row">
+        <span class="cal-label">Cam offset X</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="-30" max="30" step="0.5"
+            :value="store.config.webcamOffsetX"
+            @input="onConfigSlider('webcamOffsetX', ($event.target as HTMLInputElement).value, false)" />
+          <span class="cal-value">{{ formatValue(store.config.webcamOffsetX) }}</span>
+        </div>
+      </div>
+      <div class="cal-row">
+        <span class="cal-label">Cam offset Y</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="-30" max="30" step="0.5"
+            :value="store.config.webcamOffsetY"
+            @input="onConfigSlider('webcamOffsetY', ($event.target as HTMLInputElement).value, false)" />
+          <span class="cal-value">{{ formatValue(store.config.webcamOffsetY) }}</span>
+        </div>
+      </div>
     </div>
 
     <!-- Lighting -->

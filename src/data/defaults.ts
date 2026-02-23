@@ -13,6 +13,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   cardSpinSpeed: 0,
   nearPlane: 5,
   farPlane: 100000,
+  webcamOffsetX: 0,
+  webcamOffsetY: 0,
   lights: {
     ambientIntensity: 0.4,
     directionalIntensity: 2.4,

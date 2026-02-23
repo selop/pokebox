@@ -22,6 +22,27 @@ interface FaceDetectionResults {
   }>
 }
 
+/** Convert normalised face coordinates to world-space eye position. */
+export function faceToWorldPosition(
+  fx: number,
+  fy: number,
+  faceW: number,
+  screenW: number,
+  screenH: number,
+  eyeDefaultZ: number,
+  movementScale: number,
+  webcamOffsetX: number,
+  webcamOffsetY: number,
+  nearPlane: number,
+): { x: number; y: number; z: number } {
+  const x = -(fx - 0.5) * screenW * movementScale + webcamOffsetX
+  const y = -(fy - 0.5) * screenH * movementScale + webcamOffsetY
+  const refFaceW = 0.25
+  const depthScale = refFaceW / Math.max(faceW, 0.05)
+  const z = Math.max(eyeDefaultZ * depthScale, nearPlane + 1)
+  return { x, y, z }
+}
+
 export function useFaceTracking(videoRef: Ref<HTMLVideoElement | null>) {
   const store = useAppStore()
   let faceDetector: FaceDetection | null = null
@@ -88,16 +109,17 @@ export function useFaceTracking(videoRef: Ref<HTMLVideoElement | null>) {
     }
 
     const dims = store.dimensions
-    const headXWorld = -(fx - 0.5) * dims.screenW * store.config.movementScale
-    const headYWorld = -(fy - 0.5) * dims.screenH * store.config.movementScale
+    const pos = faceToWorldPosition(
+      fx, fy, faceW,
+      dims.screenW, dims.screenH, dims.eyeDefaultZ,
+      store.config.movementScale,
+      store.config.webcamOffsetX, store.config.webcamOffsetY,
+      store.config.nearPlane,
+    )
 
-    const refFaceW = 0.25
-    const depthScale = refFaceW / Math.max(faceW, 0.05)
-    const headZWorld = dims.eyeDefaultZ * depthScale
-
-    store.targetEye.x = headXWorld
-    store.targetEye.y = headYWorld
-    store.targetEye.z = Math.max(headZWorld, store.config.nearPlane + 1)
+    store.targetEye.x = pos.x
+    store.targetEye.y = pos.y
+    store.targetEye.z = pos.z
   }
 
   function stop() {
