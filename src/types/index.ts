@@ -3,6 +3,10 @@ export interface LightConfig {
   directionalIntensity: number
   backlightIntensity: number
   spotlightIntensity: number
+  spotlightX: number
+  spotlightY: number
+  spotlightAngle: number
+  spotlightPenumbra: number
 }
 
 export interface SceneConfig {

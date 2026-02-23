@@ -3,7 +3,9 @@ import {
   DoubleSide,
   Mesh,
   MeshBasicMaterial,
+  MeshDepthMaterial,
   PlaneGeometry,
+  RGBADepthPacking,
   RGBAFormat,
   ShaderMaterial,
   UnsignedByteType,
@@ -152,7 +154,7 @@ export function buildCardMesh(
     uniforms.uBirthdayDank2Tex = { value: birthdayTextures?.dank2 ?? blackPixel }
   }
 
-  return new Mesh(
+  const mesh = new Mesh(
     cardGeo,
     new ShaderMaterial({
       uniforms,
@@ -162,6 +164,8 @@ export function buildCardMesh(
       transparent: true,
     }),
   )
+  mesh.customDepthMaterial = new MeshDepthMaterial({ depthPacking: RGBADepthPacking })
+  return mesh
 }
 
 export function buildActivationMaterial(

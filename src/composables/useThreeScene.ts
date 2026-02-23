@@ -44,6 +44,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let camera: PerspectiveCamera | null = null
   let animationId: number | null = null
   let lastTime = performance.now() * 0.001
+  let dimStartTime = 0
+  let wasDimmed = false
 
   // Card state
   const cardMeshes = shallowRef<Mesh[]>([])
@@ -406,13 +408,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Update off-axis camera
     updateOffAxisCamera(store.eyePos.x, store.eyePos.y, store.eyePos.z)
 
-    // Update head-tracked spotlight position
+    // Spotlight (fixed position — intensity updated below)
     const spotlight = scene.getObjectByName('headSpotlight') as SpotLight | undefined
-    if (spotlight) {
-      spotlight.position.set(store.eyePos.x * 0.8, store.eyePos.y * 0.8, store.eyePos.z * 0.6)
-      spotlight.target.position.set(0, 0, -store.dimensions.boxD * 0.5)
-      spotlight.target.updateMatrixWorld()
-    }
 
     // Update tilt springs (gyroscope or mouse)
     const tilt = gyroscope.isActive.value ? gyroscope : mouseTilt
@@ -533,10 +530,58 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       back.intensity += (targetB - back.intensity) * dimRate
     }
 
-    // Update spotlight intensity from config
+    // Track dim transition for candle stagger timing
+    if (store.isDimmed && !wasDimmed) dimStartTime = time
+    wasDimmed = store.isDimmed
+
+    // Animate candle lights + flames (staggered on, together off, with flicker)
+    for (let i = 0; i < 5; i++) {
+      const candle = scene.getObjectByName(`candle${i}`) as PointLight | undefined
+      const flame = scene.getObjectByName(`candleFlame${i}`) as Mesh | undefined
+      if (!candle) continue
+      if (store.isDimmed) {
+        const elapsed = time - dimStartTime
+        const delay = i * 0.3
+        const baseTarget = elapsed > delay ? 0.8 : 0
+        const flicker = baseTarget * (0.9 + 0.1 * Math.sin(time * (3 + i * 0.7)))
+        candle.intensity += (flicker - candle.intensity) * dimRate
+        // Flame visibility + wobble
+        if (flame) {
+          const targetOpacity = baseTarget > 0 ? 0.9 : 0
+          const mat = flame.material as { opacity: number }
+          mat.opacity += (targetOpacity - mat.opacity) * dimRate
+          const scaleFlicker = 0.85 + 0.15 * Math.sin(time * (4 + i * 1.1))
+          flame.scale.set(scaleFlicker, 0.9 + 0.2 * Math.sin(time * (3.5 + i * 0.9)), scaleFlicker)
+        }
+      } else {
+        candle.intensity += (0 - candle.intensity) * dimRate
+        if (flame) {
+          const mat = flame.material as { opacity: number }
+          mat.opacity += (0 - mat.opacity) * dimRate
+        }
+      }
+    }
+
+    // Update spotlight from config
     if (spotlight) {
-      spotlight.intensity +=
-        (store.config.lights.spotlightIntensity - spotlight.intensity) * dimRate
+      const targetSpot = store.isDimmed ? 0 : store.config.lights.spotlightIntensity
+      spotlight.intensity += (targetSpot - spotlight.intensity) * dimRate
+      const { screenW, screenH, boxD } = store.dimensions
+      const spotX = store.config.lights.spotlightX
+      const spotY = store.config.lights.spotlightY
+      spotlight.position.set(
+        (screenW / 2) * spotX,
+        (screenH / 2) * spotY,
+        boxD * 0.1,
+      )
+      spotlight.target.position.set(
+        -(screenW / 2) * spotX * 0.4,
+        -(screenH / 2) * spotY * 0.2,
+        -boxD * 0.6,
+      )
+      spotlight.target.updateMatrixWorld()
+      spotlight.angle = (store.config.lights.spotlightAngle * Math.PI) / 180
+      spotlight.penumbra = store.config.lights.spotlightPenumbra
     }
 
     renderer.render(scene, camera)

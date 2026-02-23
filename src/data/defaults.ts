@@ -16,10 +16,14 @@ export const DEFAULT_CONFIG: AppConfig = {
   webcamOffsetX: 0,
   webcamOffsetY: 0,
   lights: {
-    ambientIntensity: 0.4,
-    directionalIntensity: 2.4,
-    backlightIntensity: 1.6,
-    spotlightIntensity: 1.4,
+    ambientIntensity: 0.1,
+    directionalIntensity: 1.3,
+    backlightIntensity: 10.0,
+    spotlightIntensity: 1.3,
+    spotlightX: 0.4,
+    spotlightY: 1.0,
+    spotlightAngle: 48,
+    spotlightPenumbra: 1.0,
   },
   shaders: {
     illustrationRare: {
