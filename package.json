@@ -1,6 +1,6 @@
 {
   "name": "pokebox",
-  "version": "1.0.0-RC1",
+  "version": "1.0.2",
   "private": true,
   "description": "Vue 3 + Three.js Pokemon card viewer with real-time holographic effects and head tracking",
   "author": "Sergej Lopatkin",
