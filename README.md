@@ -3,18 +3,22 @@
 </div>
 
 # pokebox
-
 Pokebox uses your webcam to track your head position and renders realistic holographic card effects that shift as you move — as if you're peering through a window into a box of shiny cards. Enjoy the holo foil effect!
 
 <div align="center">
 
-**Try it live:** [pokebox.lopatkin.net](https://pokebox.lopatkin.net)
+# **Demo available on:** [pokebox.lopatkin.net](https://pokebox.lopatkin.net)
 
 </div>
 
 <div align="center">
 
-https://github.com/user-attachments/assets/4bd75b1f-04c3-4bf0-a1fa-ba6c4b2531fb
+[Pokebox on Laptop](https://github.com/user-attachments/assets/6ac01c22-1570-453a-88ae-3e5892bd267f)
+
+[Example cards](https://github.com/user-attachments/assets/e2ea80e1-5a86-40e9-b6ac-8b29512e21e6)
+
+[Holo Foil Layers](https://github.com/user-attachments/assets/00cae60f-aeaa-4cb8-8d94-71d8756a8539)
+
 
 </div>
 
