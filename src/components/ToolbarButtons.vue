@@ -65,9 +65,8 @@ const displayModes = [
 
 <template>
   <div class="toolbar">
-    <div class="mobile-row-break" />
-    <!-- Set & card selector -->
-    <div class="toolbar-group">
+    <!-- Zone Left: Navigation -->
+    <div class="zone zone-left">
       <select
         v-if="store.cardDisplayMode === 'single'"
         class="toolbar-select card-select mobile-order-1"
@@ -82,32 +81,34 @@ const displayModes = [
       <span v-if="store.setLoading" class="toolbar-loading">Loading...</span>
       <button
         class="toolbar-btn mobile-order-5 mobile-hide-packs"
+        title="Open Booster Packs"
         @click="store.toggleBoosterModal()"
       >
         &#x1F4E6; Packs
       </button>
-    </div>
-
-    <span class="toolbar-sep" />
-
-    <!-- Global controls — always visible -->
-    <div class="toolbar-group">
-      <button
-        v-if="!store.isMobile"
-        class="toolbar-btn mobile-order-1"
-        @click="store.togglePanel()"
+      <select
+        v-if="store.sceneMode === 'cards' && !store.isMobile"
+        class="toolbar-select"
+        :value="store.cardDisplayMode"
+        @change="onDisplayModeChange"
       >
-        &#x2699; Settings
-      </button>
-      <button v-if="!store.isMobile" class="toolbar-btn" @click="toggleFullscreen">
-        &#x26F6; {{ isFullscreen ? 'Exit FS' : 'Fullscreen' }}
+        <option v-for="mode in displayModes" :key="mode.value" :value="mode.value">
+          {{ mode.label }}
+        </option>
+      </select>
+      <button
+        v-if="store.sceneMode === 'furniture'"
+        class="toolbar-btn"
+        @click="store.randomizeSeed()"
+      >
+        &#x26A1; Randomize Interior
       </button>
     </div>
 
-    <span class="toolbar-sep" />
+    <div class="mobile-row-break" />
 
-    <!-- Render controls -->
-    <div class="toolbar-group">
+    <!-- Zone Right: View & Settings -->
+    <div class="zone zone-right">
       <button
         class="toolbar-btn mobile-order-3"
         :class="{ accent: store.renderMode === 'solid' }"
@@ -125,74 +126,64 @@ const displayModes = [
           {{ store.isDimmed ? '&#x2600; Brighten' : '&#x263E; Dim' }}
         </button>
       </Transition>
+      <span class="toolbar-sep" />
+      <button
+        v-if="!store.isMobile"
+        class="toolbar-btn toolbar-btn--icon"
+        :title="isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'"
+        @click="toggleFullscreen"
+      >
+        &#x26F6;
+      </button>
+      <button
+        v-if="!store.isMobile"
+        class="toolbar-btn toolbar-btn--icon"
+        title="Settings"
+        @click="store.togglePanel()"
+      >
+        &#x2699;
+      </button>
+      <Transition name="btn-fade">
+        <button
+          v-if="
+            store.sceneMode === 'cards' &&
+            store.cardDisplayMode === 'single' &&
+            !store.isMobile
+          "
+          class="toolbar-btn toolbar-btn--icon mobile-order-2"
+          title="Shader Controls"
+          @click="store.toggleShaderPanel()"
+        >
+          &#x2726;
+        </button>
+      </Transition>
     </div>
 
-    <!-- Card-mode controls -->
-    <template v-if="store.sceneMode === 'cards'">
-      <span class="toolbar-sep" />
-
-      <div class="toolbar-group">
-        <select
-          v-if="!store.isMobile"
-          class="toolbar-select"
-          :value="store.cardDisplayMode"
-          @change="onDisplayModeChange"
+    <!-- Zone Bottom: Card actions -->
+    <Transition name="zone-fade">
+      <div
+        v-if="store.sceneMode === 'cards' && store.cardDisplayMode === 'single'"
+        class="zone zone-bottom"
+      >
+        <button
+          class="toolbar-btn mobile-order-6"
+          :class="{ accent: store.isSlideshowActive }"
+          @click="store.toggleSlideshow()"
         >
-          <option v-for="mode in displayModes" :key="mode.value" :value="mode.value">
-            {{ mode.label }}
-          </option>
-        </select>
-        <Transition name="btn-fade">
-          <button
-            v-if="store.cardDisplayMode === 'single' && !store.isMobile"
-            class="toolbar-btn mobile-order-2"
-            @click="store.toggleShaderPanel()"
-          >
-            &#x2699; Shader
-          </button>
-        </Transition>
-        <Transition name="btn-fade">
-          <button
-            v-if="store.cardDisplayMode === 'single'"
-            class="toolbar-btn mobile-order-6"
-            :class="{ accent: store.isSlideshowActive }"
-            @click="store.toggleSlideshow()"
-          >
-            {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
-          </button>
-        </Transition>
-        <Transition name="btn-fade">
-          <button
-            v-if="store.cardDisplayMode === 'single'"
-            class="toolbar-btn mobile-order-8"
-            :class="{ accent: store.isIdleFloatActive }"
-            @click="store.toggleIdleFloat()"
-          >
-            {{ store.isIdleFloatActive ? '&#x2693; Anchor' : '&#x2601; Float' }}
-          </button>
-        </Transition>
-        <Transition name="btn-fade">
-          <button
-            v-if="store.cardDisplayMode === 'single'"
-            class="toolbar-btn mobile-order-9"
-            @click="shareCard"
-          >
-            &#x1F517; Share
-          </button>
-        </Transition>
-      </div>
-    </template>
-
-    <!-- Furniture-mode controls -->
-    <template v-if="store.sceneMode === 'furniture'">
-      <span class="toolbar-sep" />
-
-      <div class="toolbar-group">
-        <button class="toolbar-btn" @click="store.randomizeSeed()">
-          &#x26A1; Randomize Interior
+          {{ store.isSlideshowActive ? '&#x23F9; Stop' : '&#x25B6; Slideshow' }}
+        </button>
+        <button
+          class="toolbar-btn mobile-order-8"
+          :class="{ accent: store.isIdleFloatActive }"
+          @click="store.toggleIdleFloat()"
+        >
+          {{ store.isIdleFloatActive ? '&#x2693; Anchor' : '&#x2601; Float' }}
+        </button>
+        <button class="toolbar-btn mobile-order-9" @click="shareCard">
+          &#x1F517; Share
         </button>
       </div>
-    </template>
+    </Transition>
   </div>
 
   <Transition name="toast-fade">
@@ -216,20 +207,35 @@ const displayModes = [
 </template>
 
 <style scoped>
+/* Desktop: toolbar is transparent, zones are independently positioned */
 .toolbar {
+  display: contents;
+}
+
+.zone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 60;
+}
+
+.zone-left {
   position: fixed;
   top: 16px;
   left: 16px;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
-.toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.zone-right {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+}
+
+.zone-bottom {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .toolbar-sep {
@@ -260,6 +266,12 @@ const displayModes = [
   transition:
     border-color 0.2s,
     color 0.2s;
+}
+
+.toolbar-btn--icon {
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  line-height: 1;
 }
 
 .toolbar-select {
@@ -346,6 +358,22 @@ const displayModes = [
   pointer-events: none;
 }
 
+/* fade + slide-up transition for bottom zone */
+.zone-fade-enter-active,
+.zone-fade-leave-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+.zone-fade-enter-from,
+.zone-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+}
+.zone-fade-leave-active {
+  pointer-events: none;
+}
+
 .nav-hint {
   position: fixed;
   bottom: 20px;
@@ -375,7 +403,7 @@ const displayModes = [
 
 .share-toast {
   position: fixed;
-  bottom: 80px;
+  bottom: 130px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
@@ -406,12 +434,16 @@ const displayModes = [
 
 @media (max-width: 768px) {
   .toolbar {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    display: flex;
     flex-wrap: wrap;
     max-width: calc(100vw - 32px);
     gap: 4px;
   }
 
-  .toolbar-group {
+  .zone {
     display: contents;
   }
 
@@ -423,6 +455,11 @@ const displayModes = [
   .toolbar-select {
     padding: 6px 8px;
     font-size: 0.58rem;
+  }
+
+  .toolbar-btn--icon {
+    padding: 6px 8px;
+    font-size: 0.7rem;
   }
 
   .toolbar-select {
