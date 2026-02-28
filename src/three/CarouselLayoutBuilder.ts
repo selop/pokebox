@@ -79,6 +79,7 @@ export function buildCarouselLayout(
     sparkleIriTextures: ReturnType<CardLoaderInstance['getSparkleIriTextures']>
     glitterTexture: ReturnType<CardLoaderInstance['getGlitterTexture']>
     noiseTexture: ReturnType<CardLoaderInstance['getNoiseTexture']>
+    grainTexture: ReturnType<CardLoaderInstance['getGrainTexture']>
     cardBackTexture: ReturnType<CardLoaderInstance['getCardBackTexture']>
   },
   getEffectiveShaderForHero: (compoundId: string) => ShaderStyle,
@@ -106,6 +107,7 @@ export function buildCarouselLayout(
       sparkleIriTextures,
       glitterTexture,
       noiseTexture,
+      grainTexture,
       cardBackTexture,
     } = resolveExtraTextures(loader, effectiveShader)
 
@@ -122,6 +124,7 @@ export function buildCarouselLayout(
       noiseTexture,
       cardBackTexture,
       sparkleIriTextures,
+      grainTexture,
     )
 
     // Replace geometry with a thin box so cards have visible thickness on the ring

@@ -39,6 +39,7 @@ export function useCardLoader(renderer: WebGLRenderer) {
   let birthdayTextures: BirthdayTextures | null = null
   let glitterTexture: Texture | null = null
   let noiseTexture: Texture | null = null
+  let grainTexture: Texture | null = null
   let cardBackTexture: Texture | null = null
 
   function clearCache(): void {
@@ -403,6 +404,33 @@ export function useCardLoader(renderer: WebGLRenderer) {
     return noiseTexture
   }
 
+  function loadGrainTexture(): Promise<Texture | null> {
+    if (grainTexture) return Promise.resolve(grainTexture)
+
+    const store = useAppStore()
+    return new Promise<Texture | null>((resolve) => {
+      loader.load(
+        'img/grain.webp',
+        (tex) => {
+          applyFilters(tex)
+          tex.wrapS = tex.wrapT = 1000 // RepeatWrapping
+          grainTexture = tex
+          resolve(grainTexture)
+        },
+        undefined,
+        () => {
+          console.warn('[useCardLoader] Failed to load texture: grain.webp')
+          store.addToast('Texture "grain.webp" could not be loaded')
+          resolve(null)
+        },
+      )
+    })
+  }
+
+  function getGrainTexture(): Texture | null {
+    return grainTexture
+  }
+
   function loadCardBackTexture(): Promise<Texture | null> {
     if (cardBackTexture) return Promise.resolve(cardBackTexture)
 
@@ -446,6 +474,8 @@ export function useCardLoader(renderer: WebGLRenderer) {
     getGlitterTexture,
     loadNoiseTexture,
     getNoiseTexture,
+    loadGrainTexture,
+    getGrainTexture,
     loadCardBackTexture,
     getCardBackTexture,
   }

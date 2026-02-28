@@ -33,9 +33,16 @@ describe('mapHoloType', () => {
     expect(mapHoloType('DOUBLE_RARE', 'SUN_PILLAR', 'HOLO')).toBe('double-rare')
   })
 
-  it('returns illustration-rare for DOUBLE_RARE + non-SUN_PILLAR', () => {
+  it('returns illustration-rare for DOUBLE_RARE + non-SUN_PILLAR (non-FLAT_SILVER)', () => {
     expect(mapHoloType('DOUBLE_RARE', 'SV_HOLO', 'HOLO')).toBe('illustration-rare')
-    expect(mapHoloType('DOUBLE_RARE', 'FLAT_SILVER', 'REVERSE')).toBe('illustration-rare')
+  })
+
+  it('returns flatsilver-reverse for FLAT_SILVER + REVERSE (any rarity)', () => {
+    expect(mapHoloType('DOUBLE_RARE', 'FLAT_SILVER', 'REVERSE')).toBe('flatsilver-reverse')
+    expect(mapHoloType('RARE', 'FLAT_SILVER', 'REVERSE')).toBe('flatsilver-reverse')
+    expect(mapHoloType('COMMON', 'FLAT_SILVER', 'REVERSE')).toBe('flatsilver-reverse')
+    expect(mapHoloType('UNCOMMON', 'FLAT_SILVER', 'REVERSE')).toBe('flatsilver-reverse')
+    expect(mapHoloType('PROMO', 'FLAT_SILVER', 'REVERSE')).toBe('flatsilver-reverse')
   })
 
   it('returns illustration-rare for ILLUSTRATION_RARE', () => {
@@ -46,22 +53,17 @@ describe('mapHoloType', () => {
     expect(mapHoloType('RARE', 'SV_HOLO', 'HOLO')).toBe('regular-holo')
   })
 
-  it('returns reverse-holo for RARE + non-SV_HOLO', () => {
-    expect(mapHoloType('RARE', 'FLAT_SILVER', 'REVERSE')).toBe('reverse-holo')
+  it('returns null for RARE + unmapped foil type', () => {
+    expect(mapHoloType('RARE', 'SUN_PILLAR', 'HOLO')).toBeNull()
   })
 
-  it('returns reverse-holo for COMMON and UNCOMMON', () => {
-    expect(mapHoloType('COMMON', 'FLAT_SILVER', 'REVERSE')).toBe('reverse-holo')
-    expect(mapHoloType('UNCOMMON', 'FLAT_SILVER', 'REVERSE')).toBe('reverse-holo')
+  it('returns null for unmapped designation', () => {
+    expect(mapHoloType('PROMO', 'SV_HOLO', 'HOLO')).toBeNull()
   })
 
-  it('returns reverse-holo for unknown designation', () => {
-    expect(mapHoloType('PROMO', 'FLAT_SILVER', 'REVERSE')).toBe('reverse-holo')
-  })
-
-  it('RAINBOW without ETCHED mask follows designation, not master-ball', () => {
-    expect(mapHoloType('COMMON', 'RAINBOW', 'REVERSE')).toBe('reverse-holo')
-    expect(mapHoloType('RARE', 'RAINBOW', 'HOLO')).toBe('reverse-holo')
+  it('returns null for RAINBOW without ETCHED mask on unmapped rarity', () => {
+    expect(mapHoloType('COMMON', 'RAINBOW', 'REVERSE')).toBeNull()
+    expect(mapHoloType('RARE', 'RAINBOW', 'HOLO')).toBeNull()
   })
 })
 
