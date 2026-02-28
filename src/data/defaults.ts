@@ -32,6 +32,12 @@ export const DEFAULT_CONFIG: AppConfig = {
     focusOffset: 0,
     exposure: 0,
   },
+  bloom: {
+    enabled: false,
+    strength: 0.6,
+    radius: 0.4,
+    threshold: 0.85,
+  },
   shaders: {
     illustrationRare: {
       rainbowScale: 0.5,

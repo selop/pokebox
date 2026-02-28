@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
-import type { DofConfig, LightConfig, SceneConfig } from '@/types'
+import type { BloomConfig, DofConfig, LightConfig, SceneConfig } from '@/types'
 
 const store = useAppStore()
 
@@ -36,6 +36,10 @@ function onCardSlider(key: keyof typeof store.cardTransform, value: string) {
 
 function onDofSlider(key: keyof DofConfig, value: string) {
   ;(store.config.dof[key] as number) = parseFloat(value)
+}
+
+function onBloomSlider(key: keyof BloomConfig, value: string) {
+  ;(store.config.bloom[key] as number) = parseFloat(value)
 }
 
 function onHoloIntensity(value: string) {
@@ -326,6 +330,46 @@ function formatValue(v: number): string {
             :value="store.config.dof.focusOffset"
             @input="onDofSlider('focusOffset', ($event.target as HTMLInputElement).value)" />
           <span class="cal-value">{{ formatValue(store.config.dof.focusOffset) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bloom -->
+    <div class="cal-section">
+      <div class="cal-section-title">Bloom</div>
+      <div class="cal-row">
+        <span class="cal-label">Enable</span>
+        <label class="cal-toggle">
+          <input type="checkbox" :checked="store.config.bloom.enabled"
+            @change="store.config.bloom.enabled = ($event.target as HTMLInputElement).checked" />
+          <span class="cal-toggle-slider"></span>
+        </label>
+      </div>
+      <div v-show="store.config.bloom.enabled" class="cal-row">
+        <span class="cal-label">Strength</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="0" max="3" step="0.05"
+            :value="store.config.bloom.strength"
+            @input="onBloomSlider('strength', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ store.config.bloom.strength.toFixed(2) }}</span>
+        </div>
+      </div>
+      <div v-show="store.config.bloom.enabled" class="cal-row">
+        <span class="cal-label">Radius</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="0" max="1" step="0.05"
+            :value="store.config.bloom.radius"
+            @input="onBloomSlider('radius', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ store.config.bloom.radius.toFixed(2) }}</span>
+        </div>
+      </div>
+      <div v-show="store.config.bloom.enabled" class="cal-row">
+        <span class="cal-label">Threshold</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="0" max="1" step="0.01"
+            :value="store.config.bloom.threshold"
+            @input="onBloomSlider('threshold', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ store.config.bloom.threshold.toFixed(2) }}</span>
         </div>
       </div>
     </div>

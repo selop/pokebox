@@ -17,6 +17,13 @@ export interface DofConfig {
   exposure: number // EV compensation (0 = no change, +1 = 2× brighter, -1 = 0.5×)
 }
 
+export interface BloomConfig {
+  enabled: boolean
+  strength: number // 0–3, how bright the glow
+  radius: number // 0–1, how spread/soft
+  threshold: number // 0–1, luminance cutoff
+}
+
 export interface SceneConfig {
   screenWidthCm: number
   screenHeightCm: number
@@ -34,6 +41,7 @@ export interface SceneConfig {
   webcamOffsetY: number // cm offset of webcam from screen centre (positive = up)
   lights: LightConfig
   dof: DofConfig
+  bloom: BloomConfig
 }
 
 export interface IllustrationRareConfig {

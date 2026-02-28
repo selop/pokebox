@@ -18,6 +18,7 @@ import type { Texture } from 'three'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { useAppStore } from '@/stores/app'
 import { buildBoxShell } from '@/three/buildBox'
 import { populateFurniture } from '@/three/buildFurniture'
@@ -50,8 +51,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let dimStartTime = 0
   let wasDimmed = false
 
-  // Post-processing (lazy-initialized on first DOF enable)
+  // Post-processing (lazy-initialized on first DOF or bloom enable)
   let composer: EffectComposer | null = null
+  let bloomPass: UnrealBloomPass | null = null
   let bokehPass: BokehPass | null = null
   let lastCardZ = 0 // cached card Z for DOF focus stability during transitions
   const FSTOP_SCALE = 0.003 // maps f-stop to BokehPass aperture: aperture = FSTOP_SCALE / fStop
@@ -403,7 +405,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert()
   }
 
-  /** Lazily create the post-processing composer on first DOF enable. */
+  /** Lazily create the post-processing composer on first DOF or bloom enable. */
   function ensureComposer() {
     if (composer || !renderer || !scene || !camera) return
     // Let EffectComposer auto-create render targets at the correct physical
@@ -411,6 +413,17 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // blur smooths out-of-focus edges, and MSAA at Retina resolution is costly.
     composer = new EffectComposer(renderer)
     composer.addPass(new RenderPass(scene, camera))
+
+    // Bloom pass — slots between RenderPass and BokehPass
+    bloomPass = new UnrealBloomPass(
+      new Vector2(window.innerWidth, window.innerHeight),
+      store.config.bloom.strength,
+      store.config.bloom.radius,
+      store.config.bloom.threshold,
+    )
+    bloomPass.enabled = store.config.bloom.enabled
+    composer.addPass(bloomPass)
+
     bokehPass = new BokehPass(scene, camera, {
       focus: 500,
       aperture: FSTOP_SCALE / store.config.dof.fStop,
@@ -620,20 +633,34 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       spotlight.penumbra = store.config.lights.spotlightPenumbra
     }
 
-    // Render — use DOF composer in single mode when enabled, direct render otherwise
+    // Render — use composer when bloom or DOF is active, direct render otherwise
     const dofActive = store.config.dof.enabled && store.cardDisplayMode === 'single'
-    if (dofActive) {
+    const bloomActive = store.config.bloom.enabled
+    if (dofActive || bloomActive) {
       ensureComposer()
-      if (composer && bokehPass) {
-        // Auto-focus on card: distance from camera to card Z + user offset
-        // Cache last known card Z to avoid focus jumps during transitions
-        if (meshes.length > 0) lastCardZ = meshes[0]!.position.z
-        const focusDist = Math.abs(camera.position.z - lastCardZ) + store.config.dof.focusOffset
+      if (composer && bokehPass && bloomPass) {
+        // Toggle bloom pass per frame and push parameters
+        bloomPass.enabled = bloomActive
+        if (bloomActive) {
+          bloomPass.strength = store.config.bloom.strength
+          bloomPass.radius = store.config.bloom.radius
+          bloomPass.threshold = store.config.bloom.threshold
+        }
+
+        // DOF uniforms — when DOF is off but bloom is on, set maxblur=0 as passthrough
         const u = bokehPass.uniforms as Record<string, { value: number }>
-        u['focus']!.value = focusDist
-        u['aperture']!.value = FSTOP_SCALE / store.config.dof.fStop
-        u['maxblur']!.value = store.config.dof.maxBlur
-        u['exposure']!.value = Math.pow(2, store.config.dof.exposure)
+        if (dofActive) {
+          if (meshes.length > 0) lastCardZ = meshes[0]!.position.z
+          const focusDist = Math.abs(camera.position.z - lastCardZ) + store.config.dof.focusOffset
+          u['focus']!.value = focusDist
+          u['aperture']!.value = FSTOP_SCALE / store.config.dof.fStop
+          u['maxblur']!.value = store.config.dof.maxBlur
+          u['exposure']!.value = Math.pow(2, store.config.dof.exposure)
+        } else {
+          // Passthrough — no blur, neutral exposure
+          u['maxblur']!.value = 0
+          u['exposure']!.value = 1.0
+        }
         composer.render()
       }
     } else {
@@ -813,6 +840,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     mouseTilt.detach()
     swipeGesture.detach()
     gyroscope.stop()
+    bloomPass?.dispose()
     bokehPass?.dispose()
     composer?.dispose()
     renderer?.dispose()
