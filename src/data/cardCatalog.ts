@@ -3,7 +3,7 @@ import type { CardCatalogEntry, HoloType, SetCardJson, SetDefinition } from '@/t
 import { assetUrl } from '@/utils/assetUrl'
 
 export const SET_REGISTRY: SetDefinition[] = [
-  { id: 'me2-5_en', label: 'ASC Ascended Heros', jsonFile: 'me2-5_en/set.json' },
+  { id: 'me2-5_en', label: 'ASC Ascended Heros', jsonFile: 'me2-5_en/set.json', preferReverse: true },
   { id: 'sv3-5_en', label: 'MEW 151', jsonFile: 'sv3-5_en/sv3-5.en-US.json' },
   { id: 'sv8-5_en', label: 'PRE Prismatic', jsonFile: 'sv8-5_en/sv8-5.en-US.json' },
   { id: 'sv4-5_en', label: 'PAF Paldean Fates', jsonFile: 'sv4-5_en/sv-4-5.en-US.json' },
@@ -84,10 +84,12 @@ export function extractPrefix(longFormID: string): string {
 /**
  * Pick the best foil entry for a card from its foil-only JSON entries.
  * Priority: RAINBOW > non-FLAT_SILVER > FLAT_SILVER.
+ * When preferReverse is true: RAINBOW > FLAT_SILVER+REVERSE > non-FLAT_SILVER > FLAT_SILVER.
  */
-export function pickBestFoilEntry(entries: SetCardJson[]): SetCardJson {
+export function pickBestFoilEntry(entries: SetCardJson[], preferReverse = false): SetCardJson {
   return (
     entries.find((e) => e.foil!.type === 'RAINBOW') ||
+    (preferReverse && entries.find((e) => e.foil!.type === 'FLAT_SILVER' && e.foil!.mask === 'REVERSE')) ||
     entries.find((e) => e.foil!.type !== 'FLAT_SILVER') ||
     entries[0]!
   )
@@ -123,7 +125,7 @@ export async function loadSetCatalog(setId: string): Promise<CardCatalogEntry[]>
   const entries = sortedNumbers
     .map((cardNum) => {
       const group = byNumber.get(cardNum)!
-      const best = pickBestFoilEntry(group)
+      const best = pickBestFoilEntry(group, setDef.preferReverse)
       const name = best.name
       const designation = best.rarity.designation
       const foilType = best.foil!.type
@@ -134,8 +136,15 @@ export async function loadSetCatalog(setId: string): Promise<CardCatalogEntry[]>
       // Skip cards with unmapped foil/rarity combinations
       if (!holoType) return null
 
-      // Get the file variant prefix from the JSON metadata, then map to actual files
-      const jsonPrefix = extractPrefix(best.ext.tcgl.longFormID)
+      // Get the file variant prefix from the JSON metadata, then map to actual files.
+      // When preferReverse selected a FLAT_SILVER+REVERSE entry, asset files may only
+      // exist under the non-FLAT_SILVER sibling's prefix (temporary workaround until
+      // the asset pipeline generates per-variant masks).
+      let jsonPrefix = extractPrefix(best.ext.tcgl.longFormID)
+      if (setDef.preferReverse && foilType === 'FLAT_SILVER' && foilMask === 'REVERSE') {
+        const stdSibling = group.find((e) => e.foil!.type !== 'FLAT_SILVER')
+        if (stdSibling) jsonPrefix = extractPrefix(stdSibling.ext.tcgl.longFormID)
+      }
       // Map JSON prefix to file prefix (sph files were deleted, use mph instead)
       const maskPrefix = jsonPrefix === 'sph' ? 'mph' : jsonPrefix
       const label = `#${cardNum} ${name}`

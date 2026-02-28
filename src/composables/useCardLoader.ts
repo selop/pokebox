@@ -111,11 +111,21 @@ export function useCardLoader(renderer: WebGLRenderer) {
         }
       }
 
-      tracedLoad(frontUrl, `load-texture card-front ${id}`, (tex) => {
-        applyFilters(tex, true)
-        cardTex = tex
-        onReady()
-      })
+      tracedLoad(
+        frontUrl,
+        `load-texture card-front ${id}`,
+        (tex) => {
+          applyFilters(tex, true)
+          cardTex = tex
+          onReady()
+        },
+        undefined,
+        () => {
+          console.warn(`[useCardLoader] Failed to load front texture for card: ${entry.label ?? id}`)
+          store.addToast(`Failed to load card asset: ${entry.label ?? id}`)
+          onReady()
+        },
+      )
 
       if (hasMask) {
         tracedLoad(
@@ -127,7 +137,11 @@ export function useCardLoader(renderer: WebGLRenderer) {
             onReady()
           },
           undefined,
-          () => onReady(), // mask file missing — continue without it
+          () => {
+            console.warn(`[useCardLoader] Failed to load mask texture for card: ${entry.label ?? id}`)
+            store.addToast(`Failed to load card asset: ${entry.label ?? id}`)
+            onReady()
+          },
         )
       }
 
@@ -141,7 +155,11 @@ export function useCardLoader(renderer: WebGLRenderer) {
             onReady()
           },
           undefined,
-          () => onReady(), // etch file missing — continue without it
+          () => {
+            console.warn(`[useCardLoader] Failed to load foil texture for card: ${entry.label ?? id}`)
+            store.addToast(`Failed to load card asset: ${entry.label ?? id}`)
+            onReady()
+          },
         )
       }
     })
@@ -179,11 +197,23 @@ export function useCardLoader(renderer: WebGLRenderer) {
         }
       }
 
-      tracedLoad(entry.front, `load-texture hero-front ${entry.id}`, (tex) => {
-        applyFilters(tex, true)
-        cardTex = tex
-        onReady()
-      })
+      const store = useAppStore()
+
+      tracedLoad(
+        entry.front,
+        `load-texture hero-front ${entry.id}`,
+        (tex) => {
+          applyFilters(tex, true)
+          cardTex = tex
+          onReady()
+        },
+        undefined,
+        () => {
+          console.warn(`[useCardLoader] Failed to load front texture for hero card: ${entry.label ?? entry.id}`)
+          store.addToast(`Failed to load card asset: ${entry.label ?? entry.id}`)
+          onReady()
+        },
+      )
 
       if (hasMask) {
         tracedLoad(
@@ -195,7 +225,11 @@ export function useCardLoader(renderer: WebGLRenderer) {
             onReady()
           },
           undefined,
-          () => onReady(),
+          () => {
+            console.warn(`[useCardLoader] Failed to load mask texture for hero card: ${entry.label ?? entry.id}`)
+            store.addToast(`Failed to load card asset: ${entry.label ?? entry.id}`)
+            onReady()
+          },
         )
       }
 
@@ -209,7 +243,11 @@ export function useCardLoader(renderer: WebGLRenderer) {
             onReady()
           },
           undefined,
-          () => onReady(),
+          () => {
+            console.warn(`[useCardLoader] Failed to load foil texture for hero card: ${entry.label ?? entry.id}`)
+            store.addToast(`Failed to load card asset: ${entry.label ?? entry.id}`)
+            onReady()
+          },
         )
       }
     })

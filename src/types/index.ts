@@ -342,6 +342,8 @@ export interface SetDefinition {
   id: string
   label: string
   jsonFile: string
+  /** When true, prefer FLAT_SILVER+REVERSE over SV_HOLO for cards with both variants. */
+  preferReverse?: boolean
 }
 
 export interface SetCardJson {
