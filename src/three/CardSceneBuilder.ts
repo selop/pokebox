@@ -73,6 +73,8 @@ export class CardSceneBuilder {
       effectiveShader === 'special-illustration-rare' ? loader.getSparkleIriTextures() : null
     const glitterTexture = loader.getGlitterTexture()
     const noiseTexture = loader.getNoiseTexture()
+    const grainTexture =
+      effectiveShader === 'flatsilver-reverse' ? loader.getGrainTexture() : null
     const cardBackTexture = loader.getCardBackTexture()
     return {
       iriTextures,
@@ -80,6 +82,7 @@ export class CardSceneBuilder {
       sparkleIriTextures,
       glitterTexture,
       noiseTexture,
+      grainTexture,
       cardBackTexture,
     }
   }
@@ -116,6 +119,7 @@ export class CardSceneBuilder {
         sparkleIriTextures,
         glitterTexture,
         noiseTexture,
+        grainTexture,
         cardBackTexture,
       } = this.resolveExtraTextures(loader, effectiveShader)
       const compositeMesh = buildCardMesh(
@@ -134,6 +138,7 @@ export class CardSceneBuilder {
         noiseTexture,
         cardBackTexture,
         sparkleIriTextures,
+        grainTexture,
       )
       compositeMesh.geometry.dispose()
       compositeMesh.geometry = new PlaneGeometry(cardW, cardH)
@@ -218,6 +223,7 @@ export class CardSceneBuilder {
       sparkleIriTextures,
       glitterTexture,
       noiseTexture,
+      grainTexture,
       cardBackTexture,
     } = this.resolveExtraTextures(loader, effectiveShader)
     const tempMesh = buildCardMesh(
@@ -233,6 +239,7 @@ export class CardSceneBuilder {
       noiseTexture,
       cardBackTexture,
       sparkleIriTextures,
+      grainTexture,
     )
 
     // Swap material only — keep mesh position/rotation/scale intact

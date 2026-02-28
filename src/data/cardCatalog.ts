@@ -3,7 +3,7 @@ import type { CardCatalogEntry, HoloType, SetCardJson, SetDefinition } from '@/t
 import { assetUrl } from '@/utils/assetUrl'
 
 export const SET_REGISTRY: SetDefinition[] = [
-  { id: 'me2-5_en', label: 'ASC Ascended Heros', jsonFile: 'me2-5_en/set.json' },
+  { id: 'me2-5_en', label: 'ASC Ascended Heros', jsonFile: 'me2-5_en/set.json', preferReverse: true },
   { id: 'sv3-5_en', label: 'MEW 151', jsonFile: 'sv3-5_en/sv3-5.en-US.json' },
   { id: 'sv8-5_en', label: 'PRE Prismatic', jsonFile: 'sv8-5_en/sv8-5.en-US.json' },
   { id: 'sv4-5_en', label: 'PAF Paldean Fates', jsonFile: 'sv4-5_en/sv-4-5.en-US.json' },
@@ -22,9 +22,12 @@ export function mapHoloType(
   foilType?: string,
   foilMask?: string,
   tags?: string[],
-): HoloType {
+): HoloType | null {
   // Master-ball holo: RAINBOW foil with ETCHED mask (common/uncommon masterball variants)
   if (foilType === 'RAINBOW' && foilMask === 'ETCHED') return 'master-ball'
+
+  // Flat silver reverse holo: FLAT_SILVER foil with REVERSE mask
+  if (foilType === 'FLAT_SILVER' && foilMask === 'REVERSE') return 'flatsilver-reverse'
 
   switch (designation) {
     case 'SHINY_RARE':
@@ -59,9 +62,9 @@ export function mapHoloType(
       return 'ultra-rare'
     case 'RARE':
       if (foilType === 'SV_HOLO') return 'regular-holo'
-      return 'reverse-holo'
+      return null
     default:
-      return 'reverse-holo'
+      return null
   }
 }
 
@@ -81,10 +84,12 @@ export function extractPrefix(longFormID: string): string {
 /**
  * Pick the best foil entry for a card from its foil-only JSON entries.
  * Priority: RAINBOW > non-FLAT_SILVER > FLAT_SILVER.
+ * When preferReverse is true: RAINBOW > FLAT_SILVER+REVERSE > non-FLAT_SILVER > FLAT_SILVER.
  */
-export function pickBestFoilEntry(entries: SetCardJson[]): SetCardJson {
+export function pickBestFoilEntry(entries: SetCardJson[], preferReverse = false): SetCardJson {
   return (
     entries.find((e) => e.foil!.type === 'RAINBOW') ||
+    (preferReverse && entries.find((e) => e.foil!.type === 'FLAT_SILVER' && e.foil!.mask === 'REVERSE')) ||
     entries.find((e) => e.foil!.type !== 'FLAT_SILVER') ||
     entries[0]!
   )
@@ -117,46 +122,58 @@ export async function loadSetCatalog(setId: string): Promise<CardCatalogEntry[]>
   // Build catalog entries
   const sortedNumbers = [...byNumber.keys()].sort()
 
-  const entries = sortedNumbers.map((cardNum) => {
-    const group = byNumber.get(cardNum)!
-    const best = pickBestFoilEntry(group)
-    const name = best.name
-    const designation = best.rarity.designation
-    const foilType = best.foil!.type
-    const foilMask = best.foil!.mask
-    const isEtched = foilMask === 'ETCHED'
-    const holoType = mapHoloType(designation, foilType, foilMask, best.tags)
+  const entries = sortedNumbers
+    .map((cardNum) => {
+      const group = byNumber.get(cardNum)!
+      const best = pickBestFoilEntry(group, setDef.preferReverse)
+      const name = best.name
+      const designation = best.rarity.designation
+      const foilType = best.foil!.type
+      const foilMask = best.foil!.mask
+      const isEtched = foilMask === 'ETCHED'
+      const holoType = mapHoloType(designation, foilType, foilMask, best.tags)
 
-    // Get the file variant prefix from the JSON metadata, then map to actual files
-    const jsonPrefix = extractPrefix(best.ext.tcgl.longFormID)
-    // Map JSON prefix to file prefix (sph files were deleted, use mph instead)
-    const maskPrefix = jsonPrefix === 'sph' ? 'mph' : jsonPrefix
-    const label = `#${cardNum} ${name}`
+      // Skip cards with unmapped foil/rarity combinations
+      if (!holoType) return null
 
-    // Build texture paths (prefixed with asset base URL for CDN support)
-    const front = assetUrl(`${setId}/fronts/${cardNum}_front_2x.webp`)
-    const mask = assetUrl(`${setId}/holo-masks/${setId}_${cardNum}_${maskPrefix}.foil_up.webp`)
+      // Get the file variant prefix from the JSON metadata, then map to actual files.
+      // When preferReverse selected a FLAT_SILVER+REVERSE entry, asset files may only
+      // exist under the non-FLAT_SILVER sibling's prefix (temporary workaround until
+      // the asset pipeline generates per-variant masks).
+      let jsonPrefix = extractPrefix(best.ext.tcgl.longFormID)
+      if (setDef.preferReverse && foilType === 'FLAT_SILVER' && foilMask === 'REVERSE') {
+        const stdSibling = group.find((e) => e.foil!.type !== 'FLAT_SILVER')
+        if (stdSibling) jsonPrefix = extractPrefix(stdSibling.ext.tcgl.longFormID)
+      }
+      // Map JSON prefix to file prefix (sph files were deleted, use mph instead)
+      const maskPrefix = jsonPrefix === 'sph' ? 'mph' : jsonPrefix
+      const label = `#${cardNum} ${name}`
 
-    // Etch foil (only for etched types)
-    const foil = isEtched
-      ? assetUrl(`${setId}/etch-foils/${setId}_${cardNum}_${maskPrefix}.etch_up.webp`)
-      : ''
+      // Build texture paths (prefixed with asset base URL for CDN support)
+      const front = assetUrl(`${setId}/fronts/${cardNum}_front_2x.webp`)
+      const mask = assetUrl(`${setId}/holo-masks/${setId}_${cardNum}_${maskPrefix}.foil_up.webp`)
 
-    const entry: CardCatalogEntry = { id: cardNum, label, front, mask, foil, holoType }
+      // Etch foil (only for etched types)
+      const foil = isEtched
+        ? assetUrl(`${setId}/etch-foils/${setId}_${cardNum}_${maskPrefix}.etch_up.webp`)
+        : ''
 
-    // Add iridescent textures for special-illustration-rare and ultra-rare cards
-    if (
-      holoType === 'special-illustration-rare' ||
-      holoType === 'ultra-rare' ||
-      holoType === 'rainbow-rare'
-    ) {
-      entry.iri7 = 'img/151/iri-7.webp'
-      entry.iri8 = 'img/151/iri-8.webp'
-      entry.iri9 = 'img/151/iri-9.webp'
-    }
+      const entry: CardCatalogEntry = { id: cardNum, label, front, mask, foil, holoType }
 
-    return entry
-  })
+      // Add iridescent textures for special-illustration-rare and ultra-rare cards
+      if (
+        holoType === 'special-illustration-rare' ||
+        holoType === 'ultra-rare' ||
+        holoType === 'rainbow-rare'
+      ) {
+        entry.iri7 = 'img/151/iri-7.webp'
+        entry.iri8 = 'img/151/iri-8.webp'
+        entry.iri9 = 'img/151/iri-9.webp'
+      }
+
+      return entry
+    })
+    .filter((entry): entry is CardCatalogEntry => entry !== null)
 
   return entries
 }

@@ -245,6 +245,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     // Load noise texture for master ball sparkle layer 2
     cardLoader.loadNoiseTexture()
 
+    // Load grain texture for flatsilver-reverse foil surface
+    cardLoader.loadGrainTexture()
+
     // Load card-back texture
     cardLoader.loadCardBackTexture()
 

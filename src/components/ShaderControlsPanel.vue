@@ -464,6 +464,29 @@ const sections: ShaderSection[] = [
       { label: 'Base saturation', prop: 'baseSaturation', min: 0, max: 3, step: 0.05 },
     ],
   },
+  {
+    id: 'flatsilver-reverse',
+    shaderKey: 'flatsilverReverse',
+    title: 'Flat Silver Reverse',
+    icon: '🪩',
+    items: [
+      { subsection: 'Rainbow' },
+      { label: 'Scale', prop: 'rainbowScale', min: 0.1, max: 5, step: 0.1 },
+      { label: 'Tilt shift', prop: 'rainbowShift', min: 0, max: 5, step: 0.1 },
+      { label: 'Saturation', prop: 'rainbowSaturation', min: 0, max: 2, step: 0.05 },
+      { label: 'Opacity', prop: 'rainbowOpacity', min: 0, max: 1, step: 0.05, suffix: '%' },
+      { subsection: 'Spotlight' },
+      { label: 'Radius', prop: 'spotlightRadius', min: 0.1, max: 2, step: 0.05 },
+      { label: 'Intensity', prop: 'spotlightIntensity', min: 0, max: 3, step: 0.05 },
+      { subsection: 'Grain' },
+      { label: 'Scale', prop: 'grainScale', min: 0.1, max: 2.0, step: 0.01 },
+      { label: 'Intensity', prop: 'grainIntensity', min: 0, max: 1, step: 0.01 },
+      { subsection: 'Overall' },
+      { label: 'Brightness', prop: 'baseBrightness', min: 0.5, max: 2, step: 0.05 },
+      { label: 'Contrast', prop: 'baseContrast', min: 0, max: 3, step: 0.05 },
+      { label: 'Saturation', prop: 'baseSaturation', min: 0, max: 3, step: 0.05 },
+    ],
+  },
 ]
 
 function sliderProps(section: ShaderSection): string[] {

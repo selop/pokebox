@@ -91,7 +91,7 @@ export const DEFAULT_CONFIG: AppConfig = {
       etchSparkle2Intensity: 0.95,
       etchSparkle2TiltSensitivity: 1.0,
       etchSparkle2TexMix: 1.0,
-      baseBrightness: 1.0,
+      baseBrightness: 0.95,
       baseContrast: 1.45,
       baseSaturation: 0.95,
     },
@@ -179,6 +179,19 @@ export const DEFAULT_CONFIG: AppConfig = {
       baseContrast: 1.7,
       baseSaturation: 1.0,
     },
+    flatsilverReverse: {
+      rainbowScale: 0.6,
+      rainbowShift: 0.9,
+      rainbowSaturation: 0.5,
+      rainbowOpacity: 0.75,
+      spotlightRadius: 1.05,
+      spotlightIntensity: 2.55,
+      grainScale: 1.2,
+      grainIntensity: 1.0,
+      baseBrightness: 0.6,
+      baseContrast: 0.9,
+      baseSaturation: 3.0,
+    },
     masterBall: {
       rainbowScale: 0.6,
       rainbowShift: 1.4,
@@ -263,7 +276,7 @@ export const DEFAULT_CARD: CardTransform = {
   rotY: 0,
 }
 
-export const STARTUP_CARD_ID = '170'
+export const STARTUP_CARD_ID = '276'
 
 export const CARD_DEFAULTS = {
   x: 0,

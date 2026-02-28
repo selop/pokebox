@@ -23,6 +23,7 @@ import doubleRareFrag from '@/shaders/double-rare.frag'
 import ultraRareFrag from '@/shaders/ultra-rare.frag'
 import rainbowRareFrag from '@/shaders/rainbow-rare.frag'
 import reverseHoloFrag from '@/shaders/reverse-holo.frag'
+import flatsilverReverseFrag from '@/shaders/flatsilver-reverse.frag'
 import teraRainbowRareFrag from '@/shaders/tera-rainbow-rare.frag'
 import masterBallFrag from '@/shaders/master-ball.frag'
 import teraShinyRareFrag from '@/shaders/tera-shiny-rare.frag'
@@ -47,6 +48,7 @@ const FRAGMENT_SHADERS: Record<ShaderStyle, string> = {
   'ultra-rare': ultraRareFrag,
   'rainbow-rare': rainbowRareFrag,
   'reverse-holo': reverseHoloFrag,
+  'flatsilver-reverse': flatsilverReverseFrag,
   'tera-rainbow-rare': teraRainbowRareFrag,
   'tera-shiny-rare': teraShinyRareFrag,
   'master-ball': masterBallFrag,
@@ -106,6 +108,7 @@ export function buildCardMesh(
   noiseTexture?: Texture | null,
   cardBackTexture?: Texture | null,
   sparkleIriTextures?: { iri1: Texture; iri2: Texture } | null,
+  grainTexture?: Texture | null,
 ): Mesh {
   const cardH = dims.screenH * config.cardSize
   const cardW = cardH * CARD_ASPECT
@@ -152,6 +155,11 @@ export function buildCardMesh(
   if (shaderStyle === 'double-rare') {
     uniforms.uBirthdayDankTex = { value: birthdayTextures?.dank ?? blackPixel }
     uniforms.uBirthdayDank2Tex = { value: birthdayTextures?.dank2 ?? blackPixel }
+  }
+
+  if (shaderStyle === 'flatsilver-reverse') {
+    uniforms.uGrainTex = { value: grainTexture || blackPixel }
+    uniforms.uHasGrain = { value: grainTexture ? 1.0 : 0.0 }
   }
 
   const mesh = new Mesh(

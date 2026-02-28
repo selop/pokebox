@@ -160,6 +160,20 @@ export interface ReverseHoloConfig {
   baseSaturation: number
 }
 
+export interface FlatsilverReverseConfig {
+  rainbowScale: number
+  rainbowShift: number
+  rainbowSaturation: number
+  rainbowOpacity: number
+  spotlightRadius: number
+  spotlightIntensity: number
+  grainScale: number
+  grainIntensity: number
+  baseBrightness: number
+  baseContrast: number
+  baseSaturation: number
+}
+
 export interface MasterBallConfig {
   rainbowScale: number
   rainbowShift: number
@@ -252,6 +266,7 @@ export interface ShaderConfigs {
   ultraRare: UltraRareConfig
   rainbowRare: RainbowRareConfig
   reverseHolo: ReverseHoloConfig
+  flatsilverReverse: FlatsilverReverseConfig
   masterBall: MasterBallConfig
   shinyRare: ShinyRareConfig
 }
@@ -299,6 +314,7 @@ export type ShaderStyle =
   | 'ultra-rare'
   | 'rainbow-rare'
   | 'reverse-holo'
+  | 'flatsilver-reverse'
   | 'master-ball'
   | 'shiny-rare'
 export type HoloType =
@@ -311,6 +327,7 @@ export type HoloType =
   | 'ultra-rare'
   | 'rainbow-rare'
   | 'reverse-holo'
+  | 'flatsilver-reverse'
   | 'master-ball'
   | 'shiny-rare'
 
@@ -325,6 +342,8 @@ export interface SetDefinition {
   id: string
   label: string
   jsonFile: string
+  /** When true, prefer FLAT_SILVER+REVERSE over SV_HOLO for cards with both variants. */
+  preferReverse?: boolean
 }
 
 export interface SetCardJson {

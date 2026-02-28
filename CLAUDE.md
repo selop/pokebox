@@ -38,6 +38,7 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
    - **Ultra Rare** (`ultra-rare.frag`): Metallic sparkle with fully parameterized brightness/contrast/bar controls
    - **Rainbow Rare** (`rainbow-rare.frag`): Metallic sparkle spotlight + iridescent glitter from iri-7 texture, for etched SV_ULTRA double rares
    - **Tera Rainbow Rare** (`tera-rainbow-rare.frag`): Rainbow holo overlay + metallic sparkle spotlight + dual etch sparkle layers, for Tera-tagged special illustration rares
+   - **Flatsilver Reverse** (`flatsilver-reverse.frag`): Inverted-mask flat silver rainbow sheen over card border/text areas (outside artwork window) with pointer-responsive spotlight, for FLAT_SILVER+REVERSE common/uncommon reverse holos
    - **Master Ball** (`master-ball.frag`): Etch foil composite on card base for RAINBOW+ETCHED masterball holo cards
    - Shared GLSL functions live in `src/shaders/common/` and are included via `#include` (resolved by `vite-plugin-glsl`):
      - `common/blend.glsl` — blend modes (overlay, screen, color-dodge, hard-light, etc.)
@@ -56,6 +57,7 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 | Rarity | Foil Type | Shader |
 |--------|-----------|--------|
 | any | `RAINBOW` + `ETCHED` mask | `master-ball` |
+| any | `FLAT_SILVER` + `REVERSE` mask | `flatsilver-reverse` |
 | `SHINY_RARE` | any | `shiny-rare` |
 | `SHINY_ULTRA_RARE` | any | `ultra-rare` |
 | `SPECIAL_ILLUSTRATION_RARE` | `TERA` + `SHINY` tags | `tera-shiny-rare` |
@@ -68,7 +70,8 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 | `DOUBLE_RARE` | `SV_ULTRA` + `ETCHED` mask | `rainbow-rare` |
 | `DOUBLE_RARE` / `ILLUSTRATION_RARE` | other | `illustration-rare` |
 | `RARE` | `SV_HOLO` | `regular-holo` |
-| `COMMON` / `UNCOMMON` / `RARE` (other) | any | `reverse-holo` |
+| `COMMON` / `UNCOMMON` / `RARE` (other) | `FLAT_SILVER` + `REVERSE` mask | `flatsilver-reverse` |
+| `COMMON` / `UNCOMMON` / `RARE` (other) | other | `reverse-holo` |
 
 ### Key modules
 
@@ -211,6 +214,7 @@ The shader test suite (`src/shaders/__tests__/`) includes:
 3. List required uniforms in compilation test
 4. Run `bun test:shader` to verify
 5. Add uniform↔config mappings to `SHADER_UNIFORM_REGISTRY` in `src/data/shaderRegistry.ts`, defaults to `src/data/defaults.ts`, types to `AppConfig` in `src/types/`, and the fragment shader import to `buildCard.ts`
+6. Add a UI section to `ShaderControlsPanel.vue` with slider definitions for all configurable uniforms — without this, the panel shows "No controls available" when viewing cards with the new shader
 
 **When modifying shader uniforms**:
 

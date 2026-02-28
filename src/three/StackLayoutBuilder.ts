@@ -25,6 +25,7 @@ export function buildStackLayout(
     sparkleIriTextures: { iri1: Texture; iri2: Texture } | null
     glitterTexture: Texture | null
     noiseTexture: Texture | null
+    grainTexture: Texture | null
     cardBackTexture: Texture | null
   },
 ): Mesh[] {
@@ -76,6 +77,7 @@ export function buildStackLayout(
         extras.noiseTexture,
         extras.cardBackTexture,
         extras.sparkleIriTextures,
+        extras.grainTexture,
       )
       // Replace geometry with our sized one
       shaderMesh.geometry.dispose()
