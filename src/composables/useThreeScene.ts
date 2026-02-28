@@ -15,6 +15,10 @@ import {
   WebGLRenderer,
 } from 'three'
 import type { Texture } from 'three'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js'
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
 import { useAppStore } from '@/stores/app'
 import { buildBoxShell } from '@/three/buildBox'
 import { populateFurniture } from '@/three/buildFurniture'
@@ -46,6 +50,33 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let lastTime = performance.now() * 0.001
   let dimStartTime = 0
   let wasDimmed = false
+
+  // Post-processing (lazy-initialized on first DOF enable)
+  let composer: EffectComposer | null = null
+  let bokehPass: BokehPass | null = null
+  let exposurePass: ShaderPass | null = null
+  let lastCardZ = 0 // cached card Z for DOF focus stability during transitions
+  const FSTOP_SCALE = 0.003 // maps f-stop to BokehPass aperture: aperture = FSTOP_SCALE / fStop
+  const ExposureShader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      exposure: { value: 1.0 },
+    },
+    vertexShader: /* glsl */ `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: /* glsl */ `
+      uniform sampler2D tDiffuse;
+      uniform float exposure;
+      varying vec2 vUv;
+      void main() {
+        gl_FragColor = texture2D(tDiffuse, vUv) * exposure;
+        gl_FragColor.a = 1.0;
+      }`,
+  }
 
   // Card state
   const cardMeshes = shallowRef<Mesh[]>([])
@@ -394,6 +425,28 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert()
   }
 
+  /** Lazily create the post-processing composer on first DOF enable. */
+  function ensureComposer() {
+    if (composer || !renderer || !scene || !camera) return
+    // Let EffectComposer auto-create render targets at the correct physical
+    // pixel size (CSS size × devicePixelRatio), then add MSAA samples.
+    composer = new EffectComposer(renderer)
+    composer.renderTarget1.samples = 4
+    composer.renderTarget2.samples = 4
+    composer.addPass(new RenderPass(scene, camera))
+    bokehPass = new BokehPass(scene, camera, {
+      focus: 500,
+      aperture: FSTOP_SCALE / store.config.dof.fStop,
+      maxblur: store.config.dof.maxBlur,
+    })
+    composer.addPass(bokehPass)
+    // No OutputPass — card ShaderMaterials output displayable gamma-space
+    // values directly (they don't call linearToOutputTexel). OutputPass would
+    // apply sRGB encoding on top of that, causing a milky brightness shift.
+    exposurePass = new ShaderPass(ExposureShader)
+    composer.addPass(exposurePass)
+  }
+
   function animate() {
     animationId = requestAnimationFrame(animate)
     if (!renderer || !scene || !camera) return
@@ -587,7 +640,27 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       spotlight.penumbra = store.config.lights.spotlightPenumbra
     }
 
-    renderer.render(scene, camera)
+    // Render — use DOF composer in single mode when enabled, direct render otherwise
+    const dofActive = store.config.dof.enabled && store.cardDisplayMode === 'single'
+    if (dofActive) {
+      ensureComposer()
+      if (composer && bokehPass) {
+        // Auto-focus on card: distance from camera to card Z + user offset
+        // Cache last known card Z to avoid focus jumps during transitions
+        if (meshes.length > 0) lastCardZ = meshes[0]!.position.z
+        const focusDist = Math.abs(camera.position.z - lastCardZ) + store.config.dof.focusOffset
+        const u = bokehPass.uniforms as Record<string, { value: number }>
+        u['focus']!.value = focusDist
+        u['aperture']!.value = FSTOP_SCALE / store.config.dof.fStop
+        u['maxblur']!.value = store.config.dof.maxBlur
+        if (exposurePass) {
+          exposurePass.uniforms['exposure']!.value = Math.pow(2, store.config.dof.exposure)
+        }
+        composer.render()
+      }
+    } else {
+      renderer.render(scene, camera)
+    }
 
     perfTracker.sampleFrame()
     perfTracker.sampleRendererInfo(renderer.info)
@@ -630,6 +703,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     if (!renderer) return
     store.updateViewport(window.innerWidth, window.innerHeight)
     renderer.setSize(window.innerWidth, window.innerHeight)
+    composer?.setSize(window.innerWidth, window.innerHeight)
     rebuildScene()
   }
 
@@ -761,6 +835,9 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     mouseTilt.detach()
     swipeGesture.detach()
     gyroscope.stop()
+    exposurePass?.dispose()
+    bokehPass?.dispose()
+    composer?.dispose()
     renderer?.dispose()
   }
 

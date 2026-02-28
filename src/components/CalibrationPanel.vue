@@ -1,8 +1,25 @@
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
-import type { LightConfig, SceneConfig } from '@/types'
+import type { DofConfig, LightConfig, SceneConfig } from '@/types'
 
 const store = useAppStore()
+
+// Third-stop f-stop sequence matching Fujifilm aperture rings
+const F_STOPS = [1.4, 1.6, 1.8, 2, 2.2, 2.5, 2.8, 3.2, 3.5, 4, 4.5, 5, 5.6, 6.3, 7.1, 8, 9, 10, 11, 13, 14, 16]
+
+function fStopToIndex(f: number): number {
+  let best = 0
+  let bestDist = Math.abs(F_STOPS[0]! - f)
+  for (let i = 1; i < F_STOPS.length; i++) {
+    const d = Math.abs(F_STOPS[i]! - f)
+    if (d < bestDist) { best = i; bestDist = d }
+  }
+  return best
+}
+
+function onFStopSlider(value: string) {
+  store.config.dof.fStop = F_STOPS[parseInt(value)]!
+}
 
 function onConfigSlider(key: keyof SceneConfig, value: string, rebuild: boolean) {
   ;(store.config[key] as number) = parseFloat(value)
@@ -15,6 +32,10 @@ function onLightSlider(key: keyof LightConfig, value: string) {
 
 function onCardSlider(key: keyof typeof store.cardTransform, value: string) {
   ;(store.cardTransform as Record<string, number>)[key] = parseFloat(value)
+}
+
+function onDofSlider(key: keyof DofConfig, value: string) {
+  ;(store.config.dof[key] as number) = parseFloat(value)
 }
 
 function onHoloIntensity(value: string) {
@@ -260,6 +281,55 @@ function formatValue(v: number): string {
       </div>
     </div>
 
+    <!-- Depth of Field -->
+    <div class="cal-section">
+      <div class="cal-section-title">Depth of Field</div>
+      <div class="cal-row">
+        <span class="cal-label">Enable</span>
+        <label class="cal-toggle">
+          <input type="checkbox" :checked="store.config.dof.enabled"
+            @change="store.config.dof.enabled = ($event.target as HTMLInputElement).checked" />
+          <span class="cal-toggle-slider"></span>
+        </label>
+      </div>
+      <div v-show="store.config.dof.enabled" class="cal-row">
+        <span class="cal-label">Aperture</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="0" :max="F_STOPS.length - 1" step="1"
+            :value="fStopToIndex(store.config.dof.fStop)"
+            @input="onFStopSlider(($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">f/{{ store.config.dof.fStop }}</span>
+        </div>
+      </div>
+      <div v-show="store.config.dof.enabled" class="cal-row">
+        <span class="cal-label">Max blur</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="0" max="0.02" step="0.001"
+            :value="store.config.dof.maxBlur"
+            @input="onDofSlider('maxBlur', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ store.config.dof.maxBlur.toFixed(3) }}</span>
+        </div>
+      </div>
+      <div v-show="store.config.dof.enabled" class="cal-row">
+        <span class="cal-label">Exposure</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="-3" max="3" step="0.1"
+            :value="store.config.dof.exposure"
+            @input="onDofSlider('exposure', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ store.config.dof.exposure >= 0 ? '+' : '' }}{{ store.config.dof.exposure.toFixed(1) }} EV</span>
+        </div>
+      </div>
+      <div v-show="store.config.dof.enabled" class="cal-row">
+        <span class="cal-label">Focus offset</span>
+        <div class="cal-slider-wrap">
+          <input type="range" class="cal-slider" min="-30" max="30" step="0.5"
+            :value="store.config.dof.focusOffset"
+            @input="onDofSlider('focusOffset', ($event.target as HTMLInputElement).value)" />
+          <span class="cal-value">{{ formatValue(store.config.dof.focusOffset) }}</span>
+        </div>
+      </div>
+    </div>
+
     <button class="cal-reset" @click="store.resetDefaults(); store.triggerRebuild()">Reset Defaults</button>
   </div>
 </template>
@@ -389,6 +459,49 @@ function formatValue(v: number): string {
 .cal-select option {
   background: #111;
   color: #fff;
+}
+
+.cal-toggle {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.cal-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.cal-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  transition: background 0.2s;
+}
+
+.cal-toggle-slider::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  background: #888;
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.cal-toggle input:checked + .cal-toggle-slider {
+  background: rgba(0, 245, 212, 0.3);
+}
+
+.cal-toggle input:checked + .cal-toggle-slider::before {
+  transform: translateX(16px);
+  background: #00f5d4;
 }
 
 .cal-reset {

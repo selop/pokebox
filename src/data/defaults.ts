@@ -25,6 +25,13 @@ export const DEFAULT_CONFIG: AppConfig = {
     spotlightAngle: 48,
     spotlightPenumbra: 1.0,
   },
+  dof: {
+    enabled: false,
+    fStop: 5.6,
+    maxBlur: 0.01,
+    focusOffset: 0,
+    exposure: 0,
+  },
   shaders: {
     illustrationRare: {
       rainbowScale: 0.5,

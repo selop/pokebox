@@ -31,6 +31,7 @@ export const useAppStore = defineStore('app', () => {
   // --- Config (reactive, slider-bound) ---
   const config = reactive<AppConfig>({
     ...DEFAULT_CONFIG,
+    dof: { ...DEFAULT_CONFIG.dof },
     shaders: Object.fromEntries(
       Object.entries(DEFAULT_CONFIG.shaders).map(([k, v]) => [k, { ...v }]),
     ) as ShaderConfigs,
@@ -260,8 +261,9 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function resetDefaults() {
-    const { shaders, ...sceneDefaults } = DEFAULT_CONFIG
+    const { shaders, dof, ...sceneDefaults } = DEFAULT_CONFIG
     Object.assign(config, sceneDefaults)
+    Object.assign(config.dof, dof)
     for (const key of Object.keys(shaders) as (keyof ShaderConfigs)[]) {
       Object.assign(config.shaders[key], shaders[key])
     }

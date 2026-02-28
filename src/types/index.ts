@@ -9,6 +9,14 @@ export interface LightConfig {
   spotlightPenumbra: number
 }
 
+export interface DofConfig {
+  enabled: boolean
+  fStop: number
+  maxBlur: number
+  focusOffset: number
+  exposure: number // EV compensation (0 = no change, +1 = 2× brighter, -1 = 0.5×)
+}
+
 export interface SceneConfig {
   screenWidthCm: number
   screenHeightCm: number
@@ -25,6 +33,7 @@ export interface SceneConfig {
   webcamOffsetX: number // cm offset of webcam from screen centre (positive = right)
   webcamOffsetY: number // cm offset of webcam from screen centre (positive = up)
   lights: LightConfig
+  dof: DofConfig
 }
 
 export interface IllustrationRareConfig {
