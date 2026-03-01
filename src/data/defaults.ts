@@ -16,10 +16,10 @@ export const DEFAULT_CONFIG: AppConfig = {
   webcamOffsetX: 0,
   webcamOffsetY: 0,
   lights: {
-    ambientIntensity: 0.1,
-    directionalIntensity: 1.3,
+    ambientIntensity: 0.6,
+    directionalIntensity: 0.9,
     backlightIntensity: 10.0,
-    spotlightIntensity: 1.3,
+    spotlightIntensity: 3.0,
     spotlightX: 0.4,
     spotlightY: 1.0,
     spotlightAngle: 48,
@@ -39,7 +39,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     threshold: 0.85,
   },
   toneMapping: {
-    algorithm: 'aces',
+    algorithm: 'none',
     exposure: 0,
   },
   shaders: {

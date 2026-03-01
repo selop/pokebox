@@ -71,6 +71,11 @@ flowchart TB
         Booster["BoosterPackModal"]
         Toolbar["ToolbarButtons"]
         ShaderPanel["ShaderControlsPanel"]
+        GfxPanel["GraphicsPanel<br/><small>tone mapping, DOF, bloom</small>"]
+        CalPanel["CalibrationPanel<br/><small>webcam offset, lights</small>"]
+        Instructions["InstructionsModal"]
+        PerfOvl["PerfOverlay<br/><small>FPS, frame time</small>"]
+        Toast["ToastContainer"]
     end
 
     subgraph Composables["Composables"]
@@ -79,6 +84,7 @@ flowchart TB
         Face["useFaceTracking"]
         Tilt["useMouseTilt /<br/>useGyroscope"]
         Swipe["useSwipeGesture<br/><small>mobile vertical swipe</small>"]
+        Fullscreen["useFullscreen"]
         UniformWatch["useUniformWatchers<br/><small>registry-driven<br/>config→uniform sync</small>"]
         Timers["useSceneTimers<br/><small>slideshow, carousel,<br/>hero lifecycle</small>"]
     end
@@ -88,10 +94,20 @@ flowchart TB
         Box["Box Shell"]
         Cards["Card Meshes<br/><small>ShaderMaterial</small>"]
         Lights["Lights<br/><small>head-tracked spotlight</small>"]
+        subgraph PostProc["Post-processing<br/><small>always-on EffectComposer</small>"]
+            RP["RenderPass"]
+            Bloom["UnrealBloomPass"]
+            Bokeh["BokehPass<br/><small>maxblur=0 passthrough<br/>when DOF inactive</small>"]
+            Output["OutputPass<br/><small>tone mapping only<br/>(no sRGB transfer)</small>"]
+            RP --> Bloom --> Bokeh --> Output
+        end
         subgraph SceneHelpers["Scene Helpers"]
+            SceneBuilder["CardSceneBuilder<br/><small>layout dispatch</small>"]
             UniformUpd["ShaderUniformUpdater<br/><small>per-frame uniform push</small>"]
-            FanAnim["FanAnimator<br/><small>intro, hover, zoom</small>"]
+            FanAnim["FanAnimator<br/><small>intro, hover, zoom,<br/>fan-zoom DOF ramp</small>"]
             StackAnim["StackAnimator<br/><small>stack intro, swipe</small>"]
+            Navigator["CardNavigator<br/><small>single-mode nav</small>"]
+            Merge["MergeAnimator<br/><small>card transitions</small>"]
             FanLayout["FanLayoutBuilder"]
             StackLayout["StackLayoutBuilder"]
             CarouselLayout["CarouselLayoutBuilder"]
@@ -100,14 +116,15 @@ flowchart TB
 
     subgraph Shaders["GLSL Shaders"]
         Vert["holo.vert"]
-        Frag["*.frag<br/><small>9 holo types</small>"]
-        Common["common/*.glsl<br/><small>blend, filters,<br/>rainbow, holo-shine</small>"]
+        Frag["*.frag<br/><small>14 shader variants</small>"]
+        Common["common/*.glsl<br/><small>blend, filters, rainbow,<br/>holo-shine, base-adjust, voronoi</small>"]
         Frag --- Common
     end
 
     subgraph Data["Data Layer"]
         Catalog["cardCatalog.ts<br/><small>SET_REGISTRY +<br/>loadSetCatalog()</small>"]
         Hero["heroShowcase.ts<br/><small>cross-set hero cards</small>"]
+        Defaults["defaults.ts<br/><small>DEFAULT_CONFIG,<br/>STARTUP_CARD_ID</small>"]
         AssetUrl["assetUrl()<br/><small>VITE_ASSET_BASE_URL</small>"]
         Registry["shaderRegistry.ts<br/><small>uniform↔config<br/>single source of truth</small>"]
     end
@@ -119,9 +136,13 @@ flowchart TB
         OTEL["OTLP Collector"]
     end
 
+    subgraph Utils["Utils"]
+        Spring["SpringValue<br/><small>physics-based damping</small>"]
+        Perf["perfTracker<br/><small>FPS, draw calls</small>"]
+    end
+
     subgraph Telemetry["Telemetry"]
         Tracer["OTel Tracer<br/><small>telemetry.ts</small>"]
-        Perf["perfTracker<br/><small>FPS, draw calls,<br/>load times</small>"]
     end
 
     %% User interactions
@@ -129,6 +150,8 @@ flowchart TB
     Booster -->|"switchSet(setId)"| Store
     Toolbar -->|"display mode, slideshow<br/><small>set/card selects hidden in carousel</small>"| Store
     ShaderPanel -->|"shader uniforms"| Store
+    GfxPanel -->|"tone mapping, DOF, bloom"| Store
+    CalPanel -->|"lights, webcam offset"| Store
 
     %% Store → Scene
     Store -->|"displayCardIds watcher"| Loader
@@ -151,6 +174,7 @@ flowchart TB
 
     %% Tilt input
     Tilt -->|"rotateX/Y"| Scene
+    Spring -->|"damped spring"| Tilt
     Swipe -->|"swipe up/down"| Scene
 
     %% Scene rendering
@@ -158,8 +182,15 @@ flowchart TB
     Scene --> Box
     Scene --> Cards
     Scene --> Lights
+    Scene --> PostProc
+    Scene -->|"dispatch"| SceneBuilder
+    SceneBuilder -->|"delegates"| FanLayout
+    SceneBuilder -->|"delegates"| StackLayout
+    SceneBuilder -->|"delegates"| CarouselLayout
     Scene -->|"tick()"| FanAnim
     Scene -->|"tick()"| StackAnim
+    Scene -->|"tick()"| Navigator
+    Scene -->|"tick()"| Merge
     Loader -->|"CardTextures"| Cards
     Cards --- Vert
     Cards --- Frag
@@ -169,11 +200,6 @@ flowchart TB
     Registry -->|"uniform defs"| UniformWatch
     Registry -->|"initial values"| Cards
 
-    %% Layout builders
-    FanLayout -->|"build meshes"| Cards
-    StackLayout -->|"build meshes"| Cards
-    CarouselLayout -->|"build meshes"| Cards
-
     %% Telemetry
     Loader -->|"traced spans"| Tracer
     Tracer -->|"OTLP HTTP POST"| OTEL
@@ -182,6 +208,30 @@ flowchart TB
     %% Animate loop
     UniformUpd -->|"uPointer, uTime<br/>uniforms per frame"| Cards
 ```
+
+## Post-processing Pipeline
+
+Every frame renders through the same `EffectComposer` FBO chain, initialized eagerly at startup. This ensures consistent lighting whether DOF, bloom, or tone mapping are active or not — no visual pop when effects toggle on/off.
+
+```mermaid
+flowchart LR
+    Scene["Scene<br/><small>cards + box + lights</small>"]
+    RP["RenderPass<br/><small>scene → FBO</small>"]
+    Bloom["UnrealBloomPass<br/><small>toggled per-frame<br/>via bloomPass.enabled</small>"]
+    Bokeh["BokehPass<br/><small>maxblur=0 passthrough<br/>when DOF inactive</small>"]
+    Output["OutputPass<br/><small>tone mapping only<br/>(SRGB_TRANSFER disabled)</small>"]
+    Canvas["Canvas"]
+
+    Scene --> RP --> Bloom --> Bokeh --> Output --> Canvas
+```
+
+**Why OutputPass without sRGB transfer:**
+
+Three.js r182 skips per-material tone mapping when rendering to an FBO (`WebGLPrograms.js` checks `currentRenderTarget === null`). `OutputPass` is the only way to apply tone mapping in the compositor pipeline. However, card `ShaderMaterial` already outputs gamma-space sRGB directly in `gl_FragColor` — adding the sRGB transfer would double-gamma those pixels (milky washed-out look). Setting `renderer.outputColorSpace = LinearSRGBColorSpace` disables the sRGB transfer in `OutputPass`, so it applies tone mapping only.
+
+**Fan-zoom DOF:**
+
+When a card is clicked in fan mode, DOF ramps in gradually over 1 second (cubic ease-in-out), focusing on the zoomed card. On unzoom, DOF ramps back to 0 over 1 second. The `fanDofMaxBlur` / `fanDofRamp` state drives `BokehPass.uniforms.maxblur` each frame.
 
 ## Data Flow: Card Set Switch
 
@@ -218,4 +268,77 @@ sequenceDiagram
     Loader->>OTel: endSpan()
     Loader->>Scene: rebuildCardsOnly()
     Note over Scene: build ShaderMaterial<br/>per holoType + textures
+```
+
+## Data Flow: Booster Pack Opening
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Modal as BoosterPackModal
+    participant Store as Pinia Store
+    participant Catalog as cardCatalog
+    participant Scene as useThreeScene
+    participant Fan as FanAnimator
+
+    User->>Modal: click pack
+    Modal->>Store: openPack(setId)
+    Note over Modal: CSS phases:<br/>focus (0.5s) → shake (0.3s) → burst (0.4s)
+    Store->>Store: packOpeningPhase = 'css-anim'
+
+    par CSS animation + set loading
+        Modal->>Modal: animate focus → shake → burst
+        Store->>Catalog: loadSetCatalog(setId)
+    end
+
+    alt set loaded before CSS finishes
+        Store->>Store: packOpeningPhase = 'cascade'
+    else CSS finishes before set loads
+        Store->>Store: packOpeningPhase = 'waiting-load'
+        Note over Store: wait for catalog...
+        Store->>Store: packOpeningPhase = 'cascade'
+    end
+
+    Store->>Scene: close modal, rebuild fan
+    Scene->>Fan: intro with origin at screen center
+    Note over Fan: cards burst from single point<br/>staggered pop-up animation
+    Fan->>Fan: auto-reveal after 0.5s
+    Store->>Store: packOpeningPhase = 'idle'
+```
+
+## Data Flow: Fan-Zoom DOF Transition
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Fan as FanAnimator
+    participant Scene as useThreeScene
+    participant Bokeh as BokehPass
+
+    Note over Bokeh: maxblur=0 (passthrough)
+
+    User->>Fan: click card in fan
+    Fan->>Fan: start zoom transition (1.2s)
+    Note over Scene: compositor already active<br/>(always-on pipeline)
+
+    Fan-->>Scene: zoomedFanIndex set (zoom complete)
+    Scene->>Scene: start DOF ramp {from: 0, to: maxBlur, duration: 1.0s}
+
+    loop every frame (1.0s ramp)
+        Scene->>Scene: cubic ease-in-out interpolation
+        Scene->>Bokeh: maxblur = interpolated value
+    end
+
+    Note over Bokeh: maxblur = config.dof.maxBlur
+
+    User->>Fan: click empty space (unzoom)
+    Fan->>Fan: start return-to-fan transition
+    Scene->>Scene: start DOF ramp {from: maxBlur, to: 0, duration: 1.0s}
+
+    loop every frame (1.0s ramp)
+        Scene->>Scene: cubic ease-in-out interpolation
+        Scene->>Bokeh: maxblur = interpolated value
+    end
+
+    Note over Bokeh: maxblur=0 (passthrough restored)
 ```

@@ -5,6 +5,7 @@ import {
   AmbientLight,
   Color,
   DirectionalLight,
+  LinearSRGBColorSpace,
   Mesh,
   NeutralToneMapping,
   NoToneMapping,
@@ -24,6 +25,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { useAppStore } from '@/stores/app'
 import { buildBoxShell } from '@/three/buildBox'
 import { populateFurniture } from '@/three/buildFurniture'
@@ -56,7 +58,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let dimStartTime = 0
   let wasDimmed = false
 
-  // Post-processing (lazy-initialized on first DOF or bloom enable)
+  // Post-processing — initialized eagerly so every frame goes through the same
+  // FBO pipeline.  This keeps lighting consistent whether DOF/bloom are active or not.
   let composer: EffectComposer | null = null
   let bloomPass: UnrealBloomPass | null = null
   let bokehPass: BokehPass | null = null
@@ -243,6 +246,10 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = PCFSoftShadowMap
+    // Linear output color space tells OutputPass to apply tone mapping only,
+    // skipping linearToSRGB conversion.  Card shaders already output gamma-space
+    // sRGB directly; an extra sRGB transfer would double-gamma them (milky look).
+    renderer.outputColorSpace = LinearSRGBColorSpace
     renderer.toneMapping = TONE_MAP[store.config.toneMapping.algorithm]
     renderer.toneMappingExposure = Math.pow(2, store.config.toneMapping.exposure)
     container.appendChild(renderer.domElement)
@@ -255,6 +262,10 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       store.config.nearPlane,
       store.config.farPlane,
     )
+
+    // Create post-processing pipeline so every frame goes through the same
+    // FBO chain — lighting stays consistent regardless of DOF/bloom state.
+    initComposer()
 
     // Init card loader
     cardLoader = useCardLoader(renderer)
@@ -424,8 +435,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert()
   }
 
-  /** Lazily create the post-processing composer on first DOF or bloom enable. */
-  function ensureComposer() {
+  /** Create the post-processing composer.  Called once during init() so every
+   *  frame renders through the same FBO pipeline — no visual pop when DOF or
+   *  bloom activates later.  Passes that are not currently needed run in
+   *  passthrough mode (bloom disabled, bokeh maxblur=0). */
+  function initComposer() {
     if (composer || !renderer || !scene || !camera) return
     // Let EffectComposer auto-create render targets at the correct physical
     // pixel size (CSS size × devicePixelRatio). No MSAA on FBOs — the DOF
@@ -446,9 +460,17 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     bokehPass = new BokehPass(scene, camera, {
       focus: 500,
       aperture: FSTOP_SCALE / store.config.dof.fStop,
-      maxblur: store.config.dof.maxBlur,
+      maxblur: 0, // starts as passthrough — DOF ramps in when needed
     })
     composer.addPass(bokehPass)
+
+    // OutputPass applies tone mapping from renderer.toneMapping / toneMappingExposure.
+    // Three.js r182 skips per-material tone mapping on FBO renders (WebGLPrograms.js
+    // checks currentRenderTarget === null), so OutputPass is the only way to get tone
+    // mapping in the compositor pipeline.  SRGB transfer is disabled via
+    // renderer.outputColorSpace = LinearSRGBColorSpace to avoid double-gamma on card
+    // ShaderMaterials which already output gamma-space sRGB in gl_FragColor.
+    composer.addPass(new OutputPass())
   }
 
   function animate() {
@@ -682,56 +704,46 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       spotlight.penumbra = store.config.lights.spotlightPenumbra
     }
 
-    // Render — use composer when bloom or DOF is active, direct render otherwise
+    // Render — always through the compositor so the FBO pipeline is identical
+    // whether DOF/bloom are active or not (consistent lighting).
     const dofManual = store.config.dof.enabled && store.cardDisplayMode === 'single'
-    // Pre-engage compositor during the entire zoom lifecycle (zoom-in → rest → zoom-out → ramp-off)
-    // so the FBO pipeline is already running before any blur appears — avoids a hard visual pop
-    // when switching between direct render and compositor paths.
     const fanDofActive = fanDofMaxBlur > 0 || fanDofRamp !== null ||
       (store.cardDisplayMode === 'fan' && (fanAnimator.zoomedFanIndex !== null || fanAnimator.isZooming))
     const dofActive = dofManual || fanDofActive
     const bloomActive = store.config.bloom.enabled
-    if (dofActive || bloomActive) {
-      ensureComposer()
-      if (composer && bokehPass && bloomPass) {
-        // Toggle bloom pass per frame and push parameters
-        bloomPass.enabled = bloomActive
-        if (bloomActive) {
-          bloomPass.strength = store.config.bloom.strength
-          bloomPass.radius = store.config.bloom.radius
-          bloomPass.threshold = store.config.bloom.threshold
-        }
 
-        // DOF uniforms — when DOF is off but bloom is on, set maxblur=0 as passthrough
-        const u = bokehPass.uniforms as Record<string, { value: number }>
-        if (dofActive) {
-          // Focus on the zoomed fan card (or first mesh for single mode)
-          let focusZ = lastCardZ
-          if (fanDofActive) {
-            const zoomedMesh = meshes.find((m) => m.userData.fanIndex === fanAnimator.zoomedFanIndex)
-            if (zoomedMesh) focusZ = zoomedMesh.position.z
-          } else if (meshes.length > 0) {
-            focusZ = meshes[0]!.position.z
-          }
-          lastCardZ = focusZ
-          const focusDist = Math.abs(camera.position.z - focusZ) + store.config.dof.focusOffset
-          u['focus']!.value = focusDist
-          u['aperture']!.value = FSTOP_SCALE / store.config.dof.fStop
-          u['maxblur']!.value = fanDofActive ? fanDofMaxBlur : store.config.dof.maxBlur
-        } else {
-          // Passthrough — no blur
-          u['maxblur']!.value = 0
-        }
-        // Tone mapping drives renderer (OutputPass picks it up)
-        renderer!.toneMapping = TONE_MAP[store.config.toneMapping.algorithm]
-        renderer!.toneMappingExposure = Math.pow(2, store.config.toneMapping.exposure)
-        composer.render()
+    if (composer && bokehPass && bloomPass) {
+      // Bloom — toggle per frame and push parameters
+      bloomPass.enabled = bloomActive
+      if (bloomActive) {
+        bloomPass.strength = store.config.bloom.strength
+        bloomPass.radius = store.config.bloom.radius
+        bloomPass.threshold = store.config.bloom.threshold
       }
-    } else {
-      // Direct render — still apply tone mapping settings
-      renderer.toneMapping = TONE_MAP[store.config.toneMapping.algorithm]
-      renderer.toneMappingExposure = Math.pow(2, store.config.toneMapping.exposure)
-      renderer.render(scene, camera)
+
+      // DOF — passthrough (maxblur=0) when inactive
+      const u = bokehPass.uniforms as Record<string, { value: number }>
+      if (dofActive) {
+        // Focus on the zoomed fan card (or first mesh for single mode)
+        let focusZ = lastCardZ
+        if (fanDofActive) {
+          const zoomedMesh = meshes.find((m) => m.userData.fanIndex === fanAnimator.zoomedFanIndex)
+          if (zoomedMesh) focusZ = zoomedMesh.position.z
+        } else if (meshes.length > 0) {
+          focusZ = meshes[0]!.position.z
+        }
+        lastCardZ = focusZ
+        const focusDist = Math.abs(camera.position.z - focusZ) + store.config.dof.focusOffset
+        u['focus']!.value = focusDist
+        u['aperture']!.value = FSTOP_SCALE / store.config.dof.fStop
+        u['maxblur']!.value = fanDofActive ? fanDofMaxBlur : store.config.dof.maxBlur
+      } else {
+        u['maxblur']!.value = 0
+      }
+
+      renderer!.toneMapping = TONE_MAP[store.config.toneMapping.algorithm]
+      renderer!.toneMappingExposure = Math.pow(2, store.config.toneMapping.exposure)
+      composer.render()
     }
 
     perfTracker.sampleFrame()
