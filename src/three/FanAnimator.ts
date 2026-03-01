@@ -37,7 +37,7 @@ const ZOOMED_Z_OFFSET = 4
 /** Fraction of the zoom duration spent on the initial slide-out phase. */
 const SLIDE_PHASE = 0.25
 /** Seconds after intro finishes before auto-reveal begins (if no hover). */
-const AUTO_REVEAL_DELAY = 1.5
+const AUTO_REVEAL_DELAY = 0.5
 /** Seconds between each card's auto-reveal activation. */
 const AUTO_REVEAL_SPREAD = 0.2
 

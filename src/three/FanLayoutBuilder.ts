@@ -91,7 +91,7 @@ export function buildFanLayout(
 
     // Staggered intro: back card (i=0) pops first, front card last
     const introDelay = i * 0.07 // seconds between each card
-    const introDuration = 0.45 // seconds for each card's pop-up
+    const introDuration = 0.35 // seconds for each card's pop-up
 
     // Store animation targets in userData
     mesh.userData.fanIndex = i
