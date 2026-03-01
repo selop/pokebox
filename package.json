@@ -62,7 +62,7 @@
     "eslint-plugin-playwright": "^2.5.1",
     "eslint-plugin-vue": "~10.7.0",
     "jiti": "^2.6.1",
-    "jsdom": "^25.0.0",
+    "jsdom": "^28.1.0",
     "npm-run-all2": "^8.0.4",
     "oxlint": "~1.42.0",
     "prettier": "3.8.1",
