@@ -114,6 +114,10 @@ export class FanAnimator {
     return this.fanZoomTransition !== null || this.fanUnzoomTransition !== null
   }
 
+  get isUnzooming(): boolean {
+    return this.fanUnzoomTransition !== null
+  }
+
   get zoomedFanIndex(): number | null {
     return this._zoomedFanIndex
   }

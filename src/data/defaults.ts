@@ -39,7 +39,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     threshold: 0.85,
   },
   toneMapping: {
-    algorithm: 'none',
+    algorithm: 'aces',
     exposure: 0,
   },
   shaders: {

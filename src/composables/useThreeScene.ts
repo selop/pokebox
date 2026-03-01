@@ -85,6 +85,12 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   // Pack opening: custom intro origin for fan cards emerging from screen center
   let pendingIntroOrigin: { x: number; y: number; z: number } | null = null
 
+  // Fan-zoom DOF: automatically engages DOF when a fan card is zoomed, fades out on unzoom
+  let fanDofMaxBlur = 0
+  let fanDofRamp: { startTime: number; duration: number; from: number; to: number } | null = null
+  let prevZoomedFanIndex: number | null = null
+  let prevUnzooming = false
+
   // Delegates
   const mergeAnimator = new MergeAnimator(store)
   const cardNavigator = new CardNavigator(
@@ -476,6 +482,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
 
     const baseRotY = cardAngle + (store.cardTransform.rotY * Math.PI) / 180
+
     if (store.cardDisplayMode === 'carousel') {
       // Carousel mode: smooth slide animation — lerp each card toward its target slot
       const peekSpeed = 1 - Math.pow(0.001, dt)
@@ -525,6 +532,43 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         mesh.rotation.x = tilt.state.rotateX
         const explodeRotY = mesh.userData.explodeRotationY || 0
         mesh.rotation.y = baseRotY + tilt.state.rotateY + explodeRotY
+      }
+    }
+
+    // ── Fan-zoom DOF: detect zoom state changes and ramp DOF in/out ──
+    if (store.cardDisplayMode === 'fan') {
+      const zoomed = fanAnimator.zoomedFanIndex
+      const unzooming = fanAnimator.isUnzooming
+      // Zoom-in completed (zoomedFanIndex just went from null → non-null)
+      if (prevZoomedFanIndex === null && zoomed !== null) {
+        fanDofRamp = { startTime: time, duration: 1.0, from: fanDofMaxBlur, to: store.config.dof.maxBlur }
+      }
+      // Unzoom started (transition just began — DOF fades during the spin-back)
+      if (!prevUnzooming && unzooming) {
+        fanDofRamp = { startTime: time, duration: 1.0, from: fanDofMaxBlur, to: 0 }
+      }
+      prevZoomedFanIndex = zoomed
+      prevUnzooming = unzooming
+    } else {
+      // Left fan mode — kill any ramp immediately
+      if (fanDofMaxBlur > 0 || fanDofRamp) {
+        fanDofMaxBlur = 0
+        fanDofRamp = null
+      }
+      prevZoomedFanIndex = null
+      prevUnzooming = false
+    }
+    // Advance fan DOF ramp
+    if (fanDofRamp) {
+      const rampT = Math.min((time - fanDofRamp.startTime) / fanDofRamp.duration, 1.0)
+      // Ease-in-out cubic — gradual onset and settle, avoids abrupt blur appearance
+      const ease = rampT < 0.5
+        ? 4 * rampT * rampT * rampT
+        : 1 - Math.pow(-2 * rampT + 2, 3) / 2
+      fanDofMaxBlur = fanDofRamp.from + (fanDofRamp.to - fanDofRamp.from) * ease
+      if (rampT >= 1.0) {
+        fanDofMaxBlur = fanDofRamp.to
+        fanDofRamp = null
       }
     }
 
@@ -639,7 +683,13 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     }
 
     // Render — use composer when bloom or DOF is active, direct render otherwise
-    const dofActive = store.config.dof.enabled && store.cardDisplayMode === 'single'
+    const dofManual = store.config.dof.enabled && store.cardDisplayMode === 'single'
+    // Pre-engage compositor during the entire zoom lifecycle (zoom-in → rest → zoom-out → ramp-off)
+    // so the FBO pipeline is already running before any blur appears — avoids a hard visual pop
+    // when switching between direct render and compositor paths.
+    const fanDofActive = fanDofMaxBlur > 0 || fanDofRamp !== null ||
+      (store.cardDisplayMode === 'fan' && (fanAnimator.zoomedFanIndex !== null || fanAnimator.isZooming))
+    const dofActive = dofManual || fanDofActive
     const bloomActive = store.config.bloom.enabled
     if (dofActive || bloomActive) {
       ensureComposer()
@@ -655,11 +705,19 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         // DOF uniforms — when DOF is off but bloom is on, set maxblur=0 as passthrough
         const u = bokehPass.uniforms as Record<string, { value: number }>
         if (dofActive) {
-          if (meshes.length > 0) lastCardZ = meshes[0]!.position.z
-          const focusDist = Math.abs(camera.position.z - lastCardZ) + store.config.dof.focusOffset
+          // Focus on the zoomed fan card (or first mesh for single mode)
+          let focusZ = lastCardZ
+          if (fanDofActive) {
+            const zoomedMesh = meshes.find((m) => m.userData.fanIndex === fanAnimator.zoomedFanIndex)
+            if (zoomedMesh) focusZ = zoomedMesh.position.z
+          } else if (meshes.length > 0) {
+            focusZ = meshes[0]!.position.z
+          }
+          lastCardZ = focusZ
+          const focusDist = Math.abs(camera.position.z - focusZ) + store.config.dof.focusOffset
           u['focus']!.value = focusDist
           u['aperture']!.value = FSTOP_SCALE / store.config.dof.fStop
-          u['maxblur']!.value = store.config.dof.maxBlur
+          u['maxblur']!.value = fanDofActive ? fanDofMaxBlur : store.config.dof.maxBlur
         } else {
           // Passthrough — no blur
           u['maxblur']!.value = 0
@@ -866,6 +924,7 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
         cardMeshes.value.map((m) => ({
           id: m.userData.cardId as string,
           heroIndex: m.userData.carouselHeroIndex as number | undefined,
+          fanIndex: m.userData.fanIndex as number | undefined,
           x: m.position.x,
           y: m.position.y,
           z: m.position.z,
@@ -875,6 +934,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
             | { x: number; y: number; z: number; rotY: number; scale: number }
             | undefined,
         })),
+      getFanDofState: () => ({
+        fanDofMaxBlur,
+        ramping: fanDofRamp !== null,
+        zoomedFanIndex: fanAnimator.zoomedFanIndex,
+      }),
     }
   }
 
