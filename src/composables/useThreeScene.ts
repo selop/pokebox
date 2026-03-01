@@ -1,10 +1,13 @@
 import { onBeforeUnmount, shallowRef, watch, type Ref } from 'vue'
 import {
   ACESFilmicToneMapping,
+  AgXToneMapping,
   AmbientLight,
   Color,
   DirectionalLight,
   Mesh,
+  NeutralToneMapping,
+  NoToneMapping,
   PCFSoftShadowMap,
   PerspectiveCamera,
   PointLight,
@@ -15,12 +18,12 @@ import {
   Vector2,
   WebGLRenderer,
 } from 'three'
-import type { Texture } from 'three'
+import type { ToneMappingAlgorithm } from '@/types'
+import type { Texture, ToneMapping } from 'three'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { useAppStore } from '@/stores/app'
 import { buildBoxShell } from '@/three/buildBox'
 import { populateFurniture } from '@/three/buildFurniture'
@@ -59,6 +62,12 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
   let bokehPass: BokehPass | null = null
   let lastCardZ = 0 // cached card Z for DOF focus stability during transitions
   const FSTOP_SCALE = 0.003 // maps f-stop to BokehPass aperture: aperture = FSTOP_SCALE / fStop
+  const TONE_MAP: Record<ToneMappingAlgorithm, ToneMapping> = {
+    aces: ACESFilmicToneMapping,
+    agx: AgXToneMapping,
+    neutral: NeutralToneMapping,
+    none: NoToneMapping,
+  }
 
   // Card state
   const cardMeshes = shallowRef<Mesh[]>([])
@@ -228,8 +237,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = PCFSoftShadowMap
-    renderer.toneMapping = ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.0
+    renderer.toneMapping = TONE_MAP[store.config.toneMapping.algorithm]
+    renderer.toneMappingExposure = Math.pow(2, store.config.toneMapping.exposure)
     container.appendChild(renderer.domElement)
     mouseTilt.attach(renderer.domElement)
     swipeGesture.attach(renderer.domElement)
@@ -434,10 +443,6 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       maxblur: store.config.dof.maxBlur,
     })
     composer.addPass(bokehPass)
-
-    // OutputPass applies tone mapping + color space encoding as the final step,
-    // so bloom and DOF operate in linear HDR space before the ACES curve.
-    composer.addPass(new OutputPass())
   }
 
   function animate() {
@@ -659,11 +664,15 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           // Passthrough — no blur
           u['maxblur']!.value = 0
         }
-        // Exposure drives tone mapping curve via renderer (OutputPass picks it up)
-        renderer!.toneMappingExposure = Math.pow(2, store.config.dof.exposure)
+        // Tone mapping drives renderer (OutputPass picks it up)
+        renderer!.toneMapping = TONE_MAP[store.config.toneMapping.algorithm]
+        renderer!.toneMappingExposure = Math.pow(2, store.config.toneMapping.exposure)
         composer.render()
       }
     } else {
+      // Direct render — still apply tone mapping settings
+      renderer.toneMapping = TONE_MAP[store.config.toneMapping.algorithm]
+      renderer.toneMappingExposure = Math.pow(2, store.config.toneMapping.exposure)
       renderer.render(scene, camera)
     }
 

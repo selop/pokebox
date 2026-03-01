@@ -143,6 +143,14 @@ const displayModes = [
       >
         &#x2699;
       </button>
+      <button
+        v-if="!store.isMobile"
+        class="toolbar-btn toolbar-btn--icon"
+        title="Graphics"
+        @click="store.toggleGraphicsPanel()"
+      >
+        &#x2728;
+      </button>
       <Transition name="btn-fade">
         <button
           v-if="

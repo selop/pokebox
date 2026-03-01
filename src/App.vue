@@ -7,6 +7,7 @@ import TrackingData from './components/TrackingData.vue'
 import ToolbarButtons from './components/ToolbarButtons.vue'
 import CalibrationPanel from './components/CalibrationPanel.vue'
 import ShaderControlsPanel from './components/ShaderControlsPanel.vue'
+import GraphicsPanel from './components/GraphicsPanel.vue'
 import InstructionsModal from './components/InstructionsModal.vue'
 import BoosterPackModal from './components/BoosterPackModal.vue'
 import CardSearch from './components/CardSearch.vue'
@@ -56,6 +57,7 @@ async function onEnableGyroscope() {
   <ToolbarButtons />
   <CalibrationPanel v-if="!store.isMobile" />
   <ShaderControlsPanel v-if="!store.isMobile" />
+  <GraphicsPanel v-if="!store.isMobile" />
   <CardSearch v-if="store.cardDisplayMode === 'single' || (store.isMobile && store.cardDisplayMode === 'stack')" />
   <PerfOverlay />
   <ToastContainer />

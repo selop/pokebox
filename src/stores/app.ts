@@ -33,6 +33,7 @@ export const useAppStore = defineStore('app', () => {
     ...DEFAULT_CONFIG,
     dof: { ...DEFAULT_CONFIG.dof },
     bloom: { ...DEFAULT_CONFIG.bloom },
+    toneMapping: { ...DEFAULT_CONFIG.toneMapping },
     shaders: Object.fromEntries(
       Object.entries(DEFAULT_CONFIG.shaders).map(([k, v]) => [k, { ...v }]),
     ) as ShaderConfigs,
@@ -96,6 +97,7 @@ export const useAppStore = defineStore('app', () => {
   // --- UI state ---
   const isPanelOpen = ref(false)
   const isShaderPanelOpen = ref(false)
+  const isGraphicsPanelOpen = ref(false)
   const isTrackingActive = ref(false)
   const isSlideshowActive = ref(false)
   const isDimmed = ref(false)
@@ -262,10 +264,11 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function resetDefaults() {
-    const { shaders, dof, bloom, ...sceneDefaults } = DEFAULT_CONFIG
+    const { shaders, dof, bloom, toneMapping, ...sceneDefaults } = DEFAULT_CONFIG
     Object.assign(config, sceneDefaults)
     Object.assign(config.dof, dof)
     Object.assign(config.bloom, bloom)
+    Object.assign(config.toneMapping, toneMapping)
     for (const key of Object.keys(shaders) as (keyof ShaderConfigs)[]) {
       Object.assign(config.shaders[key], shaders[key])
     }
@@ -366,6 +369,10 @@ export const useAppStore = defineStore('app', () => {
     isShaderPanelOpen.value = !isShaderPanelOpen.value
   }
 
+  function toggleGraphicsPanel() {
+    isGraphicsPanelOpen.value = !isGraphicsPanelOpen.value
+  }
+
   function toggleSlideshow() {
     stopHeroShowcase()
     isSlideshowActive.value = !isSlideshowActive.value
@@ -447,6 +454,7 @@ export const useAppStore = defineStore('app', () => {
     setLoading,
     isPanelOpen,
     isShaderPanelOpen,
+    isGraphicsPanelOpen,
     isTrackingActive,
     isHeroShowcaseActive,
     stopHeroShowcase,
@@ -478,6 +486,7 @@ export const useAppStore = defineStore('app', () => {
     toggleRenderMode,
     togglePanel,
     toggleShaderPanel,
+    toggleGraphicsPanel,
     toggleSlideshow,
     toggleDimLights,
     toggleIdleFloat,

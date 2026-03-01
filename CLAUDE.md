@@ -50,6 +50,17 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
    - Special illustration rare, ultra rare, and rainbow rare use iridescent textures loaded from `public/img/151/iri-{7,8,9}.webp`
    - Special illustration rare additionally loads sparkle iri textures from `public/img/151/iri-{1,2}.webp` for the tilt sparkle effect (loaded via `useCardLoader.loadSparkleIriTextures()`)
 
+### Post-processing & tone mapping
+
+When DOF or bloom is enabled, the scene renders through an `EffectComposer` chain: `RenderPass` → `UnrealBloomPass` → `BokehPass`. **No `OutputPass`** — card shaders output display-ready sRGB (gamma-space) values directly in `gl_FragColor`, so adding an OutputPass would double-apply tone mapping and wash out colors.
+
+Tone mapping is handled **per-material** by the renderer (`renderer.toneMapping`). Three.js injects tone mapping shader chunks into each material at compile time. The `TONE_MAP` lookup in `useThreeScene.ts` maps `ToneMappingAlgorithm` (`'aces'` | `'agx'` | `'neutral'` | `'none'`) to Three.js constants. Exposure is driven by `renderer.toneMappingExposure = Math.pow(2, config.toneMapping.exposure)` every frame, in both the composer and direct-render paths.
+
+The **GraphicsPanel** (`src/components/GraphicsPanel.vue`) exposes three sections:
+1. **Tone Mapping** — algorithm selector (ACES Filmic / AgX / Neutral / None) + exposure slider
+2. **Depth of Field** — enable toggle, aperture (f-stop), max blur, focus offset
+3. **Bloom** — enable toggle, strength, radius, threshold
+
 ### Shader selection logic
 
 Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog.ts` based on the JSON metadata's `rarity.designation` and `foil.type`/`foil.mask` fields:
@@ -77,12 +88,12 @@ Cards are assigned a `holoType` automatically by `mapHoloType()` in `cardCatalog
 
 | Directory           | Role                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/stores/app.ts` | Single Pinia store — all global state (config, eye position, card selection, scene mode, set switching, mobile detection, pack opening animation state machine) |
+| `src/stores/app.ts` | Single Pinia store — all global state (config incl. DOF/bloom/toneMapping, eye position, card selection, scene mode, set switching, mobile detection, panel toggles, pack opening animation state machine) |
 | `src/composables/`  | Vue composables: `useThreeScene` (scene + render loop), `useCardLoader` (texture loading), `useFaceTracking` (MediaPipe), `useKeyboard`, `useFullscreen`, `useUniformWatchers` (registry-driven config→uniform sync), `useSceneTimers` (slideshow/carousel/hero timers), `useSwipeGesture` (vertical swipe detection for mobile stack mode) |
 | `src/three/`        | Three.js builders: `buildCard` (card mesh + shader material), `buildBox` (shell geometry), `buildFurniture` (procedural objects), `CardSceneBuilder` (card scene orchestration — dispatches to layout builders), `CardNavigator` (card navigation), `MergeAnimator` (card transitions), `FanAnimator` (fan intro/hover/zoom animation), `FanLayoutBuilder` (fan arc layout), `StackAnimator` (stack intro/swipe animation), `StackLayoutBuilder` (stacked card layout for mobile), `CarouselLayoutBuilder` (carousel slot layout), `ShaderUniformUpdater` (per-frame uniform push), `geometryHelpers`, `utils` |
 | `src/shaders/`      | GLSL fragment shaders; shared functions in `common/` subdir, included via `#include` (resolved by `vite-plugin-glsl`)                                        |
 | `src/data/`         | `cardCatalog.ts` (JSON-driven card catalog with `SET_REGISTRY` and `loadSetCatalog()`), `defaults.ts` (initial config values), `heroShowcase.ts` (curated cross-set hero cards for carousel), `shaderRegistry.ts` (canonical uniform↔config mappings — single source of truth for all shader styles) |
-| `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `SetDefinition`, `SetCardJson`, `CardTransform`, `EyePosition`, `DerivedDimensions`, `HoloType`, `ShaderStyle` |
+| `src/types/`        | TypeScript interfaces: `AppConfig`, `CardCatalogEntry`, `SetDefinition`, `SetCardJson`, `CardTransform`, `EyePosition`, `DerivedDimensions`, `HoloType`, `ShaderStyle`, `ToneMappingConfig` |
 | `docs/`             | `CARD-SETS.md` (card set system documentation, adding new sets), `SHADER-TESTING.md`                                                                         |
 
 ### Card catalog & texture system
@@ -147,11 +158,21 @@ The config/displayCardIds watchers in `useThreeScene` skip rebuilds during `css-
 
 **Fan ↔ single interaction**: Click a fan card to zoom into single mode. The toolbar dropdown `switchSet()` bypasses the animation entirely.
 
-**Mobile stack mode**: On mobile, pack opening enters `stack` mode instead of `fan` — 5 cards pile with visible edges, swipeable up/down to cycle. The top card flies off and reappears at the bottom. Arrow nav and slideshow buttons are hidden in stack mode. A "Browse Set" button appears in the bottom nav bar (next to "Packs") allowing the user to exit stack into single mode for browsing individual cards. The calibration panel, shader controls panel, and their toolbar toggle buttons (Settings, Shader) are hidden on mobile via `v-if="!store.isMobile"`.
+**Mobile stack mode**: On mobile, pack opening enters `stack` mode instead of `fan` — 5 cards pile with visible edges, swipeable up/down to cycle. The top card flies off and reappears at the bottom. Arrow nav and slideshow buttons are hidden in stack mode. A "Browse Set" button appears in the bottom nav bar (next to "Packs") allowing the user to exit stack into single mode for browsing individual cards. The calibration panel, shader controls panel, graphics panel, and their toolbar toggle buttons (Settings, Graphics, Shader) are hidden on mobile via `v-if="!store.isMobile"`.
 
 ### Hero carousel
 
 On desktop startup (when no URL params override), the app enters a hero showcase carousel — a cover-flow layout with 5 visible cards from curated `HERO_SHOWCASE` entries spanning multiple sets. The center card is full-size and face-on, side cards are progressively smaller, Y-rotated, and Z-recessed. All hero cards are built once (not rebuilt on each advance); `updateCarouselTargets()` updates lerp targets and the animation loop smoothly slides cards to new positions. Auto-rotates every 4s; N/B keys rotate manually and reset the timer. Any user interaction (set change, card select, toolbar click) exits carousel via `stopHeroShowcase()`. The set and card selector dropdowns are hidden in carousel mode since the carousel spans multiple sets.
+
+### Toolbar layout
+
+The toolbar (`ToolbarButtons.vue`) uses three independently-positioned zones on desktop (CSS `display: contents` on the parent, each zone is `position: fixed`):
+
+- **zone-left** (top-left): card selector, "Packs" button, display mode dropdown
+- **zone-right** (top-right): render mode, dim lights, fullscreen ⛶, settings ⚙, graphics ✨, shader ✦ (icon buttons)
+- **zone-bottom** (bottom-center): slideshow, float/anchor, share (visible in single card mode)
+
+On mobile, all zones collapse into a single flex-wrap container with `order`-based reflow.
 
 ### State-driven rebuilds
 

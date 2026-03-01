@@ -38,6 +38,10 @@ export const DEFAULT_CONFIG: AppConfig = {
     radius: 0.4,
     threshold: 0.85,
   },
+  toneMapping: {
+    algorithm: 'none',
+    exposure: 0,
+  },
   shaders: {
     illustrationRare: {
       rainbowScale: 0.5,

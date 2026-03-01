@@ -24,6 +24,13 @@ export interface BloomConfig {
   threshold: number // 0–1, luminance cutoff
 }
 
+export type ToneMappingAlgorithm = 'aces' | 'agx' | 'neutral' | 'none'
+
+export interface ToneMappingConfig {
+  algorithm: ToneMappingAlgorithm
+  exposure: number // EV compensation (0 = no change, +1 = 2× brighter)
+}
+
 export interface SceneConfig {
   screenWidthCm: number
   screenHeightCm: number
@@ -42,6 +49,7 @@ export interface SceneConfig {
   lights: LightConfig
   dof: DofConfig
   bloom: BloomConfig
+  toneMapping: ToneMappingConfig
 }
 
 export interface IllustrationRareConfig {
