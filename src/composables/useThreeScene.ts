@@ -1,5 +1,6 @@
 import { onBeforeUnmount, shallowRef, watch, type Ref } from 'vue'
 import {
+  ACESFilmicToneMapping,
   AmbientLight,
   Color,
   DirectionalLight,
@@ -19,6 +20,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { useAppStore } from '@/stores/app'
 import { buildBoxShell } from '@/three/buildBox'
 import { populateFurniture } from '@/three/buildFurniture'
@@ -226,6 +228,8 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = PCFSoftShadowMap
+    renderer.toneMapping = ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.0
     container.appendChild(renderer.domElement)
     mouseTilt.attach(renderer.domElement)
     swipeGesture.attach(renderer.domElement)
@@ -429,15 +433,11 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
       aperture: FSTOP_SCALE / store.config.dof.fStop,
       maxblur: store.config.dof.maxBlur,
     })
-    // Patch BokehShader to include exposure compensation in the same pass,
-    // avoiding an extra fullscreen quad. No OutputPass needed — card shaders
-    // output displayable gamma-space values directly.
-    const mat = bokehPass.materialBokeh
-    mat.fragmentShader = mat.fragmentShader
-      .replace('uniform float aperture;', 'uniform float aperture;\nuniform float exposure;')
-      .replace('gl_FragColor = col / 41.0;', 'gl_FragColor = col * (exposure / 41.0);')
-    mat.uniforms['exposure'] = { value: 1.0 }
     composer.addPass(bokehPass)
+
+    // OutputPass applies tone mapping + color space encoding as the final step,
+    // so bloom and DOF operate in linear HDR space before the ACES curve.
+    composer.addPass(new OutputPass())
   }
 
   function animate() {
@@ -655,12 +655,12 @@ export function useThreeScene(containerRef: Ref<HTMLElement | null>) {
           u['focus']!.value = focusDist
           u['aperture']!.value = FSTOP_SCALE / store.config.dof.fStop
           u['maxblur']!.value = store.config.dof.maxBlur
-          u['exposure']!.value = Math.pow(2, store.config.dof.exposure)
         } else {
-          // Passthrough — no blur, neutral exposure
+          // Passthrough — no blur
           u['maxblur']!.value = 0
-          u['exposure']!.value = 1.0
         }
+        // Exposure drives tone mapping curve via renderer (OutputPass picks it up)
+        renderer!.toneMappingExposure = Math.pow(2, store.config.dof.exposure)
         composer.render()
       }
     } else {
