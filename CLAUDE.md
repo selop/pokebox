@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview section
+## Project Overview
 
 This project is a Vue 3 + TypeScript + Three.js Pokemon card viewer with GLSL shaders.
 
@@ -20,6 +20,9 @@ bun test:e2e         # Playwright end-to-end tests
 ```
 
 **Do NOT use bare `bun test`** — it invokes Bun's built-in test runner which lacks Vite's `@/` path aliases, `vite-plugin-glsl` imports, and Playwright's test harness. Always use the specific commands above (`bun test:unit`, `bun test:shader`, `bun test:e2e`).
+
+To run a single test file: `bunx vitest run path/to/test.ts`
+To filter by test name: `bunx vitest run -t "test name pattern"`
 
 ## Architecture
 
@@ -52,9 +55,11 @@ Pokebox is a Vue 3 + Three.js app that creates a parallax "window into a box" ef
 
 ### Post-processing & tone mapping
 
-When DOF or bloom is enabled, the scene renders through an `EffectComposer` chain: `RenderPass` → `UnrealBloomPass` → `BokehPass`. **No `OutputPass`** — card shaders output display-ready sRGB (gamma-space) values directly in `gl_FragColor`, so adding an OutputPass would double-apply tone mapping and wash out colors.
+The scene always renders through an `EffectComposer` chain: `RenderPass` → `UnrealBloomPass` → `BokehPass` → `OutputPass`. The compositor runs even when DOF and bloom are disabled (passes act as passthroughs), ensuring consistent tone mapping behavior.
 
-Tone mapping is handled **per-material** by the renderer (`renderer.toneMapping`). Three.js injects tone mapping shader chunks into each material at compile time. The `TONE_MAP` lookup in `useThreeScene.ts` maps `ToneMappingAlgorithm` (`'aces'` | `'agx'` | `'neutral'` | `'none'`) to Three.js constants. Exposure is driven by `renderer.toneMappingExposure = Math.pow(2, config.toneMapping.exposure)` every frame, in both the composer and direct-render paths.
+**Tone mapping** is applied by `OutputPass` using `renderer.toneMapping` / `renderer.toneMappingExposure`. Three.js r182+ skips per-material tone mapping when rendering to FBO (`currentRenderTarget !== null`), so `OutputPass` is the only way to get tone mapping in the compositor pipeline. The `TONE_MAP` lookup in `useThreeScene.ts` maps `ToneMappingAlgorithm` (`'aces'` | `'agx'` | `'neutral'` | `'none'`) to Three.js constants. Exposure is driven by `renderer.toneMappingExposure = Math.pow(2, config.toneMapping.exposure)` every frame.
+
+**Color space**: `renderer.outputColorSpace = LinearSRGBColorSpace` disables the sRGB transfer in `OutputPass`. Card shaders already output gamma-space sRGB in `gl_FragColor`, so an extra linear→sRGB conversion would double-gamma them (milky washed-out look).
 
 The **GraphicsPanel** (`src/components/GraphicsPanel.vue`) exposes three sections:
 1. **Tone Mapping** — algorithm selector (ACES Filmic / AgX / Neutral / None) + exposure slider
