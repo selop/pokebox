@@ -106,7 +106,17 @@ describe('Shader Compilation', () => {
     'uGlareOpacity',
   ])
 
-  testShaderCompilation('regular-holo', regularHoloFrag)
+  testShaderCompilation('regular-holo', regularHoloFrag, [
+    'uPillarDensity',
+    'uPillarSharpness',
+    'uPillarTiltX',
+    'uPillarTiltY',
+    'uPillarBrightness',
+    'uPillarContrast',
+    'uPillarSaturation',
+    'uGlareOpacity',
+    'uGlareRadius',
+  ])
 
   testShaderCompilation('special-illustration-rare', specialIllustrationRareFrag, [
     'uIri7Tex',

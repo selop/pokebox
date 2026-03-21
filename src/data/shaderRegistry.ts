@@ -13,6 +13,17 @@ export interface ShaderUniformDef {
  * (reactive watcher bindings), eliminating the previous 3-way duplication.
  */
 export const SHADER_UNIFORM_REGISTRY: Partial<Record<ShaderStyle, ShaderUniformDef[]>> = {
+  'regular-holo': [
+    { uniform: 'uPillarDensity', configPath: 'regularHolo.pillarDensity' },
+    { uniform: 'uPillarSharpness', configPath: 'regularHolo.pillarSharpness' },
+    { uniform: 'uPillarTiltX', configPath: 'regularHolo.pillarTiltX' },
+    { uniform: 'uPillarTiltY', configPath: 'regularHolo.pillarTiltY' },
+    { uniform: 'uPillarBrightness', configPath: 'regularHolo.pillarBrightness' },
+    { uniform: 'uPillarContrast', configPath: 'regularHolo.pillarContrast' },
+    { uniform: 'uPillarSaturation', configPath: 'regularHolo.pillarSaturation' },
+    { uniform: 'uGlareOpacity', configPath: 'regularHolo.glareOpacity' },
+    { uniform: 'uGlareRadius', configPath: 'regularHolo.glareRadius' },
+  ],
   'illustration-rare': [
     { uniform: 'uRainbowScale', configPath: 'illustrationRare.rainbowScale' },
     { uniform: 'uBarAngle', configPath: 'illustrationRare.barAngle' },

@@ -283,7 +283,20 @@ export interface TeraShinyRareConfig extends TeraRainbowRareConfig {
   mosaicFoilThreshold: number
 }
 
+export interface RegularHoloConfig {
+  pillarDensity: number
+  pillarSharpness: number
+  pillarTiltX: number
+  pillarTiltY: number
+  pillarBrightness: number
+  pillarContrast: number
+  pillarSaturation: number
+  glareOpacity: number
+  glareRadius: number
+}
+
 export interface ShaderConfigs {
+  regularHolo: RegularHoloConfig
   illustrationRare: IllustrationRareConfig
   specialIllustrationRare: SpecialIllustrationRareConfig
   teraRainbowRare: TeraRainbowRareConfig

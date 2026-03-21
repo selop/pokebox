@@ -54,6 +54,26 @@ function onShaderSlider(section: ShaderSection, prop: string, value: string) {
 
 const sections: ShaderSection[] = [
   {
+    id: 'regular-holo',
+    shaderKey: 'regularHolo',
+    title: 'Regular Holo',
+    icon: '\u{1F308}',
+    items: [
+      { subsection: 'Pillars' },
+      { label: 'Density', prop: 'pillarDensity', min: 1, max: 20, step: 0.5 },
+      { label: 'Sharpness', prop: 'pillarSharpness', min: 0, max: 1, step: 0.05 },
+      { label: 'Tilt X', prop: 'pillarTiltX', min: 0, max: 10, step: 0.1 },
+      { label: 'Tilt Y', prop: 'pillarTiltY', min: 0, max: 10, step: 0.1 },
+      { subsection: 'Color' },
+      { label: 'Brightness', prop: 'pillarBrightness', min: 0.5, max: 3, step: 0.05 },
+      { label: 'Contrast', prop: 'pillarContrast', min: 0.5, max: 5, step: 0.05 },
+      { label: 'Saturation', prop: 'pillarSaturation', min: 0, max: 2, step: 0.05 },
+      { subsection: 'Glare' },
+      { label: 'Opacity', prop: 'glareOpacity', min: 0, max: 1, step: 0.05 },
+      { label: 'Radius', prop: 'glareRadius', min: 0.1, max: 2, step: 0.05 },
+    ],
+  },
+  {
     id: 'illustration-rare',
     shaderKey: 'illustrationRare',
     title: 'Illustration Rare',

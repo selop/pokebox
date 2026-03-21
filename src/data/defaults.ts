@@ -43,6 +43,17 @@ export const DEFAULT_CONFIG: AppConfig = {
     exposure: 0,
   },
   shaders: {
+    regularHolo: {
+      pillarDensity: 6.0,
+      pillarSharpness: 0.5,
+      pillarTiltX: 4.0,
+      pillarTiltY: 2.0,
+      pillarBrightness: 1.2,
+      pillarContrast: 1.5,
+      pillarSaturation: 0.9,
+      glareOpacity: 0.6,
+      glareRadius: 0.7,
+    },
     illustrationRare: {
       rainbowScale: 0.5,
       barAngle: 132.0,
