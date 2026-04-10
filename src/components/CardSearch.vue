@@ -92,7 +92,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onClickOutside
           :alt="card.label"
           class="search-thumb"
           loading="lazy"
-          crossorigin="anonymous"
+
         />
         <span class="search-label">{{ card.label }}</span>
       </div>

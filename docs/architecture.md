@@ -13,29 +13,32 @@ flowchart TB
     end
 
     subgraph Secrets["Build-time Secrets"]
-        S1["VITE_ASSET_BASE_URL"]
+        S1["VITE_ASSET_BASE_URL<br/><small>/assets/</small>"]
         S2["VITE_OTEL_COLLECTOR_URL"]
     end
     Secrets -.->|injected at build| Build
 
     subgraph Host["Docker Host"]
+        SSD["/mnt/ssd/pokebox-assets<br/><small>25 GB SSD</small>"]
         subgraph Pokebox["pokebox container"]
             Nginx["Nginx<br/><small>:80 → :3000</small>"]
             SPA["Vite SPA Bundle"]
+            Assets["/assets/ → /data/assets/"]
             Health["/health"]
             Stub["/nginx_status"]
         end
+        SSD -->|"bind mount :ro"| Assets
         Watchtower["Watchtower"] -->|auto-pulls| GHCR
         Watchtower -->|restarts| Pokebox
     end
 
     Browser <-->|HTTPS| Nginx
     Nginx --- SPA
+    Nginx --- Assets
     Nginx --- Health
     Nginx --- Stub
 
     subgraph External["External Services"]
-        S3["Hetzner Object Storage<br/><small>pokebox-assets.fsn1.your-objectstorage.com</small>"]
         OTEL["OTLP Collector<br/><small>/v1/traces</small>"]
     end
 
@@ -56,7 +59,7 @@ flowchart TB
     Blackbox -->|probes /health & /| Nginx
     cAdvisor -->|docker socket| Pokebox
 
-    Browser -->|"GET card assets<br/><small>fronts, masks, foils, JSON</small>"| S3
+    Browser -->|"GET /assets/*<br/><small>fronts, masks, foils, JSON</small>"| Nginx
     Browser -->|"POST /v1/traces<br/><small>OTel spans</small>"| OTEL
 ```
 
@@ -130,7 +133,6 @@ flowchart TB
     end
 
     subgraph External["External"]
-        S3["Object Storage<br/><small>card assets</small>"]
         MediaPipe["MediaPipe CDN<br/><small>face_detection</small>"]
         Webcam["Webcam"]
         OTEL["OTLP Collector"]
@@ -165,7 +167,7 @@ flowchart TB
     Hero -->|"loadSetCatalog() per set"| Catalog
     Catalog -->|"fetch JSON"| AssetUrl
     Loader -->|"load textures"| AssetUrl
-    AssetUrl -->|"GET (CORS)"| S3
+    AssetUrl -->|"GET /assets/*"| Nginx
 
     %% Face tracking pipeline
     Webcam -->|stream| Face
@@ -240,7 +242,7 @@ sequenceDiagram
     participant User
     participant Store as Pinia Store
     participant Catalog as cardCatalog
-    participant S3 as Object Storage
+    participant Nginx as Nginx /assets/
     participant Loader as useCardLoader
     participant Scene as useThreeScene
     participant OTel as OTLP Collector
@@ -249,8 +251,8 @@ sequenceDiagram
     Store->>Loader: clearCache()
     Note over Loader: dispose GPU textures
     Store->>Catalog: loadSetCatalog("sv3-5_en")
-    Catalog->>S3: fetch(assetUrl("sv3-5_en/sv3-5.en-US.json"))
-    S3-->>Catalog: JSON metadata
+    Catalog->>Nginx: fetch("/assets/sv3-5_en/sv3-5.en-US.json")
+    Nginx-->>Catalog: JSON metadata
     Note over Catalog: filter foils → pick best variant<br/>→ mapHoloType() → build entries
     Catalog-->>Store: CardCatalogEntry[]
     Note over Store: CARD_CATALOG.value = entries<br/>→ displayCardIds recomputes
@@ -259,12 +261,12 @@ sequenceDiagram
     Loader->>OTel: startSpan("load-card-set")
 
     par parallel texture loads
-        Loader->>S3: GET front texture (CORS)
-        Loader->>S3: GET holo mask (CORS)
-        Loader->>S3: GET etch foil (CORS)
+        Loader->>Nginx: GET front texture
+        Loader->>Nginx: GET holo mask
+        Loader->>Nginx: GET etch foil
     end
 
-    S3-->>Loader: textures
+    Nginx-->>Loader: textures
     Loader->>OTel: endSpan()
     Loader->>Scene: rebuildCardsOnly()
     Note over Scene: build ShaderMaterial<br/>per holoType + textures

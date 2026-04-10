@@ -27,6 +27,8 @@ services:
           memory: 512M
     security_opt:
       - no-new-privileges:true
+    volumes:
+      - /mnt/HC_Volume_102273859/pokebox-assets:/data/assets:ro
     read_only: true
     tmpfs:
       - /var/run

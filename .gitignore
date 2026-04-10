@@ -58,3 +58,6 @@ public/me2-5_en/
 public/sv10_en/
 
 deploy.sh
+
+# Downloaded S3 assets (local sync copy)
+pokebox-assets/

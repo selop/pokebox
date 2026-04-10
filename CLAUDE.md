@@ -120,31 +120,21 @@ Each `CardCatalogEntry` defines texture paths and shader type (relative to `publ
 
 See `docs/CARD-SETS.md` for detailed documentation on the set system, JSON format, and how to add new sets.
 
-### Cross-origin asset loading (CORS)
+### Asset serving (local SSD)
 
-In production, card assets are served from Hetzner Object Storage (`pokebox-assets.fsn1.your-objectstorage.com`) while the app runs on `pokebox.lopatkin.net`. The `VITE_ASSET_BASE_URL` env var (set in CI) prefixes all asset paths via `assetUrl()` in `src/utils/assetUrl.ts`.
+In production, card assets are served from a local SSD mounted into the Docker container. Nginx serves them at `/assets/` from `/data/assets/` (mapped to `/mnt/HC_Volume_102273859/pokebox-assets/` on the host). The `VITE_ASSET_BASE_URL` env var is set to `/assets/` at build time, so all asset paths via `assetUrl()` in `src/utils/assetUrl.ts` resolve to same-origin requests — no CORS needed.
 
-**CORS bucket policy** is configured on the S3 bucket to allow `GET`/`HEAD` from the app origin. To update:
+**Syncing assets to the server:**
 
 ```bash
-rclone backend setxml hetzner:pokebox-assets/?cors - <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<CORSConfiguration>
-  <CORSRule>
-    <AllowedOrigin>https://pokebox.lopatkin.net</AllowedOrigin>
-    <AllowedMethod>GET</AllowedMethod>
-    <AllowedMethod>HEAD</AllowedMethod>
-    <AllowedHeader>*</AllowedHeader>
-    <MaxAgeSeconds>86400</MaxAgeSeconds>
-  </CORSRule>
-</CORSConfiguration>
-EOF
+# Download from S3 (one-time migration, requires rclone with hetzner remote)
+./scripts/download-s3-assets.sh ./pokebox-assets
+
+# Sync to VPS
+./scripts/sync-assets.sh user@server ./pokebox-assets
 ```
 
-**Client-side CORS requirements:**
-
-- Three.js v0.182+ `TextureLoader` defaults to `crossOrigin: 'anonymous'`, so WebGL texture loads automatically send the `Origin` header
-- **Any `<img>` tag that loads an asset URL MUST include `crossorigin="anonymous"`** — without it, the browser caches the response from a no-cors request (no `Access-Control-Allow-Origin` header), and when Three.js later requests the same URL with CORS, the browser serves the stale cached response and fails. This cache-poisoning bug is subtle: it only manifests when an `<img>` loads an asset before the TextureLoader does (e.g., search thumbnails in `CardSearch.vue`)
+The Docker volume mount (`/mnt/HC_Volume_102273859/pokebox-assets:/data/assets:ro`) is read-only and compatible with the container's `read_only: true` filesystem setting.
 
 ### Asset processing scripts
 

@@ -44,7 +44,7 @@ server {
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()" always;
     add_header Strict-Transport-Security "max-age=63072000; includePreload" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://pokebox-assets.fsn1.your-objectstorage.com; connect-src 'self' https://cdn.jsdelivr.net https://pokebox-assets.fsn1.your-objectstorage.com https://otel.lopatkin.net; worker-src 'self' blob:; font-src 'self' https://fonts.gstatic.com;" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://otel.lopatkin.net; worker-src 'self' blob:; font-src 'self' https://fonts.gstatic.com;" always;
 
     # Enable gzip compression
     gzip on;
@@ -53,6 +53,15 @@ server {
 
     # Rate limiting
     limit_req zone=static burst=60 nodelay;
+
+    # Serve card assets from mounted SSD volume
+    location /assets/ {
+        alias /data/assets/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+        try_files \$uri =404;
+    }
 
     # SPA fallback - serve index.html for all routes
     location / {
