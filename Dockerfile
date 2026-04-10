@@ -55,7 +55,7 @@ server {
     limit_req zone=static burst=60 nodelay;
 
     # Serve card assets from mounted SSD volume
-    location /assets/ {
+    location /card-assets/ {
         alias /data/assets/;
         expires 30d;
         add_header Cache-Control "public, immutable";

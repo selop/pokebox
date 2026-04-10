@@ -122,7 +122,7 @@ See `docs/CARD-SETS.md` for detailed documentation on the set system, JSON forma
 
 ### Asset serving (local SSD)
 
-In production, card assets are served from a local SSD mounted into the Docker container. Nginx serves them at `/assets/` from `/data/assets/` (mapped to `/mnt/HC_Volume_102273859/pokebox-assets/` on the host). The `VITE_ASSET_BASE_URL` env var is set to `/assets/` at build time, so all asset paths via `assetUrl()` in `src/utils/assetUrl.ts` resolve to same-origin requests — no CORS needed.
+In production, card assets are served from a local SSD mounted into the Docker container. Nginx serves them at `/card-assets/` from `/data/assets/` (mapped to `/mnt/HC_Volume_102273859/pokebox-assets/` on the host). The `VITE_ASSET_BASE_URL` env var is set to `/card-assets/` at build time, so all asset paths via `assetUrl()` in `src/utils/assetUrl.ts` resolve to same-origin requests — no CORS needed.
 
 **Syncing assets to the server:**
 
