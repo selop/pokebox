@@ -3,9 +3,8 @@ import type { CardCatalogEntry, HoloType, SetCardJson, SetDefinition } from '@/t
 import { assetUrl } from '@/utils/assetUrl'
 
 export const SET_REGISTRY: SetDefinition[] = [
-  { id: 'me2_en', label: 'PFL Phantasmal Flames', jsonFile: 'me2_en/set.json' },
-  { id: 'me2-5_en', label: 'ASC Ascended Heros', jsonFile: 'me2-5_en/set.json', preferReverse: true },
   { id: 'sv3-5_en', label: 'MEW 151', jsonFile: 'sv3-5_en/sv3-5.en-US.json' },
+  { id: 'me2-5_en', label: 'ASC Ascended Heros', jsonFile: 'me2-5_en/set.json', preferReverse: true },
   { id: 'sv8-5_en', label: 'PRE Prismatic', jsonFile: 'sv8-5_en/sv8-5.en-US.json' },
   { id: 'sv4-5_en', label: 'PAF Paldean Fates', jsonFile: 'sv4-5_en/sv-4-5.en-US.json' },
   { id: 'sv5_en', label: 'TEF Temporal Forces', jsonFile: 'sv5_en/sv5.en-US.json' },

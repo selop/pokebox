@@ -8,7 +8,6 @@ import pafPack from '@/assets/PAF-booster-pack.webp'
 import tefPack from '@/assets/TEF-booster-pack.webp'
 import driPack from '@/assets/DRI-booster-pack.webp'
 import ascPack from '@/assets/ASC-booster-pack.webp'
-import pflPack from '@/assets/PFL-booster-pack.webp'
 
 const store = useAppStore()
 
@@ -19,7 +18,6 @@ const packImages: Record<string, string> = {
   sv5_en: tefPack,
   sv10_en: driPack,
   'me2-5_en': ascPack,
-  me2_en: pflPack,
 }
 
 // --- Pack opening animation state ---
