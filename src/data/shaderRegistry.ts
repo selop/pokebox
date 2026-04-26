@@ -258,6 +258,5 @@ export const SHADER_UNIFORM_REGISTRY: Partial<Record<ShaderStyle, ShaderUniformD
 /** Resolve a dot-path like 'illustrationRare.barAngle' against a ShaderConfigs object. */
 export function resolveConfigPath(shaders: ShaderConfigs, path: string): number {
   const [section, key] = path.split('.') as [keyof ShaderConfigs, string]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (shaders[section] as any)[key] as number
+  return (shaders[section] as unknown as Record<string, number>)[key]!
 }

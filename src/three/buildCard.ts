@@ -12,7 +12,7 @@ import {
   Vector2,
 } from 'three'
 import type { Texture } from 'three'
-import type { AppConfig, CardTransform, DerivedDimensions, ShaderStyle } from '@/types'
+import type { AppConfig, DerivedDimensions, ShaderStyle } from '@/types'
 import { SHADER_UNIFORM_REGISTRY, resolveConfigPath } from '@/data/shaderRegistry'
 import holoVert from '@/shaders/holo.vert'
 import activationFrag from '@/shaders/activation.frag'
@@ -195,16 +195,3 @@ export function buildActivationMaterial(
   })
 }
 
-export function applyCardTransform(
-  cardMesh: Mesh,
-  cardTransform: CardTransform,
-  cardAngle: number,
-  dims: DerivedDimensions,
-): void {
-  cardMesh.position.set(
-    (cardTransform.x / 100) * dims.screenW,
-    (cardTransform.y / 100) * dims.screenH,
-    -(cardTransform.z / 100) * dims.boxD,
-  )
-  cardMesh.rotation.y = cardAngle + (cardTransform.rotY * Math.PI) / 180
-}

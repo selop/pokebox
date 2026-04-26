@@ -1,14 +1,5 @@
 import { test, expect } from '@playwright/test'
 
-interface CardMeshInfo {
-  id: string
-  fanIndex: number | undefined
-  x: number
-  y: number
-  z: number
-  scaleX: number
-}
-
 interface FanDofState {
   fanDofMaxBlur: number
   ramping: boolean
@@ -22,16 +13,6 @@ async function getFanDofState(page: Parameters<Parameters<typeof test>[1]>[0]['p
       | { getFanDofState: () => FanDofState }
       | undefined
     return debug ? debug.getFanDofState() : { fanDofMaxBlur: 0, ramping: false, zoomedFanIndex: null }
-  })
-}
-
-/** Read card mesh data from the debug bridge. */
-async function getCardMeshes(page: Parameters<Parameters<typeof test>[1]>[0]['page']): Promise<CardMeshInfo[]> {
-  return page.evaluate(() => {
-    const debug = (window as Record<string, unknown>).__POKEBOX_DEBUG__ as
-      | { getCardMeshes: () => CardMeshInfo[] }
-      | undefined
-    return debug ? debug.getCardMeshes() : []
   })
 }
 

@@ -33,8 +33,7 @@ type ShaderSection = {
 }
 
 function getShaderObj(section: ShaderSection): Record<string, number> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return store.config.shaders[section.shaderKey] as any
+  return store.config.shaders[section.shaderKey] as unknown as Record<string, number>
 }
 
 function displayValue(section: ShaderSection, slider: SliderDef): string {
