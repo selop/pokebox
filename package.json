@@ -43,7 +43,7 @@
     "@opentelemetry/semantic-conventions": "^1.39.0",
     "pinia": "^3.0.4",
     "three": "^0.182.0",
-    "vue": "^3.5.27"
+    "vue": "^3.5.29"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.1",
